@@ -1,0 +1,25 @@
+# Android build outputs
+/build/
+**/build/
+
+# IDE files
+.idea/
+.gradle/
+local.properties
+
+# Keystore and signing
+keystore.properties
+**/*.jks
+**/*.keystore
+app/keystore.jks
+
+# Generated
+*.apk
+*.aab
+*.ap_*
+
+# Misc
+*.log
+captures/
+
+
