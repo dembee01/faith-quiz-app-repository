@@ -26,6 +26,9 @@ import androidx.navigation.NavController
 import com.example.faithquiz.R
 import com.example.faithquiz.ui.navigation.Screen
 import com.example.faithquiz.ui.theme.Dimensions
+import com.example.faithquiz.ui.theme.CorrectAnswerGreen
+import com.example.faithquiz.ui.theme.WrongAnswerRed
+import com.example.faithquiz.ui.theme.ProgressTrackGray
 import kotlinx.coroutines.delay
 import com.example.faithquiz.data.QuestionBank
 import androidx.compose.ui.platform.LocalContext
@@ -174,7 +177,7 @@ fun QuizScreen(
                 },
                 modifier = Modifier.fillMaxWidth(),
                 color = MaterialTheme.colorScheme.onSurface,
-                trackColor = Color(0xFFDCE0E5)
+                trackColor = ProgressTrackGray
             )
             
             Spacer(modifier = Modifier.height(Dimensions.spaceLarge))
@@ -193,8 +196,8 @@ fun QuizScreen(
                     val isSelected = selectedAnswer == index
                     val isCorrect = index == currentQuestion.correctAnswer
                     val containerColor = when {
-                        showAnswerFeedback && isCorrect -> Color(0xFF2E7D32)
-                        showAnswerFeedback && isSelected && !isCorrect -> Color(0xFFC62828)
+                        showAnswerFeedback && isCorrect -> CorrectAnswerGreen
+                        showAnswerFeedback && isSelected && !isCorrect -> WrongAnswerRed
                         isSelected -> MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
                         else -> MaterialTheme.colorScheme.surface
                     }
@@ -275,7 +278,7 @@ fun QuizScreen(
                         },
                         enabled = selectedAnswer != -1,
                         shape = RoundedCornerShape(Dimensions.cornerRadiusLarge),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1980E6), contentColor = Color.White)
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary)
                     ) {
                         Text(
                             text = "Submit",
@@ -297,7 +300,7 @@ fun QuizScreen(
                         },
                         enabled = true,
                         shape = RoundedCornerShape(Dimensions.cornerRadiusLarge),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1980E6), contentColor = Color.White)
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary)
                     ) {
                         Text(
                             text = if (currentQuestionIndex < questions.size - 1) stringResource(R.string.next_question) else stringResource(R.string.complete_quiz),
@@ -449,8 +452,8 @@ fun QuizCompletedScreen(
             .background(
                 Brush.verticalGradient(
                     colors = listOf(
-                        Color(0xFF6366F1),
-                        Color(0xFF8B5CF6)
+                        MaterialTheme.colorScheme.primary,
+                        MaterialTheme.colorScheme.secondary
                     )
                 )
             ),
@@ -462,7 +465,7 @@ fun QuizCompletedScreen(
                 .padding(24.dp),
             shape = RoundedCornerShape(24.dp),
             colors = CardDefaults.cardColors(
-                containerColor = Color.White
+                containerColor = MaterialTheme.colorScheme.surface
             )
         ) {
             Column(
@@ -481,7 +484,7 @@ fun QuizCompletedScreen(
                     style = MaterialTheme.typography.headlineMedium.copy(
                         fontWeight = FontWeight.Bold
                     ),
-                    color = Color(0xFF6366F1),
+                    color = MaterialTheme.colorScheme.primary,
                     textAlign = TextAlign.Center
                 )
                             
@@ -490,7 +493,7 @@ fun QuizCompletedScreen(
                 Text(
                     text = "Your Score",
                     style = MaterialTheme.typography.titleMedium,
-                    color = Color.Gray
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                 )
                 
                 Text(
@@ -498,13 +501,13 @@ fun QuizCompletedScreen(
                     style = MaterialTheme.typography.displayMedium.copy(
                         fontWeight = FontWeight.Bold
                     ),
-                    color = Color(0xFF6366F1)
+                    color = MaterialTheme.colorScheme.primary
                 )
                 
                 Text(
                     text = "$percentage%",
                     style = MaterialTheme.typography.headlineSmall,
-                    color = Color.Gray
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -512,7 +515,7 @@ fun QuizCompletedScreen(
                 Text(
                     text = "Time: ${timeSpentSeconds}s",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color.Gray
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                 )
                 
                 Spacer(modifier = Modifier.height(32.dp))
@@ -528,8 +531,8 @@ fun QuizCompletedScreen(
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(16.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = Color.Gray.copy(alpha = 0.2f),
-                            contentColor = Color.Gray
+                            containerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f),
+                            contentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                         )
                     ) {
                         Text(

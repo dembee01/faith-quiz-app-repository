@@ -411,10 +411,12 @@ object QuestionBank {
             explanation = "Elihu speaks in chapters 32–37 before God responds."
         ),
         QuizQuestion(
-            question = "Which Psalm begins 'The LORD is my shepherd'?",
-            options = listOf("Psalm 1", "Psalm 19", "Psalm 23", "Psalm 51"),
+            question = "According to Proverbs, what is the beginning of knowledge?",
+            options = listOf("Love", "Obedience", "The fear of the LORD", "Wisdom"),
             correctAnswer = 2,
-            explanation = "Psalm 23 is the shepherd psalm."
+            explanation = "Proverbs 1:7 states that the fear of the LORD is the beginning of knowledge.",
+            verseReference = "Proverbs 1:7",
+            verseText = "The fear of the LORD is the beginning of knowledge; fools despise wisdom and instruction."
         ),
         QuizQuestion(
             question = "According to Proverbs, what answer turns away wrath?",
@@ -707,12 +709,12 @@ object QuestionBank {
     private fun getEarlyChurchQuestions(level: Int): List<QuizQuestion> {
         return listOf(
             QuizQuestion(
-                question = "Who was the first Christian martyr?",
-                options = listOf("Stephen", "James", "Peter", "Paul"),
+                question = "Who was chosen as one of the first seven deacons along with Stephen?",
+                options = listOf("Philip", "Barnabas", "Silas", "Timothy"),
                 correctAnswer = 0,
-                explanation = "Stephen was the first Christian martyr, stoned to death for his faith.",
-                verseReference = "Acts 7:59",
-                verseText = "And as they were stoning Stephen, he called out, 'Lord Jesus, receive my spirit.'"
+                explanation = "Philip was one of the seven chosen to serve tables in the early church.",
+                verseReference = "Acts 6:5",
+                verseText = "And they chose Stephen, a man full of faith... and Philip, and Prochorus..."
             ),
             QuizQuestion(
                 question = "What happened on the Day of Pentecost?",
@@ -747,20 +749,20 @@ object QuestionBank {
                 verseText = "But some men came down from Judea and were teaching the brothers, 'Unless you are circumcised according to the custom of Moses, you cannot be saved.'"
             ),
             QuizQuestion(
-                question = "Who wrote most of the New Testament letters?",
-                options = listOf("Peter", "John", "Paul", "James"),
-                correctAnswer = 2,
-                explanation = "Paul wrote 13 of the 27 New Testament books.",
-                verseReference = "Various",
-                verseText = "Paul's letters make up a significant portion of the New Testament."
+                question = "Which epistle is the longest letter Paul wrote?",
+                options = listOf("Romans", "1 Corinthians", "Hebrews", "Ephesians"),
+                correctAnswer = 0,
+                explanation = "Romans is the longest and most systematically theological of Paul's letters.",
+                verseReference = "Romans",
+                verseText = "Paul, a servant of Christ Jesus..."
             ),
             QuizQuestion(
-                question = "What was Paul's original name?",
-                options = listOf("Saul", "Simon", "Stephen", "Silas"),
-                correctAnswer = 0,
-                explanation = "Paul was originally named Saul before his conversion on the road to Damascus.",
-                verseReference = "Acts 9:1",
-                verseText = "But Saul, still breathing threats and murder against the disciples of the Lord."
+                question = "From which tribe was the Apostle Paul?",
+                options = listOf("Judah", "Levi", "Benjamin", "Ephraim"),
+                correctAnswer = 2,
+                explanation = "Paul states he is of the tribe of Benjamin.",
+                verseReference = "Philippians 3:5",
+                verseText = "circumcised on the eighth day... of the tribe of Benjamin."
             ),
             QuizQuestion(
                 question = "Which city was the center of early Christianity?",
@@ -925,20 +927,20 @@ object QuestionBank {
     private fun getBiblicalGeographyQuestions(level: Int): List<QuizQuestion> {
         return listOf(
             QuizQuestion(
-                question = "Where was Jesus born?",
-                options = listOf("Nazareth", "Bethlehem", "Jerusalem", "Capernaum"),
+                question = "Which city is known as the 'City of Palms'?",
+                options = listOf("Jerusalem", "Jericho", "Samaria", "Bethany"),
                 correctAnswer = 1,
-                explanation = "Jesus was born in Bethlehem, the city of David.",
-                verseReference = "Luke 2:4-5",
-                verseText = "And Joseph also went up from Galilee, from the town of Nazareth, to Judea, to the city of David, which is called Bethlehem."
+                explanation = "Jericho is frequently called the City of Palms in Scripture.",
+                verseReference = "Deuteronomy 34:3",
+                verseText = "The Negeb... and the valley of Jericho the city of palm trees."
             ),
             QuizQuestion(
-                question = "Which sea did Jesus walk on?",
-                options = listOf("Mediterranean Sea", "Red Sea", "Sea of Galilee", "Dead Sea"),
+                question = "Which body of water is also known as the Lake of Gennesaret?",
+                options = listOf("Dead Sea", "Mediterranean Sea", "Sea of Galilee", "Jordan River"),
                 correctAnswer = 2,
-                explanation = "Jesus walked on the Sea of Galilee, also called the Sea of Tiberias.",
-                verseReference = "Matthew 14:25",
-                verseText = "And in the fourth watch of the night he came to them, walking on the sea."
+                explanation = "The Sea of Galilee is also known as the Lake of Gennesaret and the Sea of Tiberias.",
+                verseReference = "Luke 5:1",
+                verseText = "On one occasion, while the crowd was pressing in on him to hear the word of God, he was standing by the lake of Gennesaret."
             ),
             QuizQuestion(
                 question = "Where did Moses receive the Ten Commandments?",
@@ -971,12 +973,12 @@ object QuestionBank {
     private fun getMiraclesQuestions(level: Int): List<QuizQuestion> {
         return listOf(
             QuizQuestion(
-                question = "What was Jesus' first miracle?",
-                options = listOf("Healing the blind", "Walking on water", "Turning water to wine", "Raising Lazarus"),
-                correctAnswer = 2,
-                explanation = "Jesus' first miracle was turning water into wine at the wedding in Cana.",
-                verseReference = "John 2:11",
-                verseText = "This, the first of his signs, Jesus did at Cana in Galilee, and manifested his glory."
+                question = "Whose mother-in-law did Jesus heal of a fever?",
+                options = listOf("Peter's", "James'", "John's", "Andrew's"),
+                correctAnswer = 0,
+                explanation = "Jesus healed Peter's mother-in-law at Peter's house.",
+                verseReference = "Matthew 8:14-15",
+                verseText = "And when Jesus entered Peter's house, he saw his mother-in-law lying sick with a fever."
             ),
             QuizQuestion(
                 question = "How many people did Jesus feed with 5 loaves and 2 fish?",
@@ -1060,17 +1062,524 @@ object QuestionBank {
     }
     
     // Placeholder functions for other topics (to be implemented)
-    private fun getBiblicalHistoryQuestions(level: Int): List<QuizQuestion> = getEarlyChurchQuestions(level)
-    private fun getBiblicalCharactersQuestions(level: Int): List<QuizQuestion> = getEarlyChurchQuestions(level)
-    private fun getBiblicalNumbersQuestions(level: Int): List<QuizQuestion> = getEarlyChurchQuestions(level)
-    private fun getBiblicalSymbolsQuestions(level: Int): List<QuizQuestion> = getEarlyChurchQuestions(level)
-    private fun getBiblicalFestivalsQuestions(level: Int): List<QuizQuestion> = getEarlyChurchQuestions(level)
-    private fun getBiblicalCovenantsQuestions(level: Int): List<QuizQuestion> = getEarlyChurchQuestions(level)
-    private fun getBiblicalProphecyQuestions(level: Int): List<QuizQuestion> = getEarlyChurchQuestions(level)
-    private fun getBiblicalTheologyQuestions(level: Int): List<QuizQuestion> = getEarlyChurchQuestions(level)
-    private fun getBiblicalLanguagesQuestions(level: Int): List<QuizQuestion> = getEarlyChurchQuestions(level)
-    private fun getBiblicalArchaeologyQuestions(level: Int): List<QuizQuestion> = getEarlyChurchQuestions(level)
-    private fun getBiblicalInterpretationQuestions(level: Int): List<QuizQuestion> = getEarlyChurchQuestions(level)
-    private fun getAdvancedTheologyQuestions(level: Int): List<QuizQuestion> = getEarlyChurchQuestions(level)
-    private fun getBiblicalMasteryQuestions(level: Int): List<QuizQuestion> = getEarlyChurchQuestions(level)
+    // Biblical History (Level 16)
+    private fun getBiblicalHistoryQuestions(level: Int): List<QuizQuestion> {
+        return listOf(
+            QuizQuestion(
+                question = "Which empire destroyed the First Temple in 586 BC?",
+                options = listOf("Assyrian", "Babylonian", "Persian", "Roman"),
+                correctAnswer = 1,
+                explanation = "The Babylonian Empire, led by Nebuchadnezzar, destroyed Jerusalem and the Temple.",
+                verseReference = "2 Kings 25:8-9"
+            ),
+            QuizQuestion(
+                question = "Who issued the decree allowing Jews to return and rebuild the Temple?",
+                options = listOf("Cyrus the Great", "Darius", "Artaxerxes", "Nebuchadnezzar"),
+                correctAnswer = 0,
+                explanation = "Cyrus the Great of Persia issued the decree fulfilling Jeremiah's prophecy.",
+                verseReference = "Ezra 1:1-2"
+            ),
+            QuizQuestion(
+                question = "Which Roman governor sentenced Jesus to crucifixion?",
+                options = listOf("Herod Antipas", "Pontius Pilate", "Felix", "Festus"),
+                correctAnswer = 1,
+                explanation = "Pontius Pilate was the Roman governor of Judea who sentenced Jesus.",
+                verseReference = "Matthew 27:26"
+            ),
+            QuizQuestion(
+                question = "Which event marks the beginning of the Church age?",
+                options = listOf("The Resurrection", "The Ascension", "Pentecost", "The Council of Jerusalem"),
+                correctAnswer = 2,
+                explanation = "Pentecost, the coming of the Holy Spirit, marks the birth of the Church.",
+                verseReference = "Acts 2"
+            ),
+            QuizQuestion(
+                question = "Who was the High Priest during Jesus' trial?",
+                options = listOf("Annas", "Caiaphas", "Gamaliel", "Nicodemus"),
+                correctAnswer = 1,
+                explanation = "Caiaphas was the High Priest who prophesied that one man should die for the people.",
+                verseReference = "John 11:49-50"
+            )
+        )
+    }
+    // Biblical Characters (Level 19)
+    private fun getBiblicalCharactersQuestions(level: Int): List<QuizQuestion> {
+        return listOf(
+            QuizQuestion(
+                question = "Who climbed a sycamore tree to see Jesus?",
+                options = listOf("Nicodemus", "Zacchaeus", "Bartimaeus", "Lazarus"),
+                correctAnswer = 1,
+                explanation = "Zacchaeus, a tax collector, climbed a tree because he was short.",
+                verseReference = "Luke 19:4"
+            ),
+            QuizQuestion(
+                question = "Who sold his birthright for a bowl of stew?",
+                options = listOf("Jacob", "Esau", "Joseph", "Reuben"),
+                correctAnswer = 1,
+                explanation = "Esau despised his birthright and sold it to Jacob for food.",
+                verseReference = "Genesis 25:33"
+            ),
+            QuizQuestion(
+                question = "Who was the great-grandmother of King David?",
+                options = listOf("Rahab", "Ruth", "Naomi", "Hannah"),
+                correctAnswer = 1,
+                explanation = "Ruth the Moabitess was the great-grandmother of King David.",
+                verseReference = "Ruth 4:17"
+            ),
+            QuizQuestion(
+                question = "Which judge made a vow that cost him his daughter?",
+                options = listOf("Gideon", "Samson", "Jephthah", "Barak"),
+                correctAnswer = 2,
+                explanation = "Jephthah made a rash vow to sacrifice whatever came out of his house.",
+                verseReference = "Judges 11:30-31"
+            ),
+            QuizQuestion(
+                question = "Who did God speak to from a burning bush?",
+                options = listOf("Abraham", "Moses", "Joshua", "Elijah"),
+                correctAnswer = 1,
+                explanation = "God spoke to Moses from the burning bush at Horeb.",
+                verseReference = "Exodus 3:2"
+            )
+        )
+    }
+    // Biblical Numbers (Level 20)
+    private fun getBiblicalNumbersQuestions(level: Int): List<QuizQuestion> {
+        return listOf(
+            QuizQuestion(
+                question = "How many years did the Israelites wander in the wilderness?",
+                options = listOf("12", "40", "70", "100"),
+                correctAnswer = 1,
+                explanation = "They wandered for 40 years, one year for each day the spies explored the land.",
+                verseReference = "Numbers 14:34"
+            ),
+            QuizQuestion(
+                question = "How many stones did David pick up to fight Goliath?",
+                options = listOf("1", "3", "5", "7"),
+                correctAnswer = 2,
+                explanation = "David chose 5 smooth stones from the brook.",
+                verseReference = "1 Samuel 17:40"
+            ),
+            QuizQuestion(
+                question = "How many disciples were with Jesus at the Transfiguration?",
+                options = listOf("3", "7", "12", "120"),
+                correctAnswer = 0,
+                explanation = "Three disciples: Peter, James, and John.",
+                verseReference = "Matthew 17:1"
+            ),
+            QuizQuestion(
+                question = "How many times did Naaman dip in the Jordan River?",
+                options = listOf("3", "7", "10", "12"),
+                correctAnswer = 1,
+                explanation = "Elisha told Naaman to wash 7 times to be healed of leprosy.",
+                verseReference = "2 Kings 5:10"
+            ),
+            QuizQuestion(
+                question = "How many books are in the entire Protestant Bible?",
+                options = listOf("55", "66", "73", "80"),
+                correctAnswer = 1,
+                explanation = "There are 66 books: 39 in the Old Testament and 27 in the New.",
+                verseReference = "N/A"
+            )
+        )
+    }
+    // Biblical Symbols (Level 21)
+    private fun getBiblicalSymbolsQuestions(level: Int): List<QuizQuestion> {
+        return listOf(
+            QuizQuestion(
+                question = "What does the 'Lamb of God' represent?",
+                options = listOf("Innocence", "Jesus as the sacrifice", "The nation of Israel", "The Church"),
+                correctAnswer = 1,
+                explanation = "The Lamb represents Jesus, the perfect sacrifice who takes away the sin of the world.",
+                verseReference = "John 1:29"
+            ),
+            QuizQuestion(
+                question = "In the armor of God, what does the 'Sword of the Spirit' represent?",
+                options = listOf("Prayer", "Faith", "The Word of God", "Salvation"),
+                correctAnswer = 2,
+                explanation = "The Sword of the Spirit is the Word of God.",
+                verseReference = "Ephesians 6:17"
+            ),
+            QuizQuestion(
+                question = "What did the veil tearing in the temple symbolize?",
+                options = listOf("God's anger", "Access to God", "The end of the world", "The destruction of the temple"),
+                correctAnswer = 1,
+                explanation = "It symbolized that through Jesus' death, we have direct access to God.",
+                verseReference = "Matthew 27:51"
+            ),
+            QuizQuestion(
+                question = "What does 'leaven' (yeast) often symbolize in the Bible?",
+                options = listOf("Growth", "Sin/Corruption", "Joy", "Provision"),
+                correctAnswer = 1,
+                explanation = "Leaven often symbolizes sin or false teaching that spreads and puffs up.",
+                verseReference = "1 Corinthians 5:6"
+            ),
+            QuizQuestion(
+                question = "What does the rainbow symbolize?",
+                options = listOf("God's covenant with Noah", "The Holy Spirit", "Creation", "Peace"),
+                correctAnswer = 0,
+                explanation = "The rainbow is the sign of God's covenant never to destroy the earth by flood again.",
+                verseReference = "Genesis 9:13"
+            )
+        )
+    }
+    // Biblical Festivals (Level 22)
+    private fun getBiblicalFestivalsQuestions(level: Int): List<QuizQuestion> {
+        return listOf(
+            QuizQuestion(
+                question = "Which festival celebrates the Israelites' deliverance from Egypt?",
+                options = listOf("Pentecost", "Passover", "Tabernacles", "Purim"),
+                correctAnswer = 1,
+                explanation = "Passover commemorates the night the angel of death passed over Israelite homes.",
+                verseReference = "Exodus 12:27"
+            ),
+            QuizQuestion(
+                question = "What is the Feast of Weeks also known as?",
+                options = listOf("Passover", "Pentecost", "Trumpets", "Atonement"),
+                correctAnswer = 1,
+                explanation = "The Feast of Weeks is also known as Pentecost (50 days after Passover).",
+                verseReference = "Leviticus 23:15-16"
+            ),
+            QuizQuestion(
+                question = "Which festival involved living in booths or tents?",
+                options = listOf("Passover", "Pentecost", "Tabernacles", "Dedication"),
+                correctAnswer = 2,
+                explanation = "The Feast of Tabernacles (Booths) reminded them of their wilderness journey.",
+                verseReference = "Leviticus 23:42"
+            ),
+            QuizQuestion(
+                question = "What is the Day of Atonement called in Hebrew?",
+                options = listOf("Rosh Hashanah", "Yom Kippur", "Hanukkah", "Purim"),
+                correctAnswer = 1,
+                explanation = "Yom Kippur is the Day of Atonement, the holiest day of the year.",
+                verseReference = "Leviticus 23:27"
+            ),
+            QuizQuestion(
+                question = "Which festival celebrates the preservation of the Jews from Haman's plot?",
+                options = listOf("Passover", "Purim", "Hanukkah", "Pentecost"),
+                correctAnswer = 1,
+                explanation = "Purim celebrates the events recorded in the book of Esther.",
+                verseReference = "Esther 9:26"
+            )
+        )
+    }
+    // Biblical Covenants (Level 23)
+    private fun getBiblicalCovenantsQuestions(level: Int): List<QuizQuestion> {
+        return listOf(
+            QuizQuestion(
+                question = "Which covenant is associated with the rainbow?",
+                options = listOf("Abrahamic", "Noahic", "Mosaic", "Davidic"),
+                correctAnswer = 1,
+                explanation = "The Noahic Covenant promised that God would never flood the whole earth again.",
+                verseReference = "Genesis 9:13"
+            ),
+            QuizQuestion(
+                question = "What was the sign of the Abrahamic Covenant?",
+                options = listOf("Sabbath", "Circumcision", "Rainbow", "Passover"),
+                correctAnswer = 1,
+                explanation = "Circumcision was the sign of God's covenant with Abraham.",
+                verseReference = "Genesis 17:11"
+            ),
+            QuizQuestion(
+                question = "Which covenant promised a descendant on the throne forever?",
+                options = listOf("Mosaic", "Davidic", "New", "Abrahamic"),
+                correctAnswer = 1,
+                explanation = "The Davidic Covenant promised that David's throne would be established forever.",
+                verseReference = "2 Samuel 7:16"
+            ),
+            QuizQuestion(
+                question = "Who is the mediator of the New Covenant?",
+                options = listOf("Moses", "Abraham", "David", "Jesus"),
+                correctAnswer = 3,
+                explanation = "Jesus is the mediator of the New Covenant, sealed by His blood.",
+                verseReference = "Hebrews 9:15"
+            ),
+            QuizQuestion(
+                question = "Where was the Mosaic Covenant established?",
+                options = listOf("Mount Zion", "Mount Sinai", "Mount Ararat", "Mount Carmel"),
+                correctAnswer = 1,
+                explanation = "The Mosaic Covenant (the Law) was given at Mount Sinai.",
+                verseReference = "Exodus 19"
+            )
+        )
+    }
+    // Biblical Prophecy (Level 24)
+    private fun getBiblicalProphecyQuestions(level: Int): List<QuizQuestion> {
+        return listOf(
+            QuizQuestion(
+                question = "Which prophet predicted the suffering servant?",
+                options = listOf("Isaiah", "Jeremiah", "Daniel", "Ezekiel"),
+                correctAnswer = 0,
+                explanation = "Isaiah 53 describes the Suffering Servant who bore our sins.",
+                verseReference = "Isaiah 53"
+            ),
+            QuizQuestion(
+                question = "Where did Micah prophesy the Messiah would be born?",
+                options = listOf("Jerusalem", "Nazareth", "Bethlehem", "Hebron"),
+                correctAnswer = 2,
+                explanation = "Micah 5:2 specifies Bethlehem Ephrathah.",
+                verseReference = "Micah 5:2"
+            ),
+            QuizQuestion(
+                question = "Who prophesied the 70 weeks?",
+                options = listOf("Ezekiel", "Daniel", "Jeremiah", "Isaiah"),
+                correctAnswer = 1,
+                explanation = "The prophecy of the 70 weeks is found in Daniel 9.",
+                verseReference = "Daniel 9:24"
+            ),
+            QuizQuestion(
+                question = "Which book contains letters to seven churches?",
+                options = listOf("Acts", "Romans", "Revelation", "Galatians"),
+                correctAnswer = 2,
+                explanation = "Revelation chapters 2-3 contain letters to the seven churches of Asia.",
+                verseReference = "Revelation 2-3"
+            ),
+            QuizQuestion(
+                question = "Who prophesied that the virgin shall conceive?",
+                options = listOf("Isaiah", "Jeremiah", "Hosea", "Micah"),
+                correctAnswer = 0,
+                explanation = "Isaiah 7:14 states that a virgin shall conceive and bear a son called Immanuel.",
+                verseReference = "Isaiah 7:14"
+            )
+        )
+    }
+    // Biblical Theology (Level 25)
+    private fun getBiblicalTheologyQuestions(level: Int): List<QuizQuestion> {
+        return listOf(
+            QuizQuestion(
+                question = "What does 'Justification' mean?",
+                options = listOf("Making holy", "Declared righteous", "Forgiven", "Born again"),
+                correctAnswer = 1,
+                explanation = "Justification is the legal declaration by God that a sinner is righteous through faith in Christ.",
+                verseReference = "Romans 5:1"
+            ),
+            QuizQuestion(
+                question = "What is 'Sanctification'?",
+                options = listOf("The process of becoming holy", "The moment of salvation", "Baptism", "Communion"),
+                correctAnswer = 0,
+                explanation = "Sanctification is the ongoing process of being made holy and like Christ.",
+                verseReference = "1 Thessalonians 4:3"
+            ),
+            QuizQuestion(
+                question = "What is the 'Incarnation'?",
+                options = listOf("Jesus rising from the dead", "God becoming man", "The Holy Spirit coming", "Jesus ascending"),
+                correctAnswer = 1,
+                explanation = "The Incarnation refers to the eternal Son of God taking on human flesh.",
+                verseReference = "John 1:14"
+            ),
+            QuizQuestion(
+                question = "What does 'Grace' mean?",
+                options = listOf("Unmerited favor", "Obedience", "Power", "Love"),
+                correctAnswer = 0,
+                explanation = "Grace is God's unmerited favor toward undeserving sinners.",
+                verseReference = "Ephesians 2:8"
+            ),
+            QuizQuestion(
+                question = "What is the 'Trinity'?",
+                options = listOf("Three Gods", "One God in three persons", "God, angels, and men", "Jesus, Mary, and Joseph"),
+                correctAnswer = 1,
+                explanation = "The Trinity is the doctrine that there is one God who exists as three distinct persons.",
+                verseReference = "Matthew 28:19"
+            )
+        )
+    }
+    // Biblical Languages (Level 26)
+    private fun getBiblicalLanguagesQuestions(level: Int): List<QuizQuestion> {
+        return listOf(
+            QuizQuestion(
+                question = "What language was the Old Testament primarily written in?",
+                options = listOf("Greek", "Hebrew", "Latin", "Aramaic"),
+                correctAnswer = 1,
+                explanation = "The Old Testament was primarily written in Hebrew, with some portions in Aramaic.",
+                verseReference = "N/A"
+            ),
+            QuizQuestion(
+                question = "What language was the New Testament written in?",
+                options = listOf("Hebrew", "Greek", "Latin", "Syriac"),
+                correctAnswer = 1,
+                explanation = "The New Testament was written in Koine (Common) Greek.",
+                verseReference = "N/A"
+            ),
+            QuizQuestion(
+                question = "What does the Hebrew word 'Shalom' mean?",
+                options = listOf("God", "Peace", "Love", "Victory"),
+                correctAnswer = 1,
+                explanation = "Shalom means peace, wholeness, and well-being.",
+                verseReference = "Judges 6:24"
+            ),
+            QuizQuestion(
+                question = "What does 'Logos' mean in John 1?",
+                options = listOf("Light", "Word", "Life", "Truth"),
+                correctAnswer = 1,
+                explanation = "Logos translates to 'Word' in John 1:1 ('In the beginning was the Word').",
+                verseReference = "John 1:1"
+            ),
+            QuizQuestion(
+                question = "What does 'Abba' mean?",
+                options = listOf("Master", "Father", "King", "Teacher"),
+                correctAnswer = 1,
+                explanation = "Abba is an Aramaic term for Father, denoting intimacy.",
+                verseReference = "Galatians 4:6"
+            )
+        )
+    }
+    // Biblical Archaeology (Level 27)
+    private fun getBiblicalArchaeologyQuestions(level: Int): List<QuizQuestion> {
+        return listOf(
+            QuizQuestion(
+                question = "What major discovery in 1947 included ancient biblical manuscripts?",
+                options = listOf("Rosetta Stone", "Dead Sea Scrolls", "Tel Dan Stele", "Pilate Stone"),
+                correctAnswer = 1,
+                explanation = "The Dead Sea Scrolls were discovered in caves at Qumran in 1947.",
+                verseReference = "N/A"
+            ),
+            QuizQuestion(
+                question = "Which artifact mentions 'House of David' outside the Bible?",
+                options = listOf("Moabite Stone", "Tel Dan Stele", "Cyrus Cylinder", "Merneptah Stele"),
+                correctAnswer = 1,
+                explanation = "The Tel Dan Stele contains an inscription referring to the 'House of David'.",
+                verseReference = "N/A"
+            ),
+            QuizQuestion(
+                question = "Hezekiah's Tunnel was built to bring water into which city?",
+                options = listOf("Jericho", "Jerusalem", "Samaria", "Bethlehem"),
+                correctAnswer = 1,
+                explanation = "King Hezekiah dug a tunnel to bring water from the Gihon Spring into Jerusalem.",
+                verseReference = "2 Kings 20:20"
+            ),
+            QuizQuestion(
+                question = "The Pool of Siloam is associated with which miracle?",
+                options = listOf("Healing a blind man", "Healing a leper", "Walking on water", "Feeding 5000"),
+                correctAnswer = 0,
+                explanation = "Jesus told the man born blind to wash in the Pool of Siloam.",
+                verseReference = "John 9:7"
+            ),
+            QuizQuestion(
+                question = "Which city's walls fell down after the Israelites marched around them?",
+                options = listOf("Jericho", "Ai", "Bethel", "Hazor"),
+                correctAnswer = 0,
+                explanation = "The walls of Jericho fell after the Israelites marched around them for seven days.",
+                verseReference = "Joshua 6:20"
+            )
+        )
+    }
+    // Biblical Interpretation (Level 28)
+    private fun getBiblicalInterpretationQuestions(level: Int): List<QuizQuestion> {
+        return listOf(
+            QuizQuestion(
+                question = "What is a 'Parable'?",
+                options = listOf("A historical fact", "An earthly story with a heavenly meaning", "A poem", "A proverb"),
+                correctAnswer = 1,
+                explanation = "A parable is often described as an earthly story with a heavenly meaning.",
+                verseReference = "Matthew 13"
+            ),
+            QuizQuestion(
+                question = "What is 'Exegesis'?",
+                options = listOf("Reading into the text", "Drawing meaning out of the text", "Ignoring the text", "Translating the text"),
+                correctAnswer = 1,
+                explanation = "Exegesis means drawing the meaning out of the text (as opposed to Eisegesis).",
+                verseReference = "2 Timothy 2:15"
+            ),
+            QuizQuestion(
+                question = "Which literary genre is Psalms?",
+                options = listOf("Prophecy", "History", "Poetry", "Law"),
+                correctAnswer = 2,
+                explanation = "Psalms is a book of Hebrew poetry and songs.",
+                verseReference = "N/A"
+            ),
+            QuizQuestion(
+                question = "What is the 'Pentateuch'?",
+                options = listOf("The New Testament", "The Prophets", "The first five books of Moses", "The Wisdom books"),
+                correctAnswer = 2,
+                explanation = "The Pentateuch (Torah) refers to the first five books of the Bible.",
+                verseReference = "N/A"
+            ),
+            QuizQuestion(
+                question = "In prophetic literature, what does 'Day of the LORD' usually signify?",
+                options = listOf("Sunday", "A day of judgment/salvation", "The Sabbath", "Creation"),
+                correctAnswer = 1,
+                explanation = "The Day of the LORD refers to a time of God's decisive intervention for judgment or salvation.",
+                verseReference = "Joel 2:1"
+            )
+        )
+    }
+    // Advanced Theology (Level 29)
+    private fun getAdvancedTheologyQuestions(level: Int): List<QuizQuestion> {
+        return listOf(
+            QuizQuestion(
+                question = "What is 'Sola Fide'?",
+                options = listOf("Scripture Alone", "Faith Alone", "Grace Alone", "Christ Alone"),
+                correctAnswer = 1,
+                explanation = "Sola Fide is the Reformation doctrine of Justification by Faith Alone.",
+                verseReference = "Romans 3:28"
+            ),
+            QuizQuestion(
+                question = "What does 'Omnipresent' mean?",
+                options = listOf("All-knowing", "All-powerful", "Present everywhere", "Unchanging"),
+                correctAnswer = 2,
+                explanation = "Omnipresent means God is present everywhere at all times.",
+                verseReference = "Psalm 139:7-10"
+            ),
+            QuizQuestion(
+                question = "What is the 'Hypostatic Union'?",
+                options = listOf("Church unity", "Jesus as 100% God and 100% Man", "Marriage", "The Trinity"),
+                correctAnswer = 1,
+                explanation = "Hypostatic Union describes the union of Christ's divine and human natures in one person.",
+                verseReference = "Philippians 2:6-7"
+            ),
+            QuizQuestion(
+                question = "What is 'Eschatology' the study of?",
+                options = listOf("Sin", "Salvation", "The End Times", "The Church"),
+                correctAnswer = 2,
+                explanation = "Eschatology is the theology concerned with death, judgment, and the final destiny of the soul and humankind.",
+                verseReference = "Revelation 21"
+            ),
+            QuizQuestion(
+                question = "What refers to God's all-knowing nature?",
+                options = listOf("Omnipotence", "Omniscience", "Omnipresence", "Immutability"),
+                correctAnswer = 1,
+                explanation = "Omniscience means God knows everything.",
+                verseReference = "1 John 3:20"
+            )
+        )
+    }
+    // Biblical Mastery (Level 30)
+    private fun getBiblicalMasteryQuestions(level: Int): List<QuizQuestion> {
+        return listOf(
+            QuizQuestion(
+                question = "How many years was the Babylonian captivity?",
+                options = listOf("50", "70", "100", "400"),
+                correctAnswer = 1,
+                explanation = "Jeremiah prophesied a 70-year captivity in Babylon.",
+                verseReference = "Jeremiah 25:11"
+            ),
+            QuizQuestion(
+                question = "Who is Melchizedek?",
+                options = listOf("King of Salem and Priest", "King of Sodom", "A prophet", "Abraham's son"),
+                correctAnswer = 0,
+                explanation = "Melchizedek was King of Salem and priest of God Most High, a type of Christ.",
+                verseReference = "Genesis 14:18"
+            ),
+            QuizQuestion(
+                question = "What is the 'Protoevangelium'?",
+                options = listOf("The first gospel promise", "The first sacrifice", "The first sin", "The first miracle"),
+                correctAnswer = 0,
+                explanation = "Protoevangelium (Genesis 3:15) is the first announcement that the seed of the woman would crush the serpent's head.",
+                verseReference = "Genesis 3:15"
+            ),
+            QuizQuestion(
+                question = "Who were the parents of John the Baptist?",
+                options = listOf("Joseph and Mary", "Zechariah and Elizabeth", "Simeon and Anna", "Abraham and Sarah"),
+                correctAnswer = 1,
+                explanation = "Zechariah (a priest) and Elizabeth were the parents of John the Baptist.",
+                verseReference = "Luke 1:5-13"
+            ),
+            QuizQuestion(
+                question = "Which chapter is known as the 'Hall of Faith'?",
+                options = listOf("Romans 8", "1 Corinthians 13", "Hebrews 11", "Psalms 23"),
+                correctAnswer = 2,
+                explanation = "Hebrews 11 lists the heroes of faith and is known as the 'Hall of Faith'.",
+                verseReference = "Hebrews 11"
+            )
+        )
+    }
 }

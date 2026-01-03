@@ -19,18 +19,20 @@ import androidx.core.view.WindowCompat
 import com.example.faithquiz.data.store.ProgressDataStore
 
 private val DarkColorScheme = darkColorScheme(
-    primary = Primary,
-    secondary = Accent,
-    tertiary = PrimaryLight,
-    background = Background,
-    surface = Surface,
+    primary = PrimaryDarkMode,
+    secondary = AccentDarkMode,
+    tertiary = PrimaryDarkModeLight,
+    background = BackgroundDark,
+    surface = SurfaceDark,
     error = Error,
     onPrimary = androidx.compose.ui.graphics.Color.White,
-    onSecondary = androidx.compose.ui.graphics.Color.White,
+    onSecondary = androidx.compose.ui.graphics.Color.Black,
     onTertiary = androidx.compose.ui.graphics.Color.White,
-    onBackground = TextPrimary,
-    onSurface = TextPrimary,
-    onError = androidx.compose.ui.graphics.Color.White
+    onBackground = TextPrimaryDark,
+    onSurface = TextPrimaryDark,
+    onError = androidx.compose.ui.graphics.Color.White,
+    surfaceVariant = CardBackgroundDark,
+    onSurfaceVariant = TextSecondaryDark
 )
 
 private val LightColorScheme = lightColorScheme(

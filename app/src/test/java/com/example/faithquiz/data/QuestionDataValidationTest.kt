@@ -36,12 +36,26 @@ class QuestionDataValidationTest {
 
 	@Test
 	fun levels_are_valid_and_unique() {
+		val allQuestions = mutableListOf<List<String>>()
+		
 		QuestionBank.getAvailableLevels().forEach { level ->
 			val list = QuestionBank.getQuestionsForLevel(level)
 			assertTrue("No questions for level $level", list.isNotEmpty())
 			list.forEach { assertValid(it) }
+			
 			val normalized = list.map { normalize(it.question) }
 			assertEquals("Duplicate questions found in level $level", normalized.size, normalized.toSet().size)
+			
+			// Verify level content is unique compared to other levels
+			// Note: Level 1 has fallback logic, so we skip if it's identical to L1 and we are L30+ (unlikely now)
+			// Actually, just check that we don't have exact duplicates of the FIRST question of the set across levels 
+			// (since my previous bug was whole levels being identical)
+			if (level > 1) {
+				val firstQ = normalized.first()
+				val isDuplicateLevel = allQuestions.any { it.first() == firstQ }
+				assertFalse("Level $level seems to be a duplicate of a previous level", isDuplicateLevel)
+			}
+			allQuestions.add(normalized)
 		}
 	}
 

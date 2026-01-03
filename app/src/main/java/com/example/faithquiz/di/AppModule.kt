@@ -26,7 +26,13 @@ object AppModule {
     @Provides
     @Singleton
     fun provideAppDatabase(@ApplicationContext context: Context): AppDatabase {
-        return AppDatabase.getDatabase(context)
+        return androidx.room.Room.databaseBuilder(
+            context.applicationContext,
+            AppDatabase::class.java,
+            "faith_quiz_database"
+        )
+        .fallbackToDestructiveMigration()
+        .build()
     }
 
     @Provides
