@@ -1,94 +1,116 @@
 package com.example.faithquiz.ui.view.review
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.BookmarkRemove
-import androidx.compose.material.icons.filled.Bookmarks
-import androidx.compose.material.icons.filled.ErrorOutline
+import androidx.compose.material.icons.filled.Info
+
 import androidx.compose.material3.*
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.faithquiz.R
 import com.example.faithquiz.data.store.ProgressDataStore
-import com.example.faithquiz.ui.theme.Dimensions
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.runtime.rememberCoroutineScope
+import com.example.faithquiz.ui.theme.*
 import kotlinx.coroutines.launch
+import java.net.URLDecoder
+import java.nio.charset.StandardCharsets
+import java.text.SimpleDateFormat
+import java.util.*
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ReviewScreen(navController: NavController) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val mistakes by ProgressDataStore.observeMistakes(context).collectAsState(initial = emptyList())
-    val dueList by ProgressDataStore.observeDueReview(context).collectAsState(initial = emptyList())
-
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(text = stringResource(id = R.string.review)) },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(id = R.string.back_description))
-                    }
-                }
+    
+    // Use detailed observation to get decoded objects
+    val mistakes by ProgressDataStore.observeMistakesDetailed(context).collectAsState(initial = emptyList())
+    // For now, we'll focus on the detailed list as the primary review method
+    
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(DeepRoyalPurple, Color.Black)
+                )
             )
-        }
-    ) { innerPadding ->
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
                 .padding(Dimensions.screenPadding)
         ) {
-            // Overview
-            Text("Smart Review (SRS)", style = MaterialTheme.typography.titleMedium)
-            Text(
-                text = "We schedule your mistakes for spaced repetition. Do the due items first, then browse all past mistakes below.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
-            )
-            Spacer(Modifier.height(Dimensions.spaceSmall))
-
-            // Due panel
-            Card(
+            // Header
+            Spacer(modifier = Modifier.height(16.dp))
+            Row(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(Dimensions.cornerRadiusMedium),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Column(modifier = Modifier.padding(Dimensions.paddingMedium)) {
-                    Text("Due Now", style = MaterialTheme.typography.titleMedium)
-                    Text("${dueList.size} items scheduled today", style = MaterialTheme.typography.bodySmall)
-                    Spacer(Modifier.height(Dimensions.spaceSmall))
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Button(enabled = dueList.isNotEmpty(), onClick = { /* hook up inline review flow later */ }) { Text("Start Review") }
-                        OutlinedButton(enabled = dueList.isNotEmpty(), onClick = { /* future: skip a day */ }) { Text("Skip Today") }
-                    }
+                IconButton(onClick = { navController.popBackStack() }) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack, 
+                        contentDescription = "Back",
+                        tint = GlowingGold
+                    )
                 }
+                Text(
+                    text = "WISDOM REVIEW",
+                    style = MaterialTheme.typography.headlineMedium.copy(
+                        fontFamily = FontFamily.Serif,
+                        fontWeight = FontWeight.Bold,
+                        color = GlowingGold
+                    ),
+                    modifier = Modifier.padding(start = 8.dp)
+                )
             }
+            
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            Text(
+                text = "Reflect on your journey and strengthen your knowledge.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color.White.copy(alpha = 0.7f),
+                modifier = Modifier.padding(start = 16.dp, bottom = 16.dp)
+            )
 
-            Spacer(Modifier.height(Dimensions.spaceLarge))
-
-            // Mistakes list
-            Text(text = stringResource(id = R.string.mistakes), style = MaterialTheme.typography.titleMedium)
-            Spacer(modifier = Modifier.height(Dimensions.spaceMedium))
-            LazyColumn(modifier = Modifier.fillMaxSize()) {
-                items(mistakes) { key ->
-                    ReviewItem(key = key, onRemove = null)
+            // Content
+            if (mistakes.isEmpty()) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "No reviews yet. Keep playing to learn!",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = Color.White.copy(alpha = 0.5f)
+                    )
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    items(mistakes) { entry ->
+                        DivineReviewItem(entry = entry)
+                    }
+                    item { Spacer(modifier = Modifier.height(32.dp)) }
                 }
             }
         }
@@ -96,38 +118,121 @@ fun ReviewScreen(navController: NavController) {
 }
 
 @Composable
-private fun ReviewItem(key: String, onRemove: (() -> Unit)?) {
+private fun DivineReviewItem(entry: ProgressDataStore.MistakeEntry) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        shape = RoundedCornerShape(Dimensions.cornerRadiusMedium)
+            .border(1.dp, GlowingGold.copy(alpha = 0.2f), RoundedCornerShape(16.dp)),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = EtherealGlass)
     ) {
-        Column(modifier = Modifier.padding(Dimensions.paddingMedium)) {
-            // key format: "level|question" — show nicely
-            val parts = key.split("|", limit = 2)
-            val levelLabel = if (parts.size == 2) "Level ${parts[0]}" else "Saved Item"
-            val questionText = if (parts.size == 2) parts[1] else key
+        Column(modifier = Modifier.padding(20.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "LEVEL ${entry.level}",
+                    style = MaterialTheme.typography.labelMedium.copy(
+                        fontWeight = FontWeight.Bold,
+                        color = GlowingGold
+                    )
+                )
+                Text(
+                    text = formatDate(entry.date),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color.White.copy(alpha = 0.5f)
+                )
+            }
 
-            Text(levelLabel, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
-            Spacer(Modifier.height(4.dp))
-            Text(questionText, style = MaterialTheme.typography.bodyMedium)
+            Spacer(modifier = Modifier.height(12.dp))
 
-            Spacer(Modifier.height(Dimensions.spaceSmall))
-            val context = LocalContext.current
-            val scope = rememberCoroutineScope()
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                Button(onClick = { scope.launch { ProgressDataStore.recordReviewResult(context, key, true) } }) { Text("Correct") }
-                OutlinedButton(onClick = { scope.launch { ProgressDataStore.recordReviewResult(context, key, false) } }) { Text("Again") }
-                if (onRemove != null) {
-                    Spacer(Modifier.weight(1f))
-                    IconButton(onClick = onRemove) {
-                        Icon(Icons.Default.BookmarkRemove, contentDescription = stringResource(id = R.string.bookmarks))
-                    }
+            Text(
+                text = entry.question,
+                style = MaterialTheme.typography.bodyLarge.copy(
+                    fontFamily = FontFamily.Serif,
+                    fontWeight = FontWeight.Medium
+                ),
+                color = Color.White
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Answers Grid
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                // User Answer (Wrong)
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .background(WrongAnswerRed.copy(alpha = 0.1f), RoundedCornerShape(8.dp))
+                        .border(1.dp, WrongAnswerRed.copy(alpha = 0.3f), RoundedCornerShape(8.dp))
+                        .padding(12.dp)
+                ) {
+                    Text(
+                        text = "YOU ANSWERED",
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                        color = WrongAnswerRed
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = entry.userAnswer,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.White.copy(alpha = 0.9f)
+                    )
+                }
+
+                // Correct Answer
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .background(CorrectAnswerGreen.copy(alpha = 0.1f), RoundedCornerShape(8.dp))
+                        .border(1.dp, CorrectAnswerGreen.copy(alpha = 0.3f), RoundedCornerShape(8.dp))
+                        .padding(12.dp)
+                ) {
+                    Text(
+                        text = "CORRECT ANSWER",
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                        color = CorrectAnswerGreen
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = entry.correctAnswer,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.White.copy(alpha = 0.9f)
+                    )
+                }
+            }
+
+            if (entry.explanation.isNotBlank()) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Row(verticalAlignment = Alignment.Top) {
+                    Icon(
+                        imageVector = Icons.Filled.Info,
+ // Ensure this exists or use standard
+                        contentDescription = "Info",
+                        tint = GlowingGold.copy(alpha = 0.7f),
+                        modifier = Modifier.size(16.dp).padding(top = 2.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = entry.explanation,
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
+                        ),
+                        color = Color.White.copy(alpha = 0.7f)
+                    )
                 }
             }
         }
     }
 }
 
-
+private fun formatDate(timestamp: Long): String {
+    val date = Date(timestamp)
+    val formatter = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
+    return formatter.format(date)
+}

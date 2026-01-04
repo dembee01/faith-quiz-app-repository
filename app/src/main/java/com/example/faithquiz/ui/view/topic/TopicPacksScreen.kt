@@ -23,10 +23,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.faithquiz.R
 import com.example.faithquiz.ui.navigation.Screen
-import com.example.faithquiz.ui.theme.Dimensions
+import com.example.faithquiz.ui.theme.*
 import com.example.faithquiz.data.TopicQuestionBank
 import com.example.faithquiz.data.store.ProgressDataStore
 
@@ -69,10 +70,7 @@ fun TopicPacksScreen(navController: NavController) {
             .fillMaxSize()
             .background(
                 Brush.verticalGradient(
-                    colors = listOf(
-                        MaterialTheme.colorScheme.primary,
-                        MaterialTheme.colorScheme.secondary
-                    )
+                    colors = listOf(DeepRoyalPurple, Color.Black)
                 )
             )
     ) {
@@ -91,13 +89,14 @@ fun TopicPacksScreen(navController: NavController) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = stringResource(R.string.back_description),
-                        tint = MaterialTheme.colorScheme.onPrimary
+                        tint = GlowingGold
                     )
                 }
                 Text(
                     text = stringResource(R.string.topic_packs),
                     style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                    color = MaterialTheme.colorScheme.onPrimary
+                    color = GlowingGold,
+                    letterSpacing = 2.sp
                 )
                 Spacer(modifier = Modifier.width(Dimensions.iconSize))
             }
@@ -105,14 +104,15 @@ fun TopicPacksScreen(navController: NavController) {
             Spacer(modifier = Modifier.height(Dimensions.spaceLarge))
 
             // Tabs
-            TabRow(
+            ScrollableTabRow(
                 selectedTabIndex = selectedTab,
-                containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.15f),
-                contentColor = MaterialTheme.colorScheme.onPrimary,
+                containerColor = Color.Transparent, // Transparent for Glass effect
+                contentColor = GlowingGold,
+                edgePadding = 0.dp,
                 indicator = { tabPositions ->
                     TabRowDefaults.SecondaryIndicator(
                         modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTab]),
-                        color = MaterialTheme.colorScheme.onPrimary,
+                        color = GlowingGold,
                         height = 3.dp
                     )
                 },
@@ -122,13 +122,13 @@ fun TopicPacksScreen(navController: NavController) {
                     Tab(
                         selected = selectedTab == index,
                         onClick = { selectedTab = index },
-                        selectedContentColor = MaterialTheme.colorScheme.onPrimary,
-                        unselectedContentColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f),
+                        selectedContentColor = GlowingGold,
+                        unselectedContentColor = Color.White.copy(alpha = 0.6f),
                         text = {
                             Text(
-                                text = stringResource(id = resId),
-                                style = MaterialTheme.typography.titleMedium,
-                                color = if (selectedTab == index) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f)
+                                text = stringResource(id = resId).uppercase(),
+                                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                                color = if (selectedTab == index) GlowingGold else Color.White.copy(alpha = 0.6f)
                             )
                         }
                     )
@@ -147,15 +147,16 @@ fun TopicPacksScreen(navController: NavController) {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(Dimensions.cornerRadiusLarge),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                    colors = CardDefaults.cardColors(containerColor = EtherealGlass)
                 ) {
                     Column(
                         modifier = Modifier.padding(Dimensions.paddingLarge)
                     ) {
                         Text(
-                            text = "Your Achievement",
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                            color = MaterialTheme.colorScheme.onSurface
+                            text = "YOUR ACHIEVEMENT",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = GlowingGold,
+                            letterSpacing = 1.sp
                         )
                         Spacer(modifier = Modifier.height(Dimensions.spaceMedium))
                         
@@ -169,20 +170,18 @@ fun TopicPacksScreen(navController: NavController) {
                                     text = achievementTitle,
                                     style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                                     color = when (achievementLevel) {
-                                        TopicQuestionBank.AchievementLevel.SUPREME -> Color(0xFFFFD700) // Gold
-                                        TopicQuestionBank.AchievementLevel.SPECIAL -> Color(0xFFC0C0C0) // Silver
-                                        TopicQuestionBank.AchievementLevel.ENCOURAGED -> MaterialTheme.colorScheme.primary
-                                        TopicQuestionBank.AchievementLevel.NONE -> MaterialTheme.colorScheme.onSurface
+                                        TopicQuestionBank.AchievementLevel.SUPREME -> Color(0xFFFFD700)
+                                        TopicQuestionBank.AchievementLevel.SPECIAL -> Color(0xFFC0C0C0)
+                                        else -> Color.White
                                     }
                                 )
                                 Text(
-                                    text = "Score: $currentScore/50",
+                                    text = "SCORE: $currentScore/50",
                                     style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                                    color = Color.White.copy(alpha = 0.7f)
                                 )
                             }
                             
-                            // Achievement Icon
                             Icon(
                                 imageVector = when (achievementLevel) {
                                     TopicQuestionBank.AchievementLevel.SUPREME -> Icons.Filled.Star
@@ -194,8 +193,8 @@ fun TopicPacksScreen(navController: NavController) {
                                 tint = when (achievementLevel) {
                                     TopicQuestionBank.AchievementLevel.SUPREME -> Color(0xFFFFD700)
                                     TopicQuestionBank.AchievementLevel.SPECIAL -> Color(0xFFC0C0C0)
-                                    TopicQuestionBank.AchievementLevel.ENCOURAGED -> MaterialTheme.colorScheme.primary
-                                    TopicQuestionBank.AchievementLevel.NONE -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                                    TopicQuestionBank.AchievementLevel.ENCOURAGED -> GlowingGold
+                                    TopicQuestionBank.AchievementLevel.NONE -> Color.White.copy(alpha = 0.5f)
                                 },
                                 modifier = Modifier.size(48.dp)
                             )
@@ -207,8 +206,8 @@ fun TopicPacksScreen(navController: NavController) {
                         LinearProgressIndicator(
                             progress = { currentScore.toFloat() / 50f },
                             modifier = Modifier.fillMaxWidth(),
-                            color = MaterialTheme.colorScheme.primary,
-                            trackColor = MaterialTheme.colorScheme.surfaceVariant
+                            color = GlowingGold,
+                            trackColor = Color.White.copy(alpha = 0.2f)
                         )
                         
                         Spacer(modifier = Modifier.height(Dimensions.spaceMedium))
@@ -216,9 +215,10 @@ fun TopicPacksScreen(navController: NavController) {
                         // Encouragement Message
                         Text(
                             text = encouragementMessage,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
-                            textAlign = TextAlign.Center
+                            style = MaterialTheme.typography.bodyMedium.copy(fontStyle = androidx.compose.ui.text.font.FontStyle.Italic),
+                            color = Color.White.copy(alpha = 0.9f),
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth()
                         )
                     }
                 }
@@ -229,20 +229,20 @@ fun TopicPacksScreen(navController: NavController) {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(Dimensions.cornerRadiusLarge),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                    colors = CardDefaults.cardColors(containerColor = EtherealGlass)
                 ) {
                     Column(
                         modifier = Modifier.padding(Dimensions.paddingLarge)
                     ) {
                         Text(
                             text = when (selectedTab) {
-                                0 -> "Gospels Quiz"
-                                1 -> "Prophets Quiz"
-                                2 -> "Parables Quiz"
-                                else -> "Topic Quiz"
+                                0 -> "GOSPELS QUIZ"
+                                1 -> "PROPHETS QUIZ"
+                                2 -> "PARABLES QUIZ"
+                                else -> "TOPIC QUIZ"
                             },
                             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                            color = MaterialTheme.colorScheme.onSurface
+                            color = Color.White
                         )
                         Spacer(modifier = Modifier.height(Dimensions.spaceMedium))
                         
@@ -254,7 +254,7 @@ fun TopicPacksScreen(navController: NavController) {
                                 else -> "Choose a topic to begin your specialized Bible study."
                             },
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
+                            color = Color.White.copy(alpha = 0.8f)
                         )
                         
                         Spacer(modifier = Modifier.height(Dimensions.spaceMedium))
@@ -266,13 +266,13 @@ fun TopicPacksScreen(navController: NavController) {
                         ) {
                             Text(
                                 text = "50 Questions",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Color.White.copy(alpha = 0.6f)
                             )
                             Text(
                                 text = "Specialized Content",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.primary
+                                style = MaterialTheme.typography.labelSmall,
+                                color = GlowingGold
                             )
                         }
                     }
@@ -293,17 +293,17 @@ fun TopicPacksScreen(navController: NavController) {
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(Dimensions.buttonHeight),
-                    shape = RoundedCornerShape(Dimensions.cornerRadiusLarge),
+                        .height(56.dp),
+                    shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.surface,
-                        contentColor = MaterialTheme.colorScheme.primary
+                        containerColor = GlowingGold,
+                        contentColor = DeepRoyalPurple
                     )
                 ) {
                     Icon(Icons.Filled.PlayArrow, contentDescription = null)
                     Spacer(modifier = Modifier.width(Dimensions.spaceSmall))
                     Text(
-                        text = stringResource(R.string.start_quiz),
+                        text = stringResource(R.string.start_quiz).uppercase(),
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                     )
                 }
@@ -314,21 +314,22 @@ fun TopicPacksScreen(navController: NavController) {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(Dimensions.cornerRadiusLarge),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                    colors = CardDefaults.cardColors(containerColor = EtherealGlass)
                 ) {
                     Column(
                         modifier = Modifier.padding(Dimensions.paddingLarge)
                     ) {
                         Text(
-                            text = "Achievement Levels",
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                            color = MaterialTheme.colorScheme.onSurface
+                            text = "ACHIEVEMENT LEVELS",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = GlowingGold,
+                            letterSpacing = 1.sp
                         )
                         Spacer(modifier = Modifier.height(Dimensions.spaceMedium))
                         
                         AchievementLevelRow("Supreme", "50/50", "Perfect Score!", Color(0xFFFFD700))
                         AchievementLevelRow("Special", "45-49/50", "Excellent!", Color(0xFFC0C0C0))
-                        AchievementLevelRow("Encouraged", "1-44/50", "Keep Learning!", MaterialTheme.colorScheme.primary)
+                        AchievementLevelRow("Encouraged", "1-44/50", "Keep Learning!", Color.White)
                     }
                 }
             }
@@ -359,15 +360,13 @@ private fun AchievementLevelRow(title: String, score: String, description: Strin
             Text(
                 text = title,
                 style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                color = MaterialTheme.colorScheme.onSurface
+                color = Color.White
             )
             Text(
                 text = "$score - $description",
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                color = Color.White.copy(alpha = 0.7f)
             )
         }
     }
 }
-
-

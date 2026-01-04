@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.map
 import java.net.URLEncoder
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
+
 private val Context.progressDataStore: DataStore<Preferences> by preferencesDataStore(name = "faith_quiz_progress")
 
 object ProgressDataStore {
@@ -68,6 +69,72 @@ object ProgressDataStore {
 
 	// Detailed mistakes log (ordered CSV of encoded entries)
 	private val KEY_MISTAKE_LOG = stringPreferencesKey("mistake_log")
+
+	// --- Quiz Session Persistence (Resume Functionality) ---
+	private val KEY_SESSION_LEVEL = intPreferencesKey("session_level")
+	private val KEY_SESSION_MODE = stringPreferencesKey("session_mode")
+	private val KEY_SESSION_INDEX = intPreferencesKey("session_index")
+	private val KEY_SESSION_SCORE = intPreferencesKey("session_score")
+	private val KEY_SESSION_TIME = longPreferencesKey("session_time_elapsed")
+	private val KEY_SESSION_SEED = longPreferencesKey("session_seed")
+	private val KEY_SESSION_LIVES = intPreferencesKey("session_lives")
+
+	data class QuizSession(
+		val level: Int,
+		val mode: String,
+		val index: Int,
+		val score: Int,
+		val time: Long, // Total elapsed seconds
+		val seed: Long,
+		val lives: Int
+	)
+
+	fun observeQuizSession(context: Context): Flow<QuizSession?> {
+		return context.progressDataStore.data.map { prefs ->
+			val level = prefs[KEY_SESSION_LEVEL] ?: -1
+			if (level == -1) {
+				null
+			} else {
+				QuizSession(
+					level = level,
+					mode = prefs[KEY_SESSION_MODE] ?: "classic",
+					index = prefs[KEY_SESSION_INDEX] ?: 0,
+					score = prefs[KEY_SESSION_SCORE] ?: 0,
+					time = prefs[KEY_SESSION_TIME] ?: 0L,
+					seed = prefs[KEY_SESSION_SEED] ?: 0L,
+					lives = prefs[KEY_SESSION_LIVES] ?: 0
+				)
+			}
+		}
+	}
+
+	suspend fun saveQuizSession(
+		context: Context,
+		session: QuizSession
+	) {
+		context.progressDataStore.edit { prefs ->
+			prefs[KEY_SESSION_LEVEL] = session.level
+			prefs[KEY_SESSION_MODE] = session.mode
+			prefs[KEY_SESSION_INDEX] = session.index
+			prefs[KEY_SESSION_SCORE] = session.score
+			prefs[KEY_SESSION_TIME] = session.time
+			prefs[KEY_SESSION_SEED] = session.seed
+			prefs[KEY_SESSION_LIVES] = session.lives
+		}
+	}
+
+	suspend fun clearQuizSession(context: Context) {
+		context.progressDataStore.edit { prefs ->
+			prefs.remove(KEY_SESSION_LEVEL)
+			prefs.remove(KEY_SESSION_MODE)
+			prefs.remove(KEY_SESSION_INDEX)
+			prefs.remove(KEY_SESSION_SCORE)
+			prefs.remove(KEY_SESSION_TIME)
+			prefs.remove(KEY_SESSION_SEED)
+			prefs.remove(KEY_SESSION_LIVES)
+		}
+	}
+	// ----------------------------------------------------
 
 	fun observeHighestUnlockedLevel(context: Context): Flow<Int> {
 		return context.progressDataStore.data.map { prefs ->
@@ -158,6 +225,15 @@ object ProgressDataStore {
 			prefs[KEY_LAST_ATTEMPT_DATE] = 0L
 			prefs[KEY_LAST_ATTEMPT_MODE] = ""
 			prefs[KEY_MISTAKE_LOG] = ""
+			
+			// Clear active session
+			prefs.remove(KEY_SESSION_LEVEL)
+			prefs.remove(KEY_SESSION_MODE)
+			prefs.remove(KEY_SESSION_INDEX)
+			prefs.remove(KEY_SESSION_SCORE)
+			prefs.remove(KEY_SESSION_TIME)
+			prefs.remove(KEY_SESSION_SEED)
+			prefs.remove(KEY_SESSION_LIVES)
 		}
 	}
 

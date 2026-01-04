@@ -17,6 +17,10 @@ import com.example.faithquiz.ui.view.dailychallenge.DailyChallengeScreen
 import com.example.faithquiz.ui.view.review.ReviewScreen
 import com.example.faithquiz.ui.view.topic.TopicPacksScreen
 import com.example.faithquiz.ui.view.topic.TopicQuizScreen
+import com.example.faithquiz.ui.view.journey.JourneyScreen
+import com.example.faithquiz.ui.view.results.GrandCompletionScreen
+
+
 
 @Composable
 fun AppNavigation(navController: NavHostController) {
@@ -36,8 +40,14 @@ fun AppNavigation(navController: NavHostController) {
             LevelSelectScreen(navController)
         }
         
+        
+        composable(Screen.Journey.route) {
+            JourneyScreen(navController)
+        }
+
         composable(
             route = Screen.Quiz.route,
+
             arguments = listOf(
                 navArgument("level") {
                     type = NavType.IntType
@@ -92,5 +102,10 @@ fun AppNavigation(navController: NavHostController) {
             val topic = backStackEntry.arguments?.getString("topic") ?: "gospels"
             TopicQuizScreen(navController, topic)
         }
+        
+        composable(Screen.GrandCompletion.route) {
+            GrandCompletionScreen(navController)
+        }
     }
 }
+

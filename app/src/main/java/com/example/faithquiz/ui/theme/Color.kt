@@ -16,6 +16,15 @@ val PrimaryDark = Color(0xFF1E40AF)
 val PrimaryLight = Color(0xFF3B82F6)
 val Accent = Color(0xFFF59E0B)
 val AccentDark = Color(0xFFD97706)
+val LightBlue = Color(0xFFE3F2FD)
+val DarkBlue = Color(0xFF0D47A1)
+
+// Divine Ethereal Theme
+val DeepRoyalPurple = Color(0xFF2E003E)
+val GlowingGold = Color(0xFFFFD700)
+val EtherealGlass = Color(0x332E003E) // Translucent purple for glass effect
+
+// Core UI Colors
 val Background = Color(0xFFF8FAFC)
 val Surface = Color(0xFFFFFFFF)
 val Error = Color(0xFFEF4444)

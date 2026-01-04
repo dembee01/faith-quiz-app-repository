@@ -157,10 +157,10 @@ object TopicQuestionBank {
             explanation = "Matthew was a tax collector before becoming a disciple of Jesus."
         ),
         QuizQuestion(
-            question = "What did Jesus say was the greatest commandment?",
-            options = listOf("Love your neighbor", "Love God with all your heart", "Keep the Sabbath", "Honor your parents"),
+            question = "What is the Great Commandment?",
+            options = listOf("Love your neighbor as yourself", "Love God with all your heart, soul, and mind", "Keep the Sabbath holy", "Honor your father and mother"),
             correctAnswer = 1,
-            explanation = "Jesus said the greatest commandment is to love God with all your heart, soul, and mind."
+            explanation = "Jesus said the first and greatest commandment is to love God with all your heart, soul, and mind."
         ),
         QuizQuestion(
             question = "Which disciple denied Jesus three times?",
@@ -169,10 +169,10 @@ object TopicQuestionBank {
             explanation = "Peter denied knowing Jesus three times before the rooster crowed."
         ),
         QuizQuestion(
-            question = "What did Jesus say about the kingdom of heaven?",
-            options = listOf("It's like a mustard seed", "It's like a pearl", "It's like yeast", "All of the above"),
-            correctAnswer = 3,
-            explanation = "Jesus used multiple parables to describe the kingdom of heaven, including the mustard seed, pearl, and yeast."
+            question = "To whom did Jesus say, 'You must be born again'?",
+            options = listOf("Nicodemus", "Zacchaeus", "Pilate", "Caiaphas"),
+            correctAnswer = 0,
+            explanation = "Jesus told the Pharisee Nicodemus that he must be born again to see the kingdom of God (John 3)."
         ),
         QuizQuestion(
             question = "Who was the first person to see Jesus after His resurrection?",
@@ -181,10 +181,10 @@ object TopicQuestionBank {
             explanation = "Mary Magdalene was the first person to see Jesus after His resurrection."
         ),
         QuizQuestion(
-            question = "What did Jesus say about the bread of life?",
-            options = listOf("It's physical bread", "It's His body", "It's His teachings", "It's His blood"),
-            correctAnswer = 1,
-            explanation = "Jesus said 'I am the bread of life' and 'This is my body' referring to Himself."
+            question = "What does the name 'Immanuel' mean?",
+            options = listOf("God with us", "God saves", "God is love", "The Annointed One"),
+            correctAnswer = 0,
+            explanation = "Immanuel means 'God with us' (Matthew 1:23)."
         ),
         QuizQuestion(
             question = "Which Gospel is known as the 'Gospel of the Kingdom'?",
@@ -196,19 +196,19 @@ object TopicQuestionBank {
             question = "What did Jesus say about the narrow gate?",
             options = listOf("It's easy to find", "It's wide and spacious", "It's narrow and few find it", "It's hidden from everyone"),
             correctAnswer = 2,
-            explanation = "Jesus said 'Enter through the narrow gate. For wide is the gate and broad is the road that leads to destruction.'"
+            explanation = "Jesus said 'Enter through the narrow gate... only a few find it.'"
         ),
         QuizQuestion(
-            question = "Who was the 'beloved disciple'?",
+            question = "Who is referred to as the 'Disciple whom Jesus loved'?",
             options = listOf("Peter", "John", "James", "Andrew"),
             correctAnswer = 1,
             explanation = "John is traditionally identified as the 'beloved disciple' mentioned in his Gospel."
         ),
         QuizQuestion(
-            question = "What did Jesus say about the light of the world?",
-            options = listOf("I am the light", "You are the light", "The sun is the light", "The moon is the light"),
-            correctAnswer = 0,
-            explanation = "Jesus said 'I am the light of the world. Whoever follows me will never walk in darkness.'"
+            question = "Which miracle is recorded in all four Gospels?",
+            options = listOf("Turning water into wine", "Walking on water", "Feeding the 5000", "Raising Lazarus"),
+            correctAnswer = 2,
+            explanation = "The Feeding of the 5000 is the only miracle recorded in all four Gospels."
         ),
         QuizQuestion(
             question = "Which Gospel writer was a physician?",
@@ -217,715 +217,793 @@ object TopicQuestionBank {
             explanation = "Luke was a physician and wrote both the Gospel of Luke and the Book of Acts."
         ),
         QuizQuestion(
-            question = "What did Jesus say about the good shepherd?",
-            options = listOf("I am the good shepherd", "I am a shepherd", "I am like a shepherd", "I am the only shepherd"),
+            question = "Who climbed a sycamore tree to see Jesus?",
+            options = listOf("Zacchaeus", "Nicodemus", "Bartimaeus", "Lazarus"),
             correctAnswer = 0,
-            explanation = "Jesus said 'I am the good shepherd. The good shepherd lays down his life for the sheep.'"
+            explanation = "Zacchaeus, a tax collector, climbed a sycamore-fig tree to see Jesus passing by."
         ),
         QuizQuestion(
-            question = "What did Jesus say about the vine and branches?",
-            options = listOf("I am the vine", "You are the branches", "Both A and B", "Neither A nor B"),
-            correctAnswer = 2,
-            explanation = "Jesus said 'I am the vine; you are the branches. If you remain in me and I in you, you will bear much fruit.'"
+            question = "What is the 'Golden Rule'?",
+            options = listOf("Love your enemies", "Do to others as you would have them do to you", "Judge not", "Give to the poor"),
+            correctAnswer = 1,
+            explanation = "The Golden Rule is: 'In everything, do to others what you would have them do to you' (Matthew 7:12)."
         ),
         QuizQuestion(
-            question = "Which Gospel begins with a genealogy?",
+            question = "Which Gospel begins with the genealogy of Jesus from Abraham?",
             options = listOf("Matthew", "Mark", "Luke", "John"),
             correctAnswer = 0,
-            explanation = "Matthew's Gospel begins with the genealogy of Jesus, tracing His lineage back to Abraham."
+            explanation = "Matthew traces Jesus' lineage from Abraham to emphasize His Jewish heritage."
         ),
         QuizQuestion(
-            question = "What did Jesus say about the way, truth, and life?",
-            options = listOf("I am the way", "I am the truth", "I am the life", "All of the above"),
-            correctAnswer = 3,
-            explanation = "Jesus said 'I am the way and the truth and the life. No one comes to the Father except through me.'"
-        ),
-        QuizQuestion(
-            question = "Who was the first person to recognize Jesus as the Messiah?",
-            options = listOf("Peter", "John the Baptist", "Simeon", "Anna"),
-            correctAnswer = 1,
-            explanation = "John the Baptist was the first to publicly identify Jesus as the Messiah."
-        ),
-        QuizQuestion(
-            question = "What did Jesus say about the resurrection?",
-            options = listOf("I am the resurrection", "I am the life", "Both A and B", "Neither A nor B"),
+            question = "Who said, 'I am the way and the truth and the life'?",
+            options = listOf("Peter", "Paul", "Jesus", "John the Baptist"),
             correctAnswer = 2,
-            explanation = "Jesus said 'I am the resurrection and the life. The one who believes in me will live, even though they die.'"
+            explanation = "Jesus made this declaration in John 14:6."
         ),
         QuizQuestion(
-            question = "Which Gospel emphasizes Jesus as the suffering servant?",
+            question = "Who was the high priest who presided over Jesus' trial?",
+            options = listOf("Annas", "Caiaphas", "Pilate", "Herod"),
+            correctAnswer = 1,
+            explanation = "Caiaphas was the high priest who prophesied it was better for one man to die for the people."
+        ),
+        QuizQuestion(
+            question = "Which sister sat at Jesus' feet while the other worked?",
+            options = listOf("Martha", "Mary", "Salome", "Joanna"),
+            correctAnswer = 1,
+            explanation = "Mary sat at Jesus' feet listening, while Martha was distracted by preparations (Luke 10)."
+        ),
+        QuizQuestion(
+            question = "Which Gospel highlights Jesus as the Suffering Servant?",
             options = listOf("Matthew", "Mark", "Luke", "John"),
             correctAnswer = 1,
-            explanation = "Mark's Gospel emphasizes Jesus as the suffering servant and focuses on His actions."
+            explanation = "Mark portrays Jesus as a servant who came to give His life as a ransom for many."
         ),
         QuizQuestion(
-            question = "What did Jesus say about the door?",
-            options = listOf("I am the door", "I am the gate", "I am the entrance", "I am the way in"),
-            correctAnswer = 0,
-            explanation = "Jesus said 'I am the door. If anyone enters through me, he will be saved.'"
+            question = "Who washed his hands to show he was innocent of Jesus' blood?",
+            options = listOf("Herod", "Caiaphas", "Pilate", "Judas"),
+            correctAnswer = 2,
+            explanation = "Pilate washed his hands before the crowd, claiming innocence of Jesus' blood."
         ),
         QuizQuestion(
-            question = "Who was the first person to see the empty tomb?",
-            options = listOf("Peter", "Mary Magdalene", "John", "The women"),
-            correctAnswer = 3,
-            explanation = "The women who came to the tomb were the first to see it was empty."
-        ),
-        QuizQuestion(
-            question = "What did Jesus say about the living water?",
-            options = listOf("I am the living water", "I give living water", "I am the source of living water", "I am like living water"),
+            question = "Who were the first visitors to the empty tomb?",
+            options = listOf("Peter and John", "Mary Magdalene and the other Mary", "The Roman guards", "The Pharisees"),
             correctAnswer = 1,
-            explanation = "Jesus said to the Samaritan woman 'Whoever drinks the water I give them will never thirst.'"
+            explanation = "The women, including Mary Magdalene, went to the tomb early on the first day of the week."
+        ),
+        QuizQuestion(
+            question = "What represents Jesus' body in the Lord's Supper?",
+            options = listOf("The wine", "The bread", "The water", "The lamb"),
+            correctAnswer = 1,
+            explanation = "Jesus broke the bread and said, 'Take and eat; this is my body.'"
         ),
         QuizQuestion(
             question = "Which Gospel writer was not one of the twelve disciples?",
             options = listOf("Matthew", "Mark", "Luke", "John"),
             correctAnswer = 2,
-            explanation = "Luke was not one of the twelve disciples but was a companion of Paul."
+            explanation = "Luke was not one of the Twelve; he was a companion of Paul and a historian."
         ),
         QuizQuestion(
-            question = "What did Jesus say about the true vine?",
-            options = listOf("I am the true vine", "I am the vine", "I am like a vine", "I am the branch"),
+            question = "Who helped Jesus carry His cross?",
+            options = listOf("Simon of Cyrene", "Joseph of Arimathea", "Barnabas", "Peter"),
             correctAnswer = 0,
-            explanation = "Jesus said 'I am the true vine, and my Father is the gardener.'"
+            explanation = "Reviewing soldiers forced Simon of Cyrene to carry the cross."
         ),
         QuizQuestion(
             question = "Which Gospel is the shortest?",
             options = listOf("Matthew", "Mark", "Luke", "John"),
             correctAnswer = 1,
-            explanation = "Mark's Gospel is the shortest of the four Gospels."
+            explanation = "Mark is the shortest Gospel and likely the first one written."
         ),
         QuizQuestion(
-            question = "What did Jesus say about the bread from heaven?",
-            options = listOf("I am the bread from heaven", "I am the manna", "I am the bread of life", "I am the heavenly bread"),
-            correctAnswer = 2,
-            explanation = "Jesus said 'I am the bread of life. Your ancestors ate the manna in the wilderness, yet they died.'"
-        ),
-        QuizQuestion(
-            question = "Who was the first person to call Jesus 'Lord'?",
-            options = listOf("Peter", "Mary", "John the Baptist", "The centurion"),
-            correctAnswer = 3,
-            explanation = "The centurion was the first to call Jesus 'Lord' in the Gospels."
-        ),
-        QuizQuestion(
-            question = "What did Jesus say about the good news?",
-            options = listOf("I am the good news", "I bring good news", "I preach good news", "I am like good news"),
+            question = "What discourse is found in Matthew 5-7?",
+            options = listOf("The Olivet Discourse", "The Sermon on the Mount", "The Upper Room Discourse", "The Parables of the Kingdom"),
             correctAnswer = 1,
-            explanation = "Jesus said 'The Spirit of the Lord is on me, because he has anointed me to proclaim good news to the poor.'"
+            explanation = "The Sermon on the Mount contains the Beatitudes and the Lord's Prayer."
+        ),
+        QuizQuestion(
+            question = "Who doubted Jesus' resurrection until he saw the nail marks?",
+            options = listOf("Peter", "Thomas", "Philip", "Andrew"),
+            correctAnswer = 1,
+            explanation = "Thomas said he would not believe unless he saw the nail marks in Jesus' hands."
+        ),
+        QuizQuestion(
+            question = "Where was Jesus baptized?",
+            options = listOf("Sea of Galilee", "Jordan River", "Dead Sea", "Pool of Siloam"),
+            correctAnswer = 1,
+            explanation = "Jesus was baptized by John in the Jordan River."
         ),
         QuizQuestion(
             question = "Which Gospel emphasizes Jesus' humanity?",
             options = listOf("Matthew", "Mark", "Luke", "John"),
             correctAnswer = 2,
-            explanation = "Luke's Gospel emphasizes Jesus' humanity and compassion for all people."
+            explanation = "Luke emphasizes Jesus' compassion for the poor, outcasts, and His humanity."
         ),
         QuizQuestion(
-            question = "What did Jesus say about the Son of Man?",
-            options = listOf("I am the Son of Man", "I am like the Son of Man", "I am called the Son of Man", "I am the Son of God"),
-            correctAnswer = 0,
-            explanation = "Jesus frequently referred to Himself as 'the Son of Man' in the Gospels."
-        ),
-        QuizQuestion(
-            question = "Who was the first person to worship Jesus?",
-            options = listOf("The wise men", "The shepherds", "Simeon", "Anna"),
-            correctAnswer = 0,
-            explanation = "The wise men were the first to worship Jesus, bringing gifts of gold, frankincense, and myrrh."
-        ),
-        QuizQuestion(
-            question = "What did Jesus say about the kingdom of God?",
-            options = listOf("It's within you", "It's near", "It's coming", "All of the above"),
-            correctAnswer = 3,
-            explanation = "Jesus said the kingdom of God is within you, near, and coming."
-        ),
-        QuizQuestion(
-            question = "Which Gospel emphasizes Jesus' divinity?",
-            options = listOf("Matthew", "Mark", "Luke", "John"),
-            correctAnswer = 3,
-            explanation = "John's Gospel emphasizes Jesus' divinity and His relationship with the Father."
-        ),
-        QuizQuestion(
-            question = "What did Jesus say about the world?",
-            options = listOf("I am the light of the world", "I am the savior of the world", "I am the hope of the world", "All of the above"),
-            correctAnswer = 3,
-            explanation = "Jesus said He is the light of the world, the savior of the world, and the hope of the world."
-        ),
-        QuizQuestion(
-            question = "Who was the first person to proclaim Jesus as the Son of God?",
-            options = listOf("Peter", "John the Baptist", "The centurion", "Thomas"),
+            question = "How many baskets of leftovers were gathered after feeding the 5000?",
+            options = listOf("7", "12", "3", "70"),
             correctAnswer = 1,
-            explanation = "John 1:34 records John the Baptist saying, 'I have seen and I testify that this is the Son of God.'"
+            explanation = "They picked up twelve basketfuls of broken pieces that were left over."
         ),
         QuizQuestion(
-            question = "What did Jesus say about the truth?",
-            options = listOf("I am the truth", "I speak the truth", "I teach the truth", "I am like the truth"),
-            correctAnswer = 0,
-            explanation = "Jesus said 'I am the way and the truth and the life.'"
+            question = "Who originally visited the baby Jesus in Matthew's Gospel?",
+            options = listOf("Shepherds", "Wise Men (Magi)", "Angels", "Simeon"),
+            correctAnswer = 1,
+            explanation = "Matthew records the visit of the Wise Men (Magi) from the east."
         ),
         QuizQuestion(
-            question = "Which Gospel writer was a fisherman?",
+            question = "What happens to the seed that falls on rocky ground?",
+            options = listOf("It brings forth much fruit", "It gets choked by thorns", "It springs up quickly but withers", "Birds eat it"),
+            correctAnswer = 2,
+            explanation = "Since it has no root, it lasts only a short time and withers under the sun."
+        ),
+        QuizQuestion(
+            question = "Which Gospel emphasizes Jesus' divinity ('I AM' statements)?",
             options = listOf("Matthew", "Mark", "Luke", "John"),
             correctAnswer = 3,
-            explanation = "John was a fisherman before becoming a disciple of Jesus."
+            explanation = "John's Gospel contains the seven 'I AM' statements highlighting Jesus' divinity."
         ),
         QuizQuestion(
-            question = "What did Jesus say about the life?",
-            options = listOf("I am the life", "I give life", "I am the source of life", "I am like life"),
-            correctAnswer = 0,
-            explanation = "Jesus said 'I am the way and the truth and the life.'"
+            question = "Who buried Jesus in his own new tomb?",
+            options = listOf("Nicodemus", "Joseph of Arimathea", "Peter", "John"),
+            correctAnswer = 1,
+            explanation = "Joseph of Arimathea asked Pilate for Jesus' body and placed it in his own new tomb."
         ),
         QuizQuestion(
-            question = "What did Jesus say about the Father?",
-            options = listOf("I and the Father are one", "I am in the Father", "The Father is in me", "All of the above"),
-            correctAnswer = 3,
-            explanation = "Jesus said 'I and the Father are one' and spoke of their mutual indwelling."
+            question = "Who witnessed the Transfiguration?",
+            options = listOf("All 12 disciples", "Peter, James, and John", "Mary and Martha", "Moses and Elijah only"),
+            correctAnswer = 1,
+            explanation = "Jesus took Peter, James, and John up the mountain where He was transfigured."
+        ),
+        QuizQuestion(
+            question = "What sign did Judas use to betray Jesus?",
+            options = listOf("A handshake", "A hug", "A kiss", "A bow"),
+            correctAnswer = 2,
+            explanation = "Judas betrayed Jesus with a kiss."
+        ),
+        QuizQuestion(
+            question = "Which Gospel writer was a cousin of Barnabas?",
+            options = listOf("Matthew", "Mark", "Luke", "John"),
+            correctAnswer = 1,
+            explanation = "Mark (John Mark) was the cousin of Barnabas (Colossians 4:10)."
+        ),
+        QuizQuestion(
+            question = "Who said, 'I must decrease, but He must increase'?",
+            options = listOf("Peter", "Paul", "John the Baptist", "John the Apostle"),
+            correctAnswer = 2,
+            explanation = "John the Baptist said this regarding his ministry in relation to Jesus."
+        ),
+        QuizQuestion(
+            question = "What does 'Gospel' mean?",
+            options = listOf("Holy Book", "Good News", "Life Story", "History"),
+            correctAnswer = 1,
+            explanation = "The word Gospel (Euangelion) translates literally to 'Good News'."
         ),
         QuizQuestion(
             question = "Which Gospel begins with the birth of John the Baptist?",
             options = listOf("Matthew", "Mark", "Luke", "John"),
             correctAnswer = 2,
-            explanation = "Luke's Gospel begins with the birth of John the Baptist before Jesus' birth."
+            explanation = "Luke's narrative begins with the announcement of John the Baptist's birth."
         ),
         QuizQuestion(
-            question = "What did Jesus say about the Holy Spirit?",
-            options = listOf("I will send the Holy Spirit", "The Holy Spirit will guide you", "The Holy Spirit will teach you", "All of the above"),
-            correctAnswer = 3,
-            explanation = "Jesus promised to send the Holy Spirit who would guide and teach the disciples."
+            question = "Who is the 'Comforter' Jesus promised to send?",
+            options = listOf("Michael the Archangel", "The Holy Spirit", "Elijah", "Moses"),
+            correctAnswer = 1,
+            explanation = "Jesus promised the Helper (Paraclete), which is the Holy Spirit."
         ),
         QuizQuestion(
-            question = "Who was the first person to recognize Jesus as the Son of God at His birth?",
-            options = listOf("Simeon", "Anna", "The shepherds", "The wise men"),
-            correctAnswer = 0,
-            explanation = "Simeon was the first to recognize Jesus as the Son of God when he held Him as a baby."
+            question = "Who blessed the baby Jesus in the temple?",
+            options = listOf("Zacharias", "Simeon", "Joseph", "Nicodemus"),
+            correctAnswer = 1,
+            explanation = "Simeon took Jesus in his arms and praised God (Luke 2:28)."
         )
     )
     
     // Prophets Questions (50 questions) - Meaningful questions about prophets
+    // Prophets Questions (50 questions) - High Quality, Varied Answers (Refined)
     private val prophetsQuestions = listOf(
         QuizQuestion(
-            question = "What was Elijah's main message to King Ahab?",
-            options = listOf("Repent and turn to God", "Build more temples", "Conquer more lands", "Marry more wives"),
+            question = "Which prophet challenged the prophets of Baal to a contest on Mount Carmel?",
+            options = listOf("Elisha", "Elijah", "Isaiah", "Jeremiah"),
+            correctAnswer = 1,
+            explanation = "Elijah challenged the 450 prophets of Baal to a contest on Mount Carmel to prove who is the true God."
+        ),
+        QuizQuestion(
+            question = "Isaiah prophesied that a virgin would conceive and bear a son. What name did he say the son would be called?",
+            options = listOf("Maher-Shalal-Hash-Baz", "Lo-Ammi", "Immanuel", "Jezreel"),
+            correctAnswer = 2,
+            explanation = "Therefore the Lord himself will give you a sign: The virgin will conceive and give birth to a son, and will call him Immanuel."
+        ),
+        QuizQuestion(
+            question = "Which prophet was swallowed by a great fish when he tried to flee from God's command?",
+            options = listOf("Nahum", "Obadiah", "Jonah", "Joel"),
+            correctAnswer = 2,
+            explanation = "Jonah was swallowed by a great fish after being thrown overboard on his way to Tarshish."
+        ),
+        QuizQuestion(
+            question = "Jeremiah corresponds to which tragic event in Jewish history?",
+            options = listOf("The Exodus from Egypt", "The destruction of Jerusalem and the Exile", "The building of the Second Temple", "The flood"),
+            correctAnswer = 1,
+            explanation = "Jeremiah prophesied during the final years of Judah and witnessed the destruction of Jerusalem and the beginning of the Exile."
+        ),
+        QuizQuestion(
+            question = "Which prophet saw a valley of dry bones come to life?",
+            options = listOf("Daniel", "Hosea", "Ezekiel", "Amos"),
+            correctAnswer = 2,
+            explanation = "God brought Ezekiel to a valley of dry bones and commanded him to prophesy to them, and they came to life."
+        ),
+        QuizQuestion(
+            question = "Daniel interpreted a dream of a great statue made of different metals. What did the statue represent?",
+            options = listOf("Four great kings", "Successive world empires", "The history of Israel", "Seven years of famine"),
+            correctAnswer = 1,
+            explanation = "The statue represented successive world empires: Babylon (Gold), Medo-Persia (Silver), Greece (Bronze), and Rome (Iron)."
+        ),
+        QuizQuestion(
+            question = "Which prophet was a shepherd and fig-tree farmer before God called him?",
+            options = listOf("Amos", "Micah", "Haggai", "Zechariah"),
             correctAnswer = 0,
-            explanation = "Elijah called Ahab to repent and turn away from idolatry back to the one true God."
+            explanation = "Amos was a shepherd and dresser of sycamore figs from Tekoa before he was called to prophesy to Israel."
         ),
         QuizQuestion(
-            question = "What did Isaiah prophesy about the Messiah?",
-            options = listOf("He would be a great warrior", "He would be born of a virgin", "He would be a wealthy king", "He would be a priest only"),
-            correctAnswer = 1,
-            explanation = "Isaiah 7:14 prophesied that the virgin would conceive and bear a son, and call him Immanuel."
-        ),
-        QuizQuestion(
-            question = "Why was Jonah reluctant to go to Nineveh?",
-            options = listOf("He feared the Assyrians", "He wanted them to be destroyed", "The journey was too long", "He didn't speak their language"),
-            correctAnswer = 1,
-            explanation = "Jonah wanted Nineveh to be destroyed and didn't want them to repent and receive God's mercy."
-        ),
-        QuizQuestion(
-            question = "What did Jeremiah prophesy about the new covenant?",
-            options = listOf("It would be easier to follow", "It would be written on hearts", "It would only last 70 years", "It would be for Jews only"),
-            correctAnswer = 1,
-            explanation = "Jeremiah 31:33 prophesied that God would put His law in their minds and write it on their hearts."
-        ),
-        QuizQuestion(
-            question = "What was Ezekiel's vision of the valley of dry bones about?",
-            options = listOf("The end of the world", "A great battle", "Israel's spiritual restoration", "A famine coming"),
+            question = "God commanded Hosea to marry a woman named Gomer. What was she?",
+            options = listOf("A prophetess", "A queen", "An adulterous wife", "A widow"),
             correctAnswer = 2,
-            explanation = "Ezekiel's vision of dry bones coming to life symbolized Israel's future spiritual restoration."
+            explanation = "Hosea was commanded to marry Gomer, an unfaithful woman, to illustrate Israel's unfaithfulness to God."
         ),
         QuizQuestion(
-            question = "What did Daniel interpret for King Nebuchadnezzar?",
-            options = listOf("The meaning of a riddle", "A prophecy about Egypt", "The dream of the great statue", "The future of Babylon only"),
+            question = "Which prophet predicted the outpouring of the Holy Spirit on 'all flesh'?",
+            options = listOf("Joel", "Zephaniah", "Malachi", "Habakkuk"),
+            correctAnswer = 0,
+            explanation = "Joel 2:28 prophesied, 'And afterward, I will pour out my Spirit on all people.'"
+        ),
+        QuizQuestion(
+            question = "Micah predicted the Messiah would be born in which town?",
+            options = listOf("Jerusalem", "Nazareth", "Bethlehem", "Hebron"),
             correctAnswer = 2,
-            explanation = "Daniel interpreted Nebuchadnezzar's dream of a great statue representing different kingdoms."
+            explanation = "Micah 5:2 states, 'But you, Bethlehem Ephrathah... out of you will come for me one who will be ruler over Israel.'"
         ),
         QuizQuestion(
-            question = "What was Amos's profession before becoming a prophet?",
-            options = listOf("Priest", "King's advisor", "Shepherd and fig farmer", "Merchant"),
+            question = "Nahum's prophecy was focused entirely on the destruction of which city?",
+            options = listOf("Nineveh", "Babylon", "Tyre", "Samaria"),
+            correctAnswer = 0,
+            explanation = "The book of Nahum is an oracle concerning Nineveh, predicting its final destruction for its wickedness."
+        ),
+        QuizQuestion(
+            question = "Which prophet questioned God asking, 'Why do the wicked prosper?'",
+            options = listOf("Habakkuk", "Zechariah", "Haggai", "Malachi"),
+            correctAnswer = 0,
+            explanation = "Habakkuk wrestled with the question of why God allowed wickedness and why He would use the Babylonians to judge Judah."
+        ),
+        QuizQuestion(
+            question = "Zephaniah warned about 'The Day of the Lord.' How did he describe it?",
+            options = listOf("A day of peace and safety", "A day of wrath and judgment", "A day of endless rain", "A day of harvesting grain"),
+            correctAnswer = 1,
+            explanation = "Zephaniah described the Day of the Lord as 'a day of wrath... a day of distress and anguish, a day of trouble and ruin.'"
+        ),
+        QuizQuestion(
+            question = "After the exile, Haggai encouraged the people to stop building their own houses and do what?",
+            options = listOf("Build the city walls", "Rebuild the Temple", "Plant vineyards", "Conquer neighbors"),
+            correctAnswer = 1,
+            explanation = "Haggai challenged the people for living in paneled houses while God's house (the Temple) remained a ruin."
+        ),
+        QuizQuestion(
+            question = "Zechariah prophesied the Messiah would enter Jerusalem riding on what?",
+            options = listOf("A white horse", "A chariot of fire", "A donkey", "A camel"),
             correctAnswer = 2,
-            explanation = "Amos was a shepherd and dresser of sycamore figs before God called him to prophesy."
+            explanation = "Rejoice greatly, Daughter Zion! See, your king comes to you... lowly and riding on a donkey. (Zechariah 9:9)"
         ),
         QuizQuestion(
-            question = "What did Hosea's marriage to Gomer symbolize?",
-            options = listOf("God's love for all nations", "The importance of marriage", "Israel's unfaithfulness to God", "The need for more prophets"),
+            question = "Malachi, the last Old Testament prophet, prophesied that who would come before the Day of the Lord?",
+            options = listOf("Moses", "Abraham", "Elijah", "David"),
             correctAnswer = 2,
-            explanation = "Hosea's marriage to an unfaithful woman symbolized Israel's spiritual adultery against God."
+            explanation = "See, I will send the prophet Elijah to you before that great and dreadful day of the Lord comes. (Malachi 4:5)"
         ),
         QuizQuestion(
-            question = "What did Joel prophesy about the last days?",
-            options = listOf("Only Jews would be saved", "The world would end immediately", "No one would be saved", "God would pour out His Spirit on all people"),
+            question = "Who anointed the first two kings of Israel, Saul and David?",
+            options = listOf("Nathan", "Samuel", "Gad", "Ahijah"),
+            correctAnswer = 1,
+            explanation = "Samuel the prophet anointed both Saul and David as kings of Israel."
+        ),
+        QuizQuestion(
+            question = "Which prophet confronted King David with the parable of the rich man and the poor man's lamb?",
+            options = listOf("Nathan", "Gad", "Samuel", "Elijah"),
+            correctAnswer = 0,
+            explanation = "Nathan used a parable to expose David's sin with Bathsheba, culminating in the words, 'You are the man!'"
+        ),
+        QuizQuestion(
+            question = "Elisha performed many miracles. Which of these did he NOT do?",
+            options = listOf("Make an axe head float", "Purify a pot of stew", "Call down fire on soldiers", "Part the Red Sea"),
             correctAnswer = 3,
-            explanation = "Joel 2:28-29 prophesied that God would pour out His Spirit on all people in the last days."
+            explanation = "Elisha made an axe head float and purified stew, but parting the Red Sea was Moses' miracle (Elisha parted the Jordan)."
         ),
         QuizQuestion(
-            question = "What was Micah's famous prophecy about Bethlehem?",
-            options = listOf("It would be destroyed", "It would become a great city", "It would be abandoned", "The Messiah would be born there"),
-            correctAnswer = 3,
-            explanation = "Micah 5:2 prophesied that the Messiah would be born in Bethlehem Ephrathah."
+            question = "Who is known as the 'Weeping Prophet'?",
+            options = listOf("Jeremiah", "Isaiah", "Ezekiel", "Hosea"),
+            correctAnswer = 0,
+            explanation = "Jeremiah is called the Weeping Prophet because of his deep sorrow over the sins and destruction of his people."
         ),
         QuizQuestion(
-            question = "What did Nahum prophesy about Nineveh?",
-            options = listOf("It would become greater", "It would be spared", "It would be moved", "It would be completely destroyed"),
-            correctAnswer = 3,
-            explanation = "Nahum prophesied that Nineveh would be completely destroyed for its wickedness."
+            question = "Which prophet was thrown into a lion's den for praying to God?",
+            options = listOf("Daniel", "Shadrach", "Meshach", "Abednego"),
+            correctAnswer = 0,
+            explanation = "Daniel was thrown into the lion's den because he continued to pray to God despite King Darius's decree."
         ),
         QuizQuestion(
-            question = "What was Habakkuk's main question to God?",
-            options = listOf("When will the Messiah come?", "How can I be saved?", "What is my purpose?", "Why do the wicked prosper?"),
-            correctAnswer = 3,
-            explanation = "Habakkuk questioned why God allowed the wicked to prosper while the righteous suffered."
+            question = "Obadiah is the shortest book in the Old Testament. Who is it a judgment against?",
+            options = listOf("Edom", "Moab", "Ammon", "Philistia"),
+            correctAnswer = 0,
+            explanation = "Obadiah pronounces judgment on Edom for their arrogance and violence against their brother nation, Israel."
         ),
         QuizQuestion(
-            question = "What did Zephaniah prophesy about the day of the Lord?",
-            options = listOf("It would be a day of celebration only", "It would never come", "It would be a day of peace only", "It would be a day of judgment and restoration"),
-            correctAnswer = 3,
-            explanation = "Zephaniah described the day of the Lord as both a day of judgment and future restoration."
+            question = "Which prophet was told not to marry or have children as a sign of the coming judgment?",
+            options = listOf("Jeremiah", "Ezekiel", "Hosea", "Isaiah"),
+            correctAnswer = 0,
+            explanation = "God commanded Jeremiah not to marry or have children in that place because of the deadly diseases and sword coming upon them."
         ),
         QuizQuestion(
-            question = "What did Haggai encourage the people to do?",
-            options = listOf("Fight their enemies", "Leave the land", "Worship idols", "Rebuild the temple"),
-            correctAnswer = 3,
-            explanation = "Haggai encouraged the returned exiles to rebuild the temple in Jerusalem."
-        ),
-        QuizQuestion(
-            question = "What did Zechariah see in his vision of the golden lampstand?",
-            options = listOf("The end of the world", "A great battle", "A famine coming", "God's Spirit working through His people"),
-            correctAnswer = 3,
-            explanation = "Zechariah's vision of the golden lampstand represented God's Spirit working through His people."
-        ),
-        QuizQuestion(
-            question = "What was Malachi's message about tithing?",
-            options = listOf("Tithing is not necessary", "Only give what you can afford", "Tithing brings curses", "Bring the whole tithe to test God's blessing"),
-            correctAnswer = 3,
-            explanation = "Malachi 3:10 encouraged bringing the whole tithe to test God's blessing and provision."
-        ),
-        QuizQuestion(
-            question = "What did Samuel anoint David to be?",
-            options = listOf("High priest", "Prophet", "Judge", "King of Israel"),
-            correctAnswer = 3,
-            explanation = "Samuel anointed David to be the next king of Israel, replacing Saul."
-        ),
-        QuizQuestion(
-            question = "What did Nathan confront David about?",
-            options = listOf("Not building the temple", "Being too old to rule", "Not going to war", "His sin with Bathsheba"),
-            correctAnswer = 3,
-            explanation = "Nathan confronted David about his adultery with Bathsheba and murder of Uriah."
-        ),
-        QuizQuestion(
-            question = "What was Elisha's first miracle after Elijah's departure?",
-            options = listOf("Parting the Jordan River", "Raising the dead", "Feeding 100 people", "Healing the waters of Jericho"),
-            correctAnswer = 3,
-            explanation = "Elisha's first miracle was healing the bitter waters of Jericho with salt."
-        ),
-        QuizQuestion(
-            question = "What did Isaiah prophesy about the suffering servant?",
-            options = listOf("He would be a great warrior", "He would be wealthy", "He would never suffer", "He would be pierced for our transgressions"),
-            correctAnswer = 3,
-            explanation = "Isaiah 53:5 prophesied that the suffering servant would be pierced for our transgressions."
-        ),
-        QuizQuestion(
-            question = "What was Jeremiah's message about the 70-year exile?",
-            options = listOf("It would be shorter", "It would be longer", "It would never end", "It would last exactly 70 years"),
-            correctAnswer = 3,
-            explanation = "Jeremiah prophesied that Judah would serve Babylon for 70 years before returning."
-        ),
-        QuizQuestion(
-            question = "What did Ezekiel see in his vision of God's glory?",
-            options = listOf("A burning mountain", "A great army", "A golden city", "A throne with wheels and living creatures"),
-            correctAnswer = 3,
-            explanation = "Ezekiel saw a vision of God's throne with wheels and four living creatures."
-        ),
-        QuizQuestion(
-            question = "What did Daniel refuse to do that got him thrown in the lion's den?",
-            options = listOf("Worship the king", "Eat the king's food", "Speak against the king", "Stop praying to God"),
-            correctAnswer = 3,
-            explanation = "Daniel continued praying to God despite the decree that forbade it."
-        ),
-        QuizQuestion(
-            question = "What was Amos's message about social justice?",
-            options = listOf("Justice is not important", "Only the rich matter", "Justice brings curses", "Let justice roll down like waters"),
-            correctAnswer = 3,
-            explanation = "Amos 5:24 called for justice to roll down like waters and righteousness like a mighty stream."
-        ),
-        QuizQuestion(
-            question = "What did Hosea name his children to symbolize?",
-            options = listOf("His love for his wife", "His wealth", "His wisdom", "God's judgment and restoration"),
-            correctAnswer = 3,
-            explanation = "Hosea's children's names symbolized God's judgment on Israel and future restoration."
-        ),
-        QuizQuestion(
-            question = "What did Obadiah prophesy about Edom?",
-            options = listOf("It would be blessed", "It would be destroyed", "It would become great", "It would be spared"),
+            question = "What strange food did Ezekiel have to bake his bread with as a sign?",
+            options = listOf("Cow dung", "Human dung (initially)", "Rotten figs", "Locusts"),
             correctAnswer = 1,
-            explanation = "Obadiah prophesied that Edom would be destroyed for its pride and violence against Israel."
+            explanation = "God initially told Ezekiel to bake bread over human excrement, but allowed him to use cow dung after Ezekiel objected."
         ),
         QuizQuestion(
-            question = "What did Micah say about what the Lord requires?",
-            options = listOf("To offer many sacrifices", "To act justly, love mercy, and walk humbly", "To build great temples", "To conquer nations"),
-            correctAnswer = 1,
-            explanation = "Micah 6:8 says the Lord requires us to act justly, love mercy, and walk humbly with God."
+            question = "Which major prophet saw the Lord 'high and lifted up' in the temple?",
+            options = listOf("Isaiah", "Jeremiah", "Ezekiel", "Daniel"),
+            correctAnswer = 0,
+            explanation = "In the year that King Uzziah died, I saw the Lord, high and exalted, seated on a throne; and the train of his robe filled the temple. (Isaiah 6:1)"
         ),
         QuizQuestion(
-            question = "What did Nahum say about God's character?",
-            options = listOf("God is always angry", "The Lord is slow to anger but will not leave the guilty unpunished", "God never judges", "God is weak"),
-            correctAnswer = 1,
-            explanation = "Nahum 1:3 describes God as slow to anger but one who will not leave the guilty unpunished."
+            question = "Which prophet foretold that the Messiah would be 'pierced for our transgressions'?",
+            options = listOf("Isaiah", "Jeremiah", "Zechariah", "Micah"),
+            correctAnswer = 0,
+            explanation = "Isaiah 53:5 - 'But he was pierced for our transgressions, he was crushed for our iniquities.'"
         ),
         QuizQuestion(
-            question = "What was Habakkuk's final response to God?",
-            options = listOf("I will give up", "I will rejoice in the Lord", "I will be angry", "I will ignore God"),
+            question = "What did the prophet Ahijah tear into twelve pieces?",
+            options = listOf("A scroll", "A new cloak", "A loaf of bread", "A veil"),
             correctAnswer = 1,
-            explanation = "Habakkuk concluded by saying he would rejoice in the Lord despite difficult circumstances."
+            explanation = "Ahijah tore his new cloak into twelve pieces and gave ten to Jeroboam, symbolizing the division of the kingdom."
         ),
         QuizQuestion(
-            question = "What did Zephaniah say about God's love for Jerusalem?",
-            options = listOf("He will destroy it", "He will quiet you with his love", "He will abandon it", "He will forget it"),
+            question = "Which king did Isaiah advise during the Assyrian siege of Jerusalem?",
+            options = listOf("Ahaz", "Hezekiah", "Josiah", "Manasseh"),
             correctAnswer = 1,
-            explanation = "Zephaniah 3:17 says the Lord will quiet Jerusalem with his love and rejoice over her with singing."
+            explanation = "Isaiah advised King Hezekiah to trust in the Lord when Sennacherib of Assyria besieged Jerusalem."
         ),
         QuizQuestion(
-            question = "What did Haggai say about the people's priorities?",
-            options = listOf("You are doing well", "You have planted much but harvested little", "You need to work harder", "You are too lazy"),
-            correctAnswer = 1,
-            explanation = "Haggai pointed out that the people planted much but harvested little because they neglected God's house."
+            question = "Who was the scribe that wrote down Jeremiah's words?",
+            options = listOf("Baruch", "Ezra", "Nehemiah", "Gedaliah"),
+            correctAnswer = 0,
+            explanation = "Baruch son of Neriah was Jeremiah's scribe and assistant who wrote down his prophecies."
         ),
         QuizQuestion(
-            question = "What did Zechariah see in his vision of the high priest Joshua?",
-            options = listOf("Him being punished", "Satan accusing him, but God defending him", "Him being praised", "Him being ignored"),
+            question = "In Ezekiel's vision, what did he see leaving the temple?",
+            options = listOf("The Ark of the Covenant", "The Glory of the Lord", "The High Priest", "The Altar"),
             correctAnswer = 1,
-            explanation = "Zechariah saw Satan accusing Joshua, but God defending him and removing his filthy clothes."
+            explanation = "Ezekiel saw the Glory of the Lord depart from the temple because of the people's idolatry."
         ),
         QuizQuestion(
-            question = "What did Malachi say about God's unchanging nature?",
-            options = listOf("I change with the times", "I the Lord do not change", "I am unpredictable", "I am weak"),
-            correctAnswer = 1,
-            explanation = "Malachi 3:6 declares that the Lord does not change, showing His faithfulness."
+            question = "Which prophet had a vision of a 'flying scroll'?",
+            options = listOf("Zechariah", "Ezekiel", "Daniel", "Revelation"),
+            correctAnswer = 0,
+            explanation = "Zechariah 5 describes a vision of a flying scroll representing the curse going out over the whole land."
         ),
         QuizQuestion(
-            question = "What did Samuel tell Saul about obedience?",
-            options = listOf("Sacrifice is more important", "To obey is better than sacrifice", "Obedience is optional", "Obedience brings curses"),
-            correctAnswer = 1,
-            explanation = "Samuel told Saul that to obey is better than sacrifice, and to heed is better than the fat of rams."
+            question = "What did God call the prophet Ezekiel repeatedly?",
+            options = listOf("Son of Man", "Mighty Warrior", "Beloved", "Servant"),
+            correctAnswer = 0,
+            explanation = "God addresses Ezekiel as 'Son of Man' over 90 times in the book."
         ),
         QuizQuestion(
-            question = "What did Nathan tell David about his sin?",
-            options = listOf("You are innocent", "You are the man who did this", "You are forgiven already", "You did nothing wrong"),
-            correctAnswer = 1,
-            explanation = "Nathan confronted David by saying 'You are the man!' referring to his sin with Bathsheba."
+            question = "Which prophet prophesied the exact number of years (70) for the Babylonian captivity?",
+            options = listOf("Jeremiah", "Isaiah", "Daniel", "Ezekiel"),
+            correctAnswer = 0,
+            explanation = "Jeremiah 25:11 states that the nations will serve the king of Babylon for seventy years."
         ),
         QuizQuestion(
-            question = "What did Elisha ask Elijah for before he was taken up?",
-            options = listOf("Great wealth", "A double portion of your spirit", "Many followers", "A long life"),
+            question = "Who were the 'minor prophets'?",
+            options = listOf("Prophets under 20 years old", "The 12 shorter prophetic books", "Prophets who didn't perform miracles", "False prophets"),
             correctAnswer = 1,
-            explanation = "Elisha asked for a double portion of Elijah's spirit before Elijah was taken up to heaven."
+            explanation = "The Minor Prophets are the final 12 books of the Old Testament, called 'minor' only because they are shorter in length."
         ),
         QuizQuestion(
-            question = "What did Isaiah say about the coming Messiah's names?",
-            options = listOf("Great Warrior, Rich King", "Wonderful Counselor, Mighty God, Everlasting Father, Prince of Peace", "Wise Teacher, Good Man", "Powerful Leader, Strong Ruler"),
-            correctAnswer = 1,
-            explanation = "Isaiah 9:6 prophesied the Messiah would be called Wonderful Counselor, Mighty God, Everlasting Father, Prince of Peace."
+            question = "Which prophet condemned the people for offering blind and crippled animals as sacrifices?",
+            options = listOf("Malachi", "Haggai", "Zechariah", "Joel"),
+            correctAnswer = 0,
+            explanation = "Malachi rebuked the priests and people for despising God's name by offering defiled sacrifices."
         ),
         QuizQuestion(
-            question = "What did Jeremiah say about God's plans?",
-            options = listOf("Plans to destroy you", "Plans to prosper you and not to harm you", "No plans for you", "Plans to test you harshly"),
-            correctAnswer = 1,
-            explanation = "Jeremiah 29:11 says God has plans to prosper you and not to harm you, to give you hope and a future."
+            question = "Elisha told Naaman the Syrian to wash in which river to be healed of leprosy?",
+            options = listOf("Nile", "Euphrates", "Jordan", "Tigris"),
+            correctAnswer = 2,
+            explanation = "Elisha told Naaman to wash seven times in the Jordan River."
         ),
         QuizQuestion(
-            question = "What did Ezekiel see in his vision of the new temple?",
-            options = listOf("Fire consuming it", "Water flowing from the temple", "It being destroyed", "It being empty"),
-            correctAnswer = 1,
-            explanation = "Ezekiel saw a vision of water flowing from the temple, bringing life wherever it went."
+            question = "Which prophet's book is an acrostic poem mourning the destruction of Jerusalem?",
+            options = listOf("Lamentations (Jeremiah)", "Ecclesiastes", "Song of Songs", "Habakkuk"),
+            correctAnswer = 0,
+            explanation = "Lamentations, traditionally ascribed to Jeremiah, is a series of poetic dirges over the fall of Jerusalem."
         ),
         QuizQuestion(
-            question = "What did Daniel say about the four kingdoms?",
-            options = listOf("They would last forever", "They would rise and fall, but God's kingdom would last forever", "Only one would succeed", "They would all be destroyed immediately"),
+            question = "What happened to the mockers who called Elisha 'baldhead'?",
+            options = listOf("They were struck blind", "Two bears came out of the woods", "Fire fell from heaven", "They became mute"),
             correctAnswer = 1,
-            explanation = "Daniel prophesied that earthly kingdoms would rise and fall, but God's kingdom would last forever."
+            explanation = "Two female bears came out of the woods and mauled forty-two of the youths who mocked God's prophet."
         ),
         QuizQuestion(
-            question = "What did Amos say about the rich oppressing the poor?",
-            options = listOf("They help the poor", "They trample on the heads of the poor", "They ignore the poor", "They are kind to the poor"),
-            correctAnswer = 1,
-            explanation = "Amos condemned the rich for trampling on the heads of the poor and denying justice to the oppressed."
+            question = "Which prophet married a prophetess?",
+            options = listOf("Isaiah", "Jeremiah", "Hosea", "Ezekiel"),
+            correctAnswer = 0,
+            explanation = "Isaiah 8:3 mentions 'I went to the prophetess,' referring to his wife."
         ),
         QuizQuestion(
-            question = "What did Hosea say about God's love for Israel?",
-            options = listOf("I will abandon you", "How can I give you up, Ephraim?", "I don't love you", "You are not my people"),
-            correctAnswer = 1,
-            explanation = "Hosea 11:8 shows God's deep love: 'How can I give you up, Ephraim? How can I hand you over, Israel?'"
+            question = "Who was taken up to heaven in a whirlwind with a chariot of fire?",
+            options = listOf("Enoch", "Elisha", "Elijah", "Moses"),
+            correctAnswer = 2,
+            explanation = "Elijah was separated from Elisha by a chariot of fire and horses of fire, and went up to heaven in a whirlwind."
         ),
         QuizQuestion(
-            question = "What did Obadiah say about Edom's pride?",
-            options = listOf("It was justified", "It would be their downfall", "It was admirable", "It was harmless"),
-            correctAnswer = 1,
-            explanation = "Obadiah condemned Edom's pride, saying it would lead to their destruction."
+            question = "Which prophet spoke of the 'Sun of Righteousness' rising with healing in its wings?",
+            options = listOf("Malachi", "Isaiah", "Zechariah", "Hosea"),
+            correctAnswer = 0,
+            explanation = "Malachi 4:2 - 'But for you who revere my name, the sun of righteousness will rise with healing in its rays.'"
         ),
         QuizQuestion(
-            question = "What did Micah say about the Messiah's birthplace?",
-            options = listOf("Jerusalem will be the birthplace", "But you, Bethlehem Ephrathah", "Nazareth will be chosen", "No specific place mentioned"),
+            question = "What did the prophet Balaam's donkey do?",
+            options = listOf("Flew", "Spoke", "Turned into a lion", "Danced"),
             correctAnswer = 1,
-            explanation = "Micah 5:2 specifically prophesied that the Messiah would come from Bethlehem Ephrathah."
+            explanation = "The Lord opened the donkey's mouth, and it spoke to Balaam, asking why he was beating it."
         ),
         QuizQuestion(
-            question = "What did Nahum say about God's power over nature?",
-            options = listOf("God has no power over nature", "The Lord has his way in the whirlwind and storm", "Nature controls God", "God is weak in storms"),
-            correctAnswer = 1,
-            explanation = "Nahum 1:3 describes God's power: 'The Lord has his way in the whirlwind and the storm.'"
+            question = "Which prophet condemned Israel for 'selling the righteous for silver and the needy for a pair of sandals'?",
+            options = listOf("Amos", "Hosea", "Joel", "Micah"),
+            correctAnswer = 0,
+            explanation = "Amos 2:6 highlights the social injustice and greed prevalent in Israel."
         ),
         QuizQuestion(
-            question = "What did Habakkuk say about faith?",
-            options = listOf("Faith is not important", "The righteous will live by faith", "Only works matter", "Faith brings curses"),
-            correctAnswer = 1,
-            explanation = "Habakkuk 2:4 declares that the righteous will live by faith, a key biblical principle."
+            question = "Who prophesied, 'The just shall live by faith'?",
+            options = listOf("Habakkuk", "Nahum", "Obadiah", "Zephaniah"),
+            correctAnswer = 0,
+            explanation = "Habakkuk 2:4 - '...but the righteous person will live by his faithfulness.' Quoted by Paul in Romans."
         ),
         QuizQuestion(
-            question = "What did Zephaniah say about God's presence?",
-            options = listOf("God has left you", "The Lord your God is with you", "God is far away", "God doesn't care"),
-            correctAnswer = 1,
-            explanation = "Zephaniah 3:17 assures that the Lord your God is with you, the Mighty Warrior who saves."
+            question = "What sign did Isaiah give Hezekiah that his life would be extended?",
+            options = listOf("The sun moved backward", "Thunder in a clear sky", "A star fell", "Water turned to blood"),
+            correctAnswer = 0,
+            explanation = "The shadow on the stairway of Ahaz went back ten steps."
         ),
         QuizQuestion(
-            question = "What did Jonah do when God called him to Nineveh?",
-            options = listOf("He went immediately", "He ran away to Tarshish", "He asked for help", "He refused politely"),
-            correctAnswer = 1,
-            explanation = "Jonah tried to flee from God's presence by going to Tarshish instead of Nineveh."
+            question = "Which prophet had a contest with Hananiah over a wooden yoke?",
+            options = listOf("Jeremiah", "Ezekiel", "Daniel", "Isaiah"),
+            correctAnswer = 0,
+            explanation = "Jeremiah wore a yoke to symbolize submission to Babylon. Hananiah broke it, predicting false peace."
         ),
         QuizQuestion(
-            question = "What did Zechariah say about the coming king?",
-            options = listOf("Be afraid", "Rejoice greatly, Daughter Zion! Shout, Daughter Jerusalem!", "Be silent", "Be angry"),
-            correctAnswer = 1,
-            explanation = "Zechariah 9:9 calls for rejoicing at the coming of the righteous king riding on a donkey."
+            question = "Who was the 'Prophetess' who judged Israel under a palm tree?",
+            options = listOf("Deborah", "Miriam", "Huldah", "Noadiah"),
+            correctAnswer = 0,
+            explanation = "Deborah was a prophetess and judge who held court under the Palm of Deborah."
         ),
         QuizQuestion(
-            question = "What did Malachi say about God's faithfulness?",
-            options = listOf("I hate you", "I have loved you, says the Lord", "I don't care about you", "You are not my people"),
+            question = "Which prophet received a vision of a man with a measuring line?",
+            options = listOf("Zechariah", "Haggai", "Malachi", "Amos"),
+            correctAnswer = 0,
+            explanation = "Zechariah 2 describes a man with a measuring line going to measure Jerusalem."
+        ),
+        QuizQuestion(
+            question = "What was the name of the idol that Dagon bowed down to?",
+            options = listOf("The Golden Calf", "The Ark of the Covenant", "Baal", "Molech"),
             correctAnswer = 1,
-            explanation = "Malachi 1:2 begins with God's declaration of love: 'I have loved you, says the Lord.'"
+            explanation = "When the Philistines placed the Ark in Dagon's temple, the statue of Dagon fell face down before it."
+        ),
+        QuizQuestion(
+            question = "Which prophet said the Lord requires us 'To act justly and to love mercy and to walk humbly with your God'?",
+            options = listOf("Micah", "Isaiah", "Jeremiah", "Amos"),
+            correctAnswer = 0,
+            explanation = "Micah 6:8 is one of the most famous summaries of biblical ethics."
         )
     )
     
-    // Parables Questions (50 questions) - Adding a sample of key questions
+    // Parables Questions (50 questions) - High Quality, Varied Answers
     private val parablesQuestions = listOf(
         QuizQuestion(
-            question = "What is the parable of the sower about?",
-            options = listOf("Different types of soil", "Different responses to God's word", "Different kinds of people", "All of the above"),
-            correctAnswer = 3,
-            explanation = "The parable of the sower illustrates different responses to God's word based on the condition of the heart."
-        ),
-        QuizQuestion(
-            question = "What does the parable of the prodigal son teach?",
-            options = listOf("Forgiveness", "Repentance", "God's love", "All of the above"),
-            correctAnswer = 3,
-            explanation = "The parable of the prodigal son teaches about forgiveness, repentance, and God's unconditional love."
-        ),
-        QuizQuestion(
-            question = "What is the parable of the good Samaritan about?",
-            options = listOf("Being a good neighbor", "Loving your enemy", "Helping others", "All of the above"),
-            correctAnswer = 3,
-            explanation = "The parable of the good Samaritan teaches about being a good neighbor and loving others."
-        ),
-        QuizQuestion(
-            question = "What does the parable of the talents teach?",
-            options = listOf("Using your gifts", "Being faithful", "God's judgment", "All of the above"),
-            correctAnswer = 3,
-            explanation = "The parable of the talents teaches about using your gifts faithfully for God's kingdom."
-        ),
-        QuizQuestion(
-            question = "What is the parable of the lost sheep about?",
-            options = listOf("God's love for sinners", "Seeking the lost", "Rejoicing over repentance", "All of the above"),
-            correctAnswer = 3,
-            explanation = "The parable of the lost sheep illustrates God's love for sinners and His desire to seek and save the lost."
-        ),
-        // Continue with more parables questions...
-        QuizQuestion(
-            question = "What does the parable of the mustard seed teach?",
-            options = listOf("The kingdom starts small", "Faith can move mountains", "Growth takes time", "All of the above"),
-            correctAnswer = 0,
-            explanation = "The parable of the mustard seed teaches that the kingdom of God starts small but grows into something great."
-        ),
-        QuizQuestion(
-            question = "What is the parable of the wedding feast about?",
-            options = listOf("God's invitation", "Many are called", "Few are chosen", "All of the above"),
-            correctAnswer = 3,
-            explanation = "The parable of the wedding feast teaches about God's invitation to salvation and the need to respond properly."
-        ),
-        QuizQuestion(
-            question = "What does the parable of the rich fool teach?",
-            options = listOf("Don't be greedy", "Store up treasures in heaven", "Life is short", "All of the above"),
-            correctAnswer = 3,
-            explanation = "The parable of the rich fool teaches about the folly of greed and the importance of storing up treasures in heaven."
-        ),
-        QuizQuestion(
-            question = "What is the parable of the persistent widow about?",
-            options = listOf("Prayer", "Persistence", "Justice", "All of the above"),
-            correctAnswer = 3,
-            explanation = "The parable of the persistent widow teaches about the importance of persistent prayer and God's justice."
-        ),
-        QuizQuestion(
-            question = "What does the parable of the two sons teach?",
-            options = listOf("Actions speak louder than words", "Repentance", "Obedience", "All of the above"),
-            correctAnswer = 3,
-            explanation = "The parable of the two sons teaches that actions speak louder than words and the importance of repentance."
-        ),
-        QuizQuestion(
-            question = "What is the parable of the ten virgins about?",
-            options = listOf("Being prepared", "Wedding customs", "Oil lamps", "All of the above"),
-            correctAnswer = 3,
-            explanation = "The parable of the ten virgins teaches about being prepared for Christ's return."
-        ),
-        QuizQuestion(
-            question = "What does the parable of the lost coin teach?",
-            options = listOf("God's love for sinners", "Seeking the lost", "Rejoicing over repentance", "All of the above"),
-            correctAnswer = 3,
-            explanation = "The parable of the lost coin illustrates God's love for sinners and His desire to seek and save the lost."
-        ),
-        QuizQuestion(
-            question = "What is the parable of the unforgiving servant about?",
-            options = listOf("Forgiveness", "Debt", "Mercy", "All of the above"),
-            correctAnswer = 3,
-            explanation = "The parable of the unforgiving servant teaches about the importance of forgiving others as we have been forgiven."
-        ),
-        QuizQuestion(
-            question = "What does the parable of the workers in the vineyard teach?",
-            options = listOf("God's grace", "Fair wages", "Working hard", "All of the above"),
-            correctAnswer = 0,
-            explanation = "The parable of the workers in the vineyard teaches about God's grace and generosity."
-        ),
-        QuizQuestion(
-            question = "What is the parable of the wise and foolish builders about?",
-            options = listOf("Building houses", "Following Jesus' teachings", "Storms", "All of the above"),
+            question = "In the Parable of the Sower, what happened to the seed that fell on rocky ground?",
+            options = listOf("It was eaten by birds", "It sprang up quickly but withered", "It was choked by thorns", "It produced a hundredfold"),
             correctAnswer = 1,
-            explanation = "The parable of the wise and foolish builders teaches about the importance of following Jesus' teachings."
+            explanation = "The seed on rocky ground sprang up quickly but withered because it had no deep root."
         ),
         QuizQuestion(
-            question = "What does the parable of the sheep and goats teach?",
-            options = listOf("Helping others", "Final judgment", "Compassion", "All of the above"),
-            correctAnswer = 3,
-            explanation = "The parable of the sheep and goats teaches about helping others and the final judgment."
+            question = "In the Parable of the Good Samaritan, who was the first person to pass by the injured man?",
+            options = listOf("A Levite", "A Priest", "A Roman Soldier", "An Innkeeper"),
+            correctAnswer = 1,
+            explanation = "A priest happened to be going down the same road, and when he saw the man, he passed by on the other side."
         ),
         QuizQuestion(
-            question = "What is the parable of the great banquet about?",
-            options = listOf("God's invitation", "Making excuses", "Including everyone", "All of the above"),
+            question = "What did the father give the returning Prodigal Son?",
+            options = listOf("A beating", "A servant's job", "Reviewing his sins", "The best robe, a ring, and sandals"),
             correctAnswer = 3,
-            explanation = "The parable of the great banquet teaches about God's invitation to salvation and including everyone."
+            explanation = "The father ordered the best robe, a ring for his finger, and sandals for his feet to welcome his son back."
         ),
         QuizQuestion(
-            question = "What does the parable of the fig tree teach?",
-            options = listOf("Signs of the times", "Patience", "Fruitfulness", "All of the above"),
-            correctAnswer = 3,
-            explanation = "The parable of the fig tree teaches about recognizing signs of the times and being fruitful."
+            question = "In the Parable of the Talents, what did the man with one talent do?",
+            options = listOf("Invested it and made more", "Gave it to the poor", "Buried it in the ground", "Lost it in gambling"),
+            correctAnswer = 2,
+            explanation = "The man with one talent was afraid and went out and hid his master's money in the ground."
         ),
         QuizQuestion(
-            question = "What is the parable of the hidden treasure about?",
-            options = listOf("Finding treasure", "The kingdom of heaven", "Sacrificing everything", "All of the above"),
-            correctAnswer = 3,
-            explanation = "The parable of the hidden treasure teaches about the value of the kingdom of heaven."
+            question = "Which parable compares the Kingdom of Heaven to a tiny seed that becomes a large tree?",
+            options = listOf("The Leaven", "The Mustard Seed", "The Wheat and Tares", "The Fig Tree"),
+            correctAnswer = 1,
+            explanation = "The Parable of the Mustard Seed compares the Kingdom to the smallest of seeds that grows into a large tree."
         ),
         QuizQuestion(
-            question = "What does the parable of the pearl of great price teach?",
-            options = listOf("The value of the kingdom", "Selling everything", "Finding wisdom", "All of the above"),
-            correctAnswer = 3,
-            explanation = "The parable of the pearl of great price teaches about the incomparable value of the kingdom of heaven."
+            question = "In the Parable of the Ten Virgins, what did the five foolish virgins forget?",
+            options = listOf("Their lamps", "Their robes", "Extra oil", "Their invitations"),
+            correctAnswer = 2,
+            explanation = "The foolish ones took their lamps but did not take any oil with them."
         ),
         QuizQuestion(
-            question = "What is the parable of the dragnet about?",
-            options = listOf("Fishing", "Final judgment", "Good and evil", "All of the above"),
-            correctAnswer = 3,
-            explanation = "The parable of the dragnet teaches about the final judgment and separation of good and evil."
+            question = "What happened to the house built on sand when the rain came?",
+            options = listOf("It stood firm", "It fell with a great crash", "It floated away", "It was slightly damaged"),
+            correctAnswer = 1,
+            explanation = "The rain came, the streams rose, and the winds blew and beat against that house, and it fell with a great crash."
         ),
         QuizQuestion(
-            question = "What does the parable of the leaven teach?",
-            options = listOf("Baking bread", "The kingdom's growth", "Small beginnings", "All of the above"),
-            correctAnswer = 3,
-            explanation = "The parable of the leaven teaches about how the kingdom of God grows and spreads."
+            question = "In the Parable of the Lost Sheep, how many sheep did the shepherd leave behind to find the one?",
+            options = listOf("9", "99", "50", "100"),
+            correctAnswer = 1,
+            explanation = "The shepherd leaves the ninety-nine in the open country to go after the lost sheep until he finds it."
         ),
         QuizQuestion(
-            question = "What is the parable of the growing seed about?",
-            options = listOf("Farming", "God's work", "Patience", "All of the above"),
-            correctAnswer = 3,
-            explanation = "The parable of the growing seed teaches about how God's kingdom grows mysteriously."
+            question = "Who did the rich man see in Abraham's bosom specifically?",
+            options = listOf("Moses", "Elijah", "Lazarus", "David"),
+            correctAnswer = 2,
+            explanation = "In Hades, the rich man looked up and saw Abraham far away, with Lazarus by his side."
         ),
         QuizQuestion(
-            question = "What does the parable of the unjust steward teach?",
-            options = listOf("Being shrewd", "Using resources wisely", "Preparing for the future", "All of the above"),
-            correctAnswer = 3,
-            explanation = "The parable of the unjust steward teaches about using worldly resources wisely for eternal purposes."
+            question = "In the Parable of the Unforgiving Servant, how much did the first servant owe the king?",
+            options = listOf("100 denarii", "10,000 talents", "50 shekels", "1,000 drachmas"),
+            correctAnswer = 1,
+            explanation = "The first servant owed a massive debt of ten thousand talents, which meant millions of dollars in modern terms."
         ),
         QuizQuestion(
-            question = "What is the parable of the rich man and Lazarus about?",
-            options = listOf("Wealth and poverty", "Afterlife", "Compassion", "All of the above"),
-            correctAnswer = 3,
-            explanation = "The parable of the rich man and Lazarus teaches about wealth, poverty, and the afterlife."
+            question = "What item did the woman lose in the parable about rejoicing?",
+            options = listOf("A sheep", "A pearl", "A silver coin", "A golden ring"),
+            correctAnswer = 2,
+            explanation = "The parable describes a woman who has ten silver coins and loses one, sweeping the house to find it."
         ),
         QuizQuestion(
-            question = "What does the parable of the Pharisee and tax collector teach?",
-            options = listOf("Humility", "Prayer", "Righteousness", "All of the above"),
-            correctAnswer = 3,
-            explanation = "The parable of the Pharisee and tax collector teaches about humility in prayer and righteousness."
+            question = "In the Parable of the Wedding Feast, why was one guest thrown out?",
+            options = listOf("He was drunk", "He wasn't wearing wedding clothes", "He insulted the king", "He arrived too late"),
+            correctAnswer = 1,
+            explanation = "The king noticed a man there who was not wearing wedding clothes, representing a lack of righteousness."
         ),
         QuizQuestion(
-            question = "What is the parable of the unjust judge about?",
-            options = listOf("Persistent prayer", "Justice", "Faith", "All of the above"),
-            correctAnswer = 3,
-            explanation = "The parable of the unjust judge teaches about persistent prayer and faith."
+            question = "What did the enemy sow among the wheat while everyone was sleeping?",
+            options = listOf("Thorns", "Weeds (Tares)", "Rocks", "Barley"),
+            correctAnswer = 1,
+            explanation = "While everyone was sleeping, his enemy came and sowed weeds among the wheat, and went away."
         ),
         QuizQuestion(
-            question = "What does the parable of the ten minas teach?",
-            options = listOf("Using talents", "Being faithful", "God's return", "All of the above"),
-            correctAnswer = 3,
-            explanation = "The parable of the ten minas teaches about being faithful with what God has given us."
+            question = "In the Parable of the Workers in the Vineyard, what did those hired at the eleventh hour receive?",
+            options = listOf("Only one hour's pay", "Half a denarius", "A full day's wage (a denarius)", "Nothing"),
+            correctAnswer = 2,
+            explanation = "The landowner paid everyone a denarius, regardless of how long they had worked, showing God's grace."
         ),
         QuizQuestion(
-            question = "What is the parable of the wise and foolish virgins about?",
-            options = listOf("Being prepared", "Oil for lamps", "Christ's return", "All of the above"),
-            correctAnswer = 3,
-            explanation = "The parable of the wise and foolish virgins teaches about being prepared for Christ's return."
+            question = "What did the merchant do when he found the pearl of great price?",
+            options = listOf("Stole it", "Sold all he had to buy it", "Haggled for a lower price", "Ignored it"),
+            correctAnswer = 1,
+            explanation = "When he found one of great value, he went away and sold everything he had and bought it."
         ),
         QuizQuestion(
-            question = "What does the parable of the barren fig tree teach?",
-            options = listOf("Patience", "Fruitfulness", "Second chances", "All of the above"),
-            correctAnswer = 3,
-            explanation = "The parable of the barren fig tree teaches about God's patience and the need for fruitfulness."
+            question = "In the Parable of the Pharisee and the Tax Collector, how did the Tax Collector pray?",
+            options = listOf("He thanked God he wasn't like others", "He beat his breast and asked for mercy", "He recited long scriptures", "He prayed silently in his heart only"),
+            correctAnswer = 1,
+            explanation = "The tax collector stood at a distance, beat his breast and said, 'God, have mercy on me, a sinner.'"
         ),
         QuizQuestion(
-            question = "What is the parable of the great supper about?",
-            options = listOf("God's invitation", "Making excuses", "Including the poor", "All of the above"),
-            correctAnswer = 3,
-            explanation = "The parable of the great supper teaches about God's invitation to salvation and including everyone."
+            question = "Which parable teaches about the need to forgive others from the heart?",
+            options = listOf("The Good Samaritan", "The Unforgiving Servant", "The Prodigal Son", "The Lost Sheep"),
+            correctAnswer = 1,
+            explanation = "The Parable of the Unforgiving Servant concludes with the warning to forgive your brother from your heart."
         ),
         QuizQuestion(
-            question = "What does the parable of the unjust steward teach about money?",
-            options = listOf("Using it wisely", "Making friends", "Eternal purposes", "All of the above"),
-            correctAnswer = 3,
-            explanation = "The parable of the unjust steward teaches about using money wisely for eternal purposes."
+            question = "In the Parable of the Great Banquet, who was invited first but made excuses?",
+            options = listOf("The poor and crippled", "The king's family", "The invited guests", "Foreigners"),
+            correctAnswer = 2,
+            explanation = "A certain man was preparing a great banquet and invited many guests, but they all alike began to make excuses."
         ),
         QuizQuestion(
-            question = "What is the parable of the rich fool about?",
-            options = listOf("Greed", "Storing up treasures", "Life's brevity", "All of the above"),
-            correctAnswer = 3,
-            explanation = "The parable of the rich fool teaches about the folly of greed and storing up earthly treasures."
+            question = "What does the leaven represent in the Parable of the Leaven?",
+            options = listOf("Sin spreading in the church", "The permeating growth of the Kingdom", "False teaching", "Hypocrisy"),
+            correctAnswer = 1,
+            explanation = "The leaven represents the Kingdom of Heaven, which, though small, permeates and transforms the whole world."
         ),
         QuizQuestion(
-            question = "What does the parable of the lost sheep teach about God's love?",
-            options = listOf("It's unconditional", "It seeks the lost", "It rejoices over repentance", "All of the above"),
-            correctAnswer = 3,
-            explanation = "The parable of the lost sheep teaches about God's unconditional love for sinners."
+            question = "In the Parable of the Rich Fool, what did the man plan to do with his surplus?",
+            options = listOf("Give it to the poor", "Build bigger barns", "Invest it in trade", "Offer it to the temple"),
+            correctAnswer = 1,
+            explanation = "He said, 'I will tear down my barns and build bigger ones, and there I will store my surplus grain.'"
         ),
         QuizQuestion(
-            question = "What is the parable of the mustard seed about?",
-            options = listOf("Small beginnings", "Great growth", "The kingdom", "All of the above"),
-            correctAnswer = 3,
-            explanation = "The parable of the mustard seed teaches about how the kingdom of God starts small but grows great."
+            question = "What fruit was the master looking for on the barren fig tree?",
+            options = listOf("Dates", "Olives", "Figs", "Grapes"),
+            correctAnswer = 2,
+            explanation = "A man had a fig tree planting in his vineyard, and he went to look for fruit on it, but did not find any."
         ),
         QuizQuestion(
-            question = "What does the parable of the talents teach about stewardship?",
-            options = listOf("Using gifts wisely", "Being faithful", "God's judgment", "All of the above"),
-            correctAnswer = 3,
-            explanation = "The parable of the talents teaches about using our God-given gifts wisely and faithfully."
+            question = "In the Parable of the Two Sons, which son actually did the father's will?",
+            options = listOf("The one who said 'I will' but didn't go", "The one who said 'I will not' but later went", "Both did the will", "Neither did the will"),
+            correctAnswer = 1,
+            explanation = "The first son said he wouldn't go, but later changed his mind and went. Jesus asked, 'Which of the two did what his father wanted?'"
         ),
         QuizQuestion(
-            question = "What is the parable of the good Samaritan about?",
-            options = listOf("Loving your neighbor", "Helping others", "Compassion", "All of the above"),
-            correctAnswer = 3,
-            explanation = "The parable of the good Samaritan teaches about loving your neighbor and showing compassion."
+            question = "What does the Treasure Hidden in the Field represent?",
+            options = listOf("Earthly riches", "Wisdom", "The Kingdom of Heaven", "A secret mystery"),
+            correctAnswer = 2,
+            explanation = "The kingdom of heaven is like treasure hidden in a field. When a man found it, he hid it again, and then in his joy went and sold all he had and bought that field."
+        ),
+        QuizQuestion(
+            question = "In the Parable of the Persistent Widow, who did she keep bothering?",
+            options = listOf("A corrupt tax collector", "An unjust judge", "Her neighbor", "The king"),
+            correctAnswer = 1,
+            explanation = "She kept coming to an unjust judge who neither feared God nor cared about men, pleading for justice."
+        ),
+        QuizQuestion(
+            question = "Which parable warns against greed and assuming we have plenty of time?",
+            options = listOf("The Rich Man and Lazarus", "The Rich Fool", "The Unjust Steward", "The Prodigal Son"),
+            correctAnswer = 1,
+            explanation = "The Parable of the Rich Fool warns against storing up things for oneself but not being rich toward God."
+        ),
+        QuizQuestion(
+            question = "In the Parable of the Net, what happens to the bad fish?",
+            options = listOf("They are sold cheaply", "They are thrown away", "They are eaten anyway", "They are put back in the sea"),
+            correctAnswer = 1,
+            explanation = "The fishermen collect the good fish in baskets, but throw the bad away. This is how it will be at the end of the age."
+        ),
+        QuizQuestion(
+            question = "Who are the 'goats' in the Parable of the Sheep and Goats?",
+            options = listOf("The righteous", "The false teachers", "Those who did not help the least of these", "The demons"),
+            correctAnswer = 2,
+            explanation = "The goats are those who saw the hungry, thirsty, or stranger and did not help them."
+        ),
+        QuizQuestion(
+            question = "In the Parable of the Ten Minas, what was the reward for the servant who earned ten more minas?",
+            options = listOf("Ten cities to rule", "Ten bags of gold", "Freedom from slavery", "A promotion to general"),
+            correctAnswer = 0,
+            explanation = "'Well done, my good servant!' his master replied. 'Because you have been trustworthy in a very small matter, take charge of ten cities.'"
+        ),
+        QuizQuestion(
+            question = "What is the main lesson of the Parable of the Growing Seed?",
+            options = listOf("Farming is hard work", "We must water the seed daily", "God brings the growth automatically", "We need better soil"),
+            correctAnswer = 2,
+            explanation = "The seed sprouts and grows, though he does not know how. All by itself the soil produces corn."
+        ),
+        QuizQuestion(
+            question = "In the Parable of the Unjust Steward, why was the steward commended?",
+            options = listOf("For his honesty", "For his repentance", "For acting shrewdly", "For saving money"),
+            correctAnswer = 2,
+            explanation = "The master commended the dishonest manager because he had acted shrewdly in preparing for his future."
+        ),
+        QuizQuestion(
+            question = "In the Parable of the Lamp, where should a lamp be placed?",
+            options = listOf("Under a bowl", "Under a bed", "On a stand", "In a closet"),
+            correctAnswer = 2,
+            explanation = "No one lights a lamp and puts it in a place where it will be hidden, or under a bowl. Instead they put it on its stand."
+        ),
+        QuizQuestion(
+            question = "Which parable illustrates God's desire for us to be persistent in prayer?",
+            options = listOf("The Friend at Midnight", "The Good Samaritan", "The Sower", "The Talents"),
+            correctAnswer = 0,
+            explanation = "The Parable of the Friend at Midnight teaches audacity and persistence in asking."
+        ),
+        QuizQuestion(
+            question = "In the Parable of the Wicked Tenants, what did they do to the owner's son?",
+            options = listOf("Honored him", "Paid him the rent", "Threw him out and killed him", "Ignored him"),
+            correctAnswer = 2,
+            explanation = "When the tenants saw the son, they threw him out of the vineyard and killed him, hoping to get his inheritance."
+        ),
+        QuizQuestion(
+            question = "What does the 'narrow door' represent in Jesus' teaching?",
+            options = listOf("A literal small gate in Jerusalem", "The difficulty of entering the Kingdom", "Only for the poor", "A secret entrance"),
+            correctAnswer = 1,
+            explanation = "Make every effort to enter through the narrow door, because many, I tell you, will try to enter and will not be able to."
+        ),
+        QuizQuestion(
+            question = "In the Parable of the Cost of Discipleship, what should a builder do first?",
+            options = listOf("Lay the foundation", "Buy materials", "Sit down and estimate the cost", "Hire workers"),
+            correctAnswer = 2,
+            explanation = "Suppose one of you wants to build a tower. Won't you first sit down and estimate the cost to see if you have enough money to complete it?"
+        ),
+        QuizQuestion(
+            question = "In the Parable of the Lost Coin, why did the woman light a lamp and sweep?",
+            options = listOf("It was dark", "She was cleaning anyway", "Because the coin was valuable to her", "Guests were coming"),
+            correctAnswer = 2,
+            explanation = "The diligent search illustrates God's diligent search for the lost sinner."
+        ),
+        QuizQuestion(
+            question = "What represents the Word of God in the Parable of the Sower?",
+            options = listOf("The sower", "The seed", "The soil", "The sun"),
+            correctAnswer = 1,
+            explanation = "The seed is the word of God (Luke 8:11)."
+        ),
+        QuizQuestion(
+            question = "In the Parable of the Sheep and Goats, what is the criteria for judgment?",
+            options = listOf("Correct theology", "Church attendance", "How one treated the least of these", "Tithing"),
+            correctAnswer = 2,
+            explanation = "Whatever you did for one of the least of these brothers and sisters of mine, you did for me."
+        ),
+        QuizQuestion(
+            question = "What was the complaint of the older brother in the Prodigal Son story?",
+            options = listOf("He didn't get a share of the inheritance", "The father never gave him a goat to celebrate with friends", "He wanted to leave too", "He hated the servants"),
+            correctAnswer = 1,
+            explanation = "He complained, 'You never gave me even a young goat so I could celebrate with my friends.'"
+        ),
+        QuizQuestion(
+            question = "In the Parable of the Rich Man and Lazarus, what did the rich man want Abraham to do?",
+            options = listOf("Send Lazarus to dip his finger in water", "Pull him out of the fire", "Destroy the chasm", "Punish Lazarus"),
+            correctAnswer = 0,
+            explanation = "He asked Abraham to send Lazarus to dip the tip of his finger in water and cool his tongue."
+        ),
+        QuizQuestion(
+            question = "Which parable speaks about the separation of the righteous and wicked at the end of the age?",
+            options = listOf("The Mustard Seed", "The Wheat and Tares", "The Sower", "The Pearl"),
+            correctAnswer = 1,
+            explanation = "The harvest is the end of the age, and the harvesters are angels who will weed out of his kingdom everything that causes sin."
+        ),
+        QuizQuestion(
+            question = "In the Parable of the Lowest Seat, where does Jesus say we should sit at a feast?",
+            options = listOf("At the head of the table", "Next to the host", "In the lowest place", "Outside"),
+            correctAnswer = 2,
+            explanation = "But when you are invited, take the lowest place, so that when your host comes, he will say to you, 'Friend, move up to a better place.'"
+        ),
+        QuizQuestion(
+            question = "What is the lesson of the Parable of the Empty House?",
+            options = listOf("Keep your house clean", "Demons like empty places", "Reformation without habitation by God invites worse evil", "Ghosts are real"),
+            correctAnswer = 2,
+            explanation = "When an impure spirit comes out of a person... if it finds the house unoccupied, it takes seven other spirits more wicked than itself."
+        ),
+        QuizQuestion(
+            question = "In the Parable of the Two Debtors (Luke 7), who loved the moneylender more?",
+            options = listOf("The one who owed 50 denarii", "The one who owed 500 denarii", "Both loved equally", "Neither loved him"),
+            correctAnswer = 1,
+            explanation = "Simon answered correctly: 'I suppose the one who had the bigger debt forgiven.'"
+        ),
+        QuizQuestion(
+            question = "Which parable describes a master returning from a wedding banquet?",
+            options = listOf("The Watchful Servants", "The Ten Virgins", "The Great Banquet", "The Marriage Feast"),
+            correctAnswer = 0,
+            explanation = "Be like servants waiting for their master to return from a wedding banquet, so that when he comes and knocks they can immediately open the door."
+        ),
+        QuizQuestion(
+            question = "In the Parable of the Barren Fig Tree, what did the gardener ask for?",
+            options = listOf("Cut it down immediately", "One more year to dig around it and fertilize it", "Plant a new tree", "Burn the vineyard"),
+            correctAnswer = 1,
+            explanation = "Sir, leave it alone for one more year, and I'll dig around it and fertilize it. If it bears fruit next year, fine! If not, then cut it down."
+        ),
+        QuizQuestion(
+            question = "What did the man do who found the Treasure Hidden in the Field?",
+            options = listOf("Told his friends", "Hid it again", "Took it immediately", "Left it there"),
+            correctAnswer = 1,
+            explanation = "The text says 'When a man found it, he hid it again, and then in his joy went and sold all he had and bought that field.'"
+        ),
+        QuizQuestion(
+            question = "In the Parable of the Speck and the Plank, what must we do first?",
+            options = listOf("Help our brother", "Ignore the plank", "Remove the plank from our own eye", "Judge the brother"),
+            correctAnswer = 2,
+            explanation = "First take the plank out of your own eye, and then you will see clearly to remove the speck from your brother's eye."
+        ),
+        QuizQuestion(
+            question = "Why did the rich young ruler walk away sad?",
+            options = listOf("Jesus insulted him", "He had great wealth", "He didn't understand", "The disciples were rude"),
+            correctAnswer = 1,
+            explanation = "He went away sad, because he had great wealth and was unwilling to sell it to follow Jesus."
+        ),
+        QuizQuestion(
+            question = "In the Parable of the Physicians, who does Jesus say needs a doctor?",
+            options = listOf("The healthy", "The sick", "Everyone", "No one"),
+            correctAnswer = 1,
+            explanation = "It is not the healthy who need a doctor, but the sick. I have not come to call the righteous, but sinners."
         )
     )
 

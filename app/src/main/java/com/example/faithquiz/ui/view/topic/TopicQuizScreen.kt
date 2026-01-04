@@ -1,32 +1,47 @@
 package com.example.faithquiz.ui.view.topic
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.ContentTransform
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.faithquiz.R
-import com.example.faithquiz.ui.theme.Dimensions
 import com.example.faithquiz.data.TopicQuestionBank
+import com.example.faithquiz.data.model.QuizQuestion
 import com.example.faithquiz.data.store.ProgressDataStore
+import com.example.faithquiz.ui.theme.*
+import com.example.faithquiz.ui.view.components.DivineTimerHUD
+import com.example.faithquiz.ui.view.results.ProfessionalResultsScreen
+import com.example.faithquiz.ui.viewmodel.TimerViewModel
 import kotlinx.coroutines.launch
 import kotlin.random.Random
-import com.example.faithquiz.data.model.QuizQuestion
 
 @Composable
 fun TopicQuizScreen(
@@ -36,13 +51,21 @@ fun TopicQuizScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     
-    val topicType = when (topic) {
+    val topicType = when (topic.lowercase()) {
         "gospels" -> TopicQuestionBank.TopicType.GOSPELS
         "prophets" -> TopicQuestionBank.TopicType.PROPHETS
         "parables" -> TopicQuestionBank.TopicType.PARABLES
         else -> TopicQuestionBank.TopicType.GOSPELS
     }
     
+    // Topic Title for UI
+    val topicTitle = when (topicType) {
+        TopicQuestionBank.TopicType.GOSPELS -> "Gospels Quiz"
+        TopicQuestionBank.TopicType.PROPHETS -> "Prophets Quiz"
+        TopicQuestionBank.TopicType.PARABLES -> "Parables Quiz"
+    }
+
+    // Stable random seed
     val randomSeed = rememberSaveable(topicType) { Random.nextLong() }
 
     val questions = remember(topicType, randomSeed) { 
@@ -51,296 +74,328 @@ fun TopicQuizScreen(
             .shuffled(Random(randomSeed)) 
     }
     
-    // Try resuming from saved session
+    // Resume Logic
     val session by ProgressDataStore.observeTopicSession(context).collectAsState(initial = Triple("", 0, 0))
-    val incomingTopicId = when (topicType) { 
-        TopicQuestionBank.TopicType.GOSPELS -> "gospels"
-        TopicQuestionBank.TopicType.PROPHETS -> "prophets"
-        TopicQuestionBank.TopicType.PARABLES -> "parables"
-    }
+    val incomingTopicId = topic.lowercase()
 
-    var currentQuestionIndex by rememberSaveable(incomingTopicId) { mutableIntStateOf(if (session.first == incomingTopicId) session.second.coerceIn(0, questions.lastIndex) else 0) }
+    val isResuming = session.first == incomingTopicId
+    
+    var currentQuestionIndex by rememberSaveable(incomingTopicId) { mutableIntStateOf(if (isResuming) session.second.coerceIn(0, questions.lastIndex) else 0) }
     var selectedAnswer by rememberSaveable(incomingTopicId) { mutableIntStateOf(-1) }
     var showAnswerFeedback by rememberSaveable(incomingTopicId) { mutableStateOf(false) }
-    var score by rememberSaveable(incomingTopicId) { mutableIntStateOf(if (session.first == incomingTopicId) session.third.coerceIn(0, 50) else 0) }
+    var score by rememberSaveable(incomingTopicId) { mutableIntStateOf(if (isResuming) session.third.coerceIn(0, 50) else 0) }
     var isQuizCompleted by rememberSaveable { mutableStateOf(false) }
-    
-    val currentQuestion = if (questions.isNotEmpty() && currentQuestionIndex < questions.size) {
-        questions[currentQuestionIndex]
-    } else {
-        null
-    }
-    
-    val topicTitle = when (topicType) {
-        TopicQuestionBank.TopicType.GOSPELS -> "Gospels Quiz"
-        TopicQuestionBank.TopicType.PROPHETS -> "Prophets Quiz"
-        TopicQuestionBank.TopicType.PARABLES -> "Parables Quiz"
+    var totalElapsedSeconds by rememberSaveable { mutableIntStateOf(0) }
+
+    // Timer ViewModel
+    val timerViewModel: TimerViewModel = viewModel()
+    val currentQuestionTime by timerViewModel.currentQuestionTime.collectAsState()
+    val totalLevelTime by timerViewModel.totalLevelTime.collectAsState()
+
+    // Reset Timer on Start
+    LaunchedEffect(Unit) {
+        // We reset total time for a new topic session mostly, or we could persist it if we want deeper resume support
+        // For now, simpler is better: simple elapsed time
+        timerViewModel.setTotalTime(0) 
+        timerViewModel.startTimer()
     }
 
+    // Timer Logic
+    LaunchedEffect(currentQuestionIndex, isQuizCompleted, showAnswerFeedback) {
+        if (!isQuizCompleted && !showAnswerFeedback) {
+            timerViewModel.resetQuestionTime()
+            timerViewModel.startTimer()
+        } else {
+            timerViewModel.pauseTimer()
+        }
+    }
+
+    // Completion Logic
+    LaunchedEffect(isQuizCompleted) {
+        if (isQuizCompleted) {
+            timerViewModel.pauseTimer()
+            totalElapsedSeconds = timerViewModel.totalLevelTime.value.toInt()
+            
+            // Stats updates
+            ProgressDataStore.updateTopicScoreIfHigher(context, topic, score)
+            ProgressDataStore.clearTopicSession(context)
+            ProgressDataStore.addTimeSpentSeconds(context, totalElapsedSeconds)
+            ProgressDataStore.incrementQuestionsAnswered(context, questions.size) // Approximate
+        }
+    }
+
+    // Persist session
+    LaunchedEffect(currentQuestionIndex, score, isQuizCompleted) {
+        if (!isQuizCompleted) {
+            ProgressDataStore.saveTopicSession(context, incomingTopicId, currentQuestionIndex, score)
+        }
+    }
+
+    // -- RENDERING --
+    
+    // 1. Completion Screen
+    if (isQuizCompleted) {
+        ProfessionalResultsScreen(
+            navController = navController,
+            score = score,
+            totalQuestions = questions.size,
+            level = 0, // Ignored
+            timeSpentSeconds = totalElapsedSeconds,
+            customTitle = "${topicTitle.uppercase()} COMPLETE",
+            onRetry = {
+                // Restart logic
+                currentQuestionIndex = 0
+                score = 0
+                selectedAnswer = -1
+                showAnswerFeedback = false
+                isQuizCompleted = false
+                timerViewModel.setTotalTime(0)
+                timerViewModel.startTimer()
+                scope.launch { ProgressDataStore.clearTopicSession(context) }
+            },
+            onNext = {
+                navController.popBackStack()
+            }
+        )
+        return
+    }
+    
+    // 2. Quiz UI
+    val currentQuestion = if (questions.isNotEmpty() && currentQuestionIndex < questions.size) questions[currentQuestionIndex] else null
+    
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(Dimensions.screenPadding)
-                .verticalScroll(rememberScrollState())
-        ) {
-            // Header
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(onClick = { navController.popBackStack() }) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = stringResource(R.string.back_description),
-                        tint = MaterialTheme.colorScheme.onSurface
-                    )
-                }
-                Text(
-                    text = topicTitle,
-                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                    color = MaterialTheme.colorScheme.onSurface
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(DeepRoyalPurple, Color.Black)
                 )
-                Spacer(modifier = Modifier.width(Dimensions.iconSize))
-            }
-            
-            Spacer(modifier = Modifier.height(Dimensions.spaceMedium))
-            
-            // Progress indicator
-            LinearProgressIndicator(
-                progress = { if (questions.isNotEmpty()) (currentQuestionIndex + 1).toFloat() / questions.size else 0f },
-                modifier = Modifier.fillMaxWidth(),
-                color = MaterialTheme.colorScheme.primary
             )
-            
-            Spacer(modifier = Modifier.height(Dimensions.spaceMedium))
-            
-            // Question counter
-            Text(
-                text = "Question ${currentQuestionIndex + 1} of ${questions.size}",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-            )
-            
-            Spacer(modifier = Modifier.height(Dimensions.spaceLarge))
-            
-            // Current question
-            currentQuestion?.let { question ->
-                Text(
-                    text = question.question,
-                    style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-                    color = MaterialTheme.colorScheme.onSurface,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth()
+    ) {
+        if (currentQuestion != null) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(Dimensions.screenPadding)
+                    .verticalScroll(rememberScrollState())
+            ) {
+                // Spacer for HUD
+                Spacer(modifier = Modifier.height(80.dp))
+
+                // Header
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.back_description),
+                            tint = GlowingGold
+                        )
+                    }
+                    Text(
+                        text = topicTitle.uppercase(),
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        color = GlowingGold,
+                        letterSpacing = 1.sp
+                    )
+                    Spacer(modifier = Modifier.width(Dimensions.iconSize))
+                }
+                
+                Spacer(modifier = Modifier.height(Dimensions.spaceMedium))
+
+                // Progress Bar
+                LinearProgressIndicator(
+                    progress = { (currentQuestionIndex + 1).toFloat() / questions.size },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(6.dp)
+                        .clip(RoundedCornerShape(3.dp)),
+                    color = GlowingGold,
+                    trackColor = EtherealGlass
                 )
                 
                 Spacer(modifier = Modifier.height(Dimensions.spaceLarge))
                 
-                // Answer options (can change before Submit)
-                question.options.forEachIndexed { index, option ->
-                    val isSelected = selectedAnswer == index
-                    val isCorrect = index == question.correctAnswer
-                    val isSelectedWrong = showAnswerFeedback && isSelected && !isCorrect
-                    
-                    Button(
-                        onClick = {
-                            if (!showAnswerFeedback) {
-                                selectedAnswer = index
+                // Question
+                AnimatedContent(
+                    targetState = currentQuestion,
+                    transitionSpec = {
+                        ContentTransform(
+                            targetContentEnter = fadeIn(animationSpec = tween(500)),
+                            initialContentExit = fadeOut(animationSpec = tween(300))
+                        )
+                    },
+                    label = "Question Animation"
+                ) { targetQuestion ->
+                    Column {
+                        Text(
+                            text = targetQuestion.question,
+                            style = MaterialTheme.typography.headlineSmall.copy(
+                                fontWeight = FontWeight.Bold,
+                                fontFamily = FontFamily.Serif
+                            ),
+                            color = Color.White,
+                            modifier = Modifier.padding(vertical = Dimensions.spaceLarge),
+                            textAlign = TextAlign.Center
+                        )
+                        
+                        // Options
+                        targetQuestion.options.forEachIndexed { index, option ->
+                            val isSelected = selectedAnswer == index
+                            val isCorrect = index == targetQuestion.correctAnswer
+                            
+                            val borderColor = when {
+                                showAnswerFeedback && isCorrect -> CorrectAnswerGreen
+                                showAnswerFeedback && isSelected && !isCorrect -> WrongAnswerRed
+                                isSelected -> GlowingGold
+                                else -> EtherealGlass
                             }
-                        },
+                            
+                            val containerColor = when {
+                                showAnswerFeedback && isCorrect -> CorrectAnswerGreen.copy(alpha = 0.3f)
+                                showAnswerFeedback && isSelected && !isCorrect -> WrongAnswerRed.copy(alpha = 0.3f)
+                                isSelected -> GlowingGold.copy(alpha = 0.2f)
+                                else -> EtherealGlass
+                            }
+
+                            Surface(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 6.dp)
+                                    .clip(RoundedCornerShape(16.dp))
+                                    .clickable(enabled = !showAnswerFeedback) {
+                                        if (!showAnswerFeedback) selectedAnswer = index
+                                    },
+                                color = containerColor,
+                                border = BorderStroke(1.dp, borderColor),
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(16.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(32.dp)
+                                            .background(
+                                                color = if(isSelected || (showAnswerFeedback && isCorrect)) borderColor else Color.White.copy(alpha = 0.1f),
+                                                shape = CircleShape
+                                            ),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = "${('A' + index)}",
+                                            style = MaterialTheme.typography.labelLarge,
+                                            color = if(isSelected || (showAnswerFeedback && isCorrect)) Color.Black else Color.White
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.width(16.dp))
+                                    Text(
+                                        text = option,
+                                        color = Color.White.copy(alpha = 0.9f),
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                Spacer(modifier = Modifier.height(24.dp))
+                
+                // Explanation
+                if (showAnswerFeedback) {
+                    Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = Dimensions.spaceXSmall),
-                        shape = RoundedCornerShape(Dimensions.cornerRadiusMedium),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = when {
-                                showAnswerFeedback && isCorrect -> Color(0xFF4CAF50)
-                                isSelectedWrong -> Color(0xFFF44336)
-                                isSelected && !showAnswerFeedback -> MaterialTheme.colorScheme.secondary
-                                else -> MaterialTheme.colorScheme.surface
-                            },
-                            contentColor = when {
-                                showAnswerFeedback && (isCorrect || isSelectedWrong) -> Color.White
-                                else -> MaterialTheme.colorScheme.onSurface
-                            }
-                        ),
-                        enabled = !showAnswerFeedback
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(EtherealGlass)
+                            .padding(16.dp)
                     ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            if (showAnswerFeedback && isCorrect) {
-                                Icon(Icons.Filled.Check, contentDescription = null)
-                                Spacer(modifier = Modifier.width(Dimensions.spaceSmall))
-                            } else if (isSelectedWrong) {
-                                Icon(Icons.Filled.Close, contentDescription = null)
-                                Spacer(modifier = Modifier.width(Dimensions.spaceSmall))
-                            }
+                        Column {
                             Text(
-                                text = option,
-                                style = MaterialTheme.typography.bodyLarge,
-                                modifier = Modifier.weight(1f)
+                                text = "DIVINE INSIGHT",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = GlowingGold,
+                                letterSpacing = 1.sp
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = currentQuestion.explanation,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = Color.White
                             )
                         }
                     }
-                    Spacer(modifier = Modifier.height(Dimensions.spaceSmall))
                 }
+
+                Spacer(modifier = Modifier.height(24.dp))
                 
-                Spacer(modifier = Modifier.height(Dimensions.spaceLarge))
-                
-                // Submit or Next/Complete controls
-                if (!showAnswerFeedback) {
-                    Button(
-                        onClick = {
+                // Button
+                val buttonColor = if (showAnswerFeedback) GlowingGold else DeepRoyalPurple
+                val buttonTextColor = if (showAnswerFeedback) DeepRoyalPurple else GlowingGold
+                val buttonText = if (showAnswerFeedback) 
+                    if (currentQuestionIndex < questions.size - 1) "NEXT QUESTION" else "FINISH QUIZ"
+                else "SUBMIT ANSWER"
+
+                Button(
+                    onClick = {
+                        if (!showAnswerFeedback) {
                             if (selectedAnswer != -1) {
-                                val isCorrectSelection = selectedAnswer == question.correctAnswer
+                                val isCorrect = selectedAnswer == currentQuestion.correctAnswer
                                 showAnswerFeedback = true
-                                if (isCorrectSelection) {
-                                    score++
-                                }
+                                if (isCorrect) score++
                             }
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(Dimensions.buttonHeight),
-                        enabled = selectedAnswer != -1,
-                        shape = RoundedCornerShape(Dimensions.cornerRadiusLarge),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary,
-                            contentColor = MaterialTheme.colorScheme.onPrimary
-                        )
-                    ) {
-                        Text(
-                            text = "Submit",
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-                        )
-                    }
-                } else {
-                    Button(
-                        onClick = {
+                        } else {
                             if (currentQuestionIndex < questions.size - 1) {
                                 currentQuestionIndex++
                                 selectedAnswer = -1
                                 showAnswerFeedback = false
                             } else {
                                 isQuizCompleted = true
-                                scope.launch {
-                                    ProgressDataStore.updateTopicScoreIfHigher(context, topic, score)
-                                    ProgressDataStore.clearTopicSession(context)
-                                }
-                                navController.popBackStack()
-                            }
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(Dimensions.buttonHeight),
-                        shape = RoundedCornerShape(Dimensions.cornerRadiusLarge),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary,
-                            contentColor = MaterialTheme.colorScheme.onPrimary
-                        )
-                    ) {
-                        Text(
-                            text = if (currentQuestionIndex < questions.size - 1) "Next Question" else "Complete Quiz",
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-                        )
-                    }
-                }
-                
-                // Explanation panel with verse reference (after submission)
-                if (showAnswerFeedback) {
-                    Spacer(modifier = Modifier.height(Dimensions.spaceMedium))
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(Dimensions.cornerRadiusLarge),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-                    ) {
-                        Column(modifier = Modifier.padding(Dimensions.paddingLarge)) {
-                            Text(
-                                text = stringResource(id = R.string.explanation),
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            Spacer(modifier = Modifier.height(Dimensions.spaceSmall))
-                            Text(
-                                text = question.explanation,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            question.verseReference?.let { ref ->
-                                Spacer(modifier = Modifier.height(Dimensions.spaceSmall))
-                                Text(text = ref, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurface)
-                            }
-                            question.verseText?.let { verse ->
-                                Spacer(modifier = Modifier.height(Dimensions.spaceSmall))
-                                Text(text = verse, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurface)
-                            }
-                            question.crossRefs?.takeIf { it.isNotEmpty() }?.let { refs ->
-                                Spacer(modifier = Modifier.height(Dimensions.spaceSmall))
-                                Text(text = "Cross-refs: ${refs.joinToString()}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurface)
                             }
                         }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(Dimensions.spaceMedium))
-                
-                // Current score
-                Text(
-                    text = "Score: $score/${questions.size}",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                // Persist session progress on each question render
-                LaunchedEffect(currentQuestionIndex, score) {
-                    ProgressDataStore.saveTopicSession(context, incomingTopicId, currentQuestionIndex, score)
-                }
-            } ?: run {
-                // Empty state when no questions are available
-                Spacer(modifier = Modifier.height(Dimensions.spaceLarge))
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(Dimensions.cornerRadiusLarge),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                    },
+                    enabled = selectedAnswer != -1 || showAnswerFeedback,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = buttonColor,
+                        disabledContainerColor = Color.White.copy(alpha = 0.1f),
+                        contentColor = buttonTextColor
+                    ),
+                    border = if (!showAnswerFeedback) BorderStroke(1.dp, GlowingGold) else null
                 ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(Dimensions.paddingLarge),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Info,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                        Spacer(modifier = Modifier.height(Dimensions.spaceSmall))
-                        Text(
-                            text = stringResource(id = R.string.no_questions_available),
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            textAlign = TextAlign.Center
-                        )
-                        Spacer(modifier = Modifier.height(Dimensions.spaceMedium))
-                        Button(
-                            onClick = { navController.popBackStack() },
-                            shape = RoundedCornerShape(Dimensions.cornerRadiusLarge)
-                        ) {
-                            Text(text = stringResource(id = R.string.back))
-                        }
-                    }
+                    Text(
+                        text = buttonText,
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                    )
                 }
+                
+                Spacer(modifier = Modifier.height(48.dp))
+            }
+        } else {
+            // Empty State
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text("No questions found for this topic.", color = Color.White)
             }
         }
+
+        // HUD
+        DivineTimerHUD(
+            questionTimeSeconds = currentQuestionTime,
+            totalTimeSeconds = totalLevelTime,
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(top = 8.dp)
+        )
     }
 }
 

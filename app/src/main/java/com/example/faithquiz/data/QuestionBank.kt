@@ -1019,44 +1019,40 @@ object QuestionBank {
     private fun getParablesQuestions(level: Int): List<QuizQuestion> {
         return listOf(
             QuizQuestion(
-                question = "What is the Parable of the Sower about?",
-                options = listOf("Farming", "Different types of soil", "The Word of God", "All of the above"),
-                correctAnswer = 3,
-                explanation = "The Parable of the Sower uses farming and different soil types to teach about how people receive the Word of God.",
-                verseReference = "Matthew 13:3-9",
-                verseText = "A sower went out to sow. And as he sowed, some seeds fell along the path, and the birds came and devoured them."
+                question = "In the Parable of the Sower, what does the seed represent?",
+                options = listOf("The Sower", "The soil", "The Word of God", "The birds"),
+                correctAnswer = 2,
+                explanation = "Luke 8:11 states: 'The seed is the word of God.'",
+                verseReference = "Luke 8:11",
+                verseText = "Now the parable is this: The seed is the word of God."
             ),
             QuizQuestion(
-                question = "What does the Parable of the Good Samaritan teach?",
-                options = listOf("Hospitality", "Love your neighbor", "Help the poor", "All of the above"),
-                correctAnswer = 3,
-                explanation = "The Good Samaritan teaches us to love our neighbor by showing mercy and compassion.",
-                verseReference = "Luke 10:36-37",
-                verseText = "Which of these three, do you think, proved to be a neighbor to the man who fell among the robbers? He said, 'The one who showed him mercy.'"
-            ),
-            QuizQuestion(
-                question = "What is the main point of the Parable of the Prodigal Son?",
-                options = listOf("Family relationships", "God's forgiveness", "Wasting money", "Returning home"),
+                question = "In the Parable of the Good Samaritan, who passed by the injured man without helping?",
+                options = listOf("A Soldier and a Merchant", "A Priest and a Levite", "A Pharisee and a Sadducee", "None of the above"),
                 correctAnswer = 1,
-                explanation = "The Parable of the Prodigal Son illustrates God's unconditional love and forgiveness.",
-                verseReference = "Luke 15:20",
-                verseText = "And he arose and came to his father. But while he was still a long way off, his father saw him and felt compassion, and ran and embraced him and kissed him."
+                explanation = "A priest and a Levite both passed by on the other side before the Samaritan stopped to help.",
+                verseReference = "Luke 10:31-32"
             ),
             QuizQuestion(
-                question = "What does the Parable of the Talents teach?",
-                options = listOf("Money management", "Using our gifts", "Being faithful", "All of the above"),
-                correctAnswer = 3,
-                explanation = "The Parable of the Talents teaches us to use our God-given gifts and abilities faithfully.",
-                verseReference = "Matthew 25:21",
-                verseText = "His master said to him, 'Well done, good and faithful servant. You have been faithful over a little; I will set you over much.'"
+                question = "In the Parable of the Virgins, what did the five foolish virgins forget to bring?",
+                options = listOf("Their lamps", "Oil for their lamps", "Wedding garments", "Their invitations"),
+                correctAnswer = 1,
+                explanation = "The foolish virgins took their lamps but took no oil with them (Matthew 25:3).",
+                verseReference = "Matthew 25:3"
             ),
             QuizQuestion(
-                question = "What is the Parable of the Lost Sheep about?",
-                options = listOf("Shepherding", "God's love for sinners", "Searching", "All of the above"),
-                correctAnswer = 3,
-                explanation = "The Parable of the Lost Sheep illustrates God's love for sinners and His desire to save them.",
-                verseReference = "Luke 15:4-6",
-                verseText = "What man of you, having a hundred sheep, if he has lost one of them, does not leave the ninety-nine in the open country, and go after the one that is lost, until he finds it?"
+                question = "In the Parable of the Talents, what did the man with one talent do with it?",
+                options = listOf("Invested it", "Lost it", "Buried it in the ground", "Gave it to charity"),
+                correctAnswer = 2,
+                explanation = "He was afraid and went and hid his talent in the ground.",
+                verseReference = "Matthew 25:25"
+            ),
+            QuizQuestion(
+                question = "In the Parable of the Lost Sheep, how many sheep did the shepherd leave behind to find the one?",
+                options = listOf("9", "50", "99", "100"),
+                correctAnswer = 2,
+                explanation = "He leaves the ninety-nine in the open country to go after the one that is lost.",
+                verseReference = "Luke 15:4"
             )
         )
     }
@@ -1142,43 +1138,43 @@ object QuestionBank {
             )
         )
     }
-    // Biblical Numbers (Level 20)
+    // Biblical Numbers (Level 20) - Hard Mode
     private fun getBiblicalNumbersQuestions(level: Int): List<QuizQuestion> {
         return listOf(
             QuizQuestion(
-                question = "How many years did the Israelites wander in the wilderness?",
-                options = listOf("12", "40", "70", "100"),
-                correctAnswer = 1,
-                explanation = "They wandered for 40 years, one year for each day the spies explored the land.",
-                verseReference = "Numbers 14:34"
-            ),
-            QuizQuestion(
-                question = "How many stones did David pick up to fight Goliath?",
-                options = listOf("1", "3", "5", "7"),
+                question = "Exactly how many fish were caught in the miraculous catch recorded in John 21?",
+                options = listOf("120", "144", "153", "1000"),
                 correctAnswer = 2,
-                explanation = "David chose 5 smooth stones from the brook.",
-                verseReference = "1 Samuel 17:40"
+                explanation = "Simon Peter hauled the net ashore, full of large fish, 153 of them. (John 21:11)",
+                verseReference = "John 21:11"
             ),
             QuizQuestion(
-                question = "How many disciples were with Jesus at the Transfiguration?",
-                options = listOf("3", "7", "12", "120"),
+                question = "How old was Methuselah when he died?",
+                options = listOf("900", "930", "950", "969"),
+                correctAnswer = 3,
+                explanation = "Methuselah lived 969 years, the longest human lifespan recorded in the Bible.",
+                verseReference = "Genesis 5:27"
+            ),
+            QuizQuestion(
+                question = "How many years did the invalid man wait by the pool of Bethesda?",
+                options = listOf("12 years", "38 years", "40 years", "50 years"),
+                correctAnswer = 1,
+                explanation = "One man was there who had been an invalid for thirty-eight years. (John 5:5)",
+                verseReference = "John 5:5"
+            ),
+            QuizQuestion(
+                question = "According to 1 Kings, how many proverbs did Solomon speak?",
+                options = listOf("1000", "3000", "1005", "5000"),
+                correctAnswer = 1,
+                explanation = "He also spoke 3,000 proverbs, and his songs were 1,005. (1 Kings 4:32)",
+                verseReference = "1 Kings 4:32"
+            ),
+            QuizQuestion(
+                question = "How many men of war did Gideon finally take into battle against Midian?",
+                options = listOf("300", "10,000", "32,000", "500"),
                 correctAnswer = 0,
-                explanation = "Three disciples: Peter, James, and John.",
-                verseReference = "Matthew 17:1"
-            ),
-            QuizQuestion(
-                question = "How many times did Naaman dip in the Jordan River?",
-                options = listOf("3", "7", "10", "12"),
-                correctAnswer = 1,
-                explanation = "Elisha told Naaman to wash 7 times to be healed of leprosy.",
-                verseReference = "2 Kings 5:10"
-            ),
-            QuizQuestion(
-                question = "How many books are in the entire Protestant Bible?",
-                options = listOf("55", "66", "73", "80"),
-                correctAnswer = 1,
-                explanation = "There are 66 books: 39 in the Old Testament and 27 in the New.",
-                verseReference = "N/A"
+                explanation = "The LORD said to Gideon, 'With the 300 men who lapped I will save you.' (Judges 7:7)",
+                verseReference = "Judges 7:7"
             )
         )
     }
@@ -1302,83 +1298,83 @@ object QuestionBank {
             )
         )
     }
-    // Biblical Prophecy (Level 24)
+    // Biblical Prophecy (Level 24) - Hard Mode
     private fun getBiblicalProphecyQuestions(level: Int): List<QuizQuestion> {
         return listOf(
             QuizQuestion(
-                question = "Which prophet predicted the suffering servant?",
-                options = listOf("Isaiah", "Jeremiah", "Daniel", "Ezekiel"),
-                correctAnswer = 0,
-                explanation = "Isaiah 53 describes the Suffering Servant who bore our sins.",
-                verseReference = "Isaiah 53"
-            ),
-            QuizQuestion(
-                question = "Where did Micah prophesy the Messiah would be born?",
-                options = listOf("Jerusalem", "Nazareth", "Bethlehem", "Hebron"),
-                correctAnswer = 2,
-                explanation = "Micah 5:2 specifies Bethlehem Ephrathah.",
-                verseReference = "Micah 5:2"
-            ),
-            QuizQuestion(
-                question = "Who prophesied the 70 weeks?",
-                options = listOf("Ezekiel", "Daniel", "Jeremiah", "Isaiah"),
+                question = "Which prophet was told to buy a linen loincloth and hide it by the Euphrates?",
+                options = listOf("Ezekiel", "Jeremiah", "Isaiah", "Hosea"),
                 correctAnswer = 1,
-                explanation = "The prophecy of the 70 weeks is found in Daniel 9.",
-                verseReference = "Daniel 9:24"
+                explanation = "Jeremiah 13:4 - 'Take the loincloth... and go to the Euphrates and hide it there in a cleft of the rock.'",
+                verseReference = "Jeremiah 13:4"
             ),
             QuizQuestion(
-                question = "Which book contains letters to seven churches?",
-                options = listOf("Acts", "Romans", "Revelation", "Galatians"),
-                correctAnswer = 2,
-                explanation = "Revelation chapters 2-3 contain letters to the seven churches of Asia.",
-                verseReference = "Revelation 2-3"
+                question = "Who prophesied about the 'Valley of Decision'?",
+                options = listOf("Zechariah", "Joel", "Amos", "Obadiah"),
+                correctAnswer = 1,
+                explanation = "Multitudes, multitudes, in the valley of decision! For the day of the LORD is near... (Joel 3:14)",
+                verseReference = "Joel 3:14"
             ),
             QuizQuestion(
-                question = "Who prophesied that the virgin shall conceive?",
-                options = listOf("Isaiah", "Jeremiah", "Hosea", "Micah"),
-                correctAnswer = 0,
-                explanation = "Isaiah 7:14 states that a virgin shall conceive and bear a son called Immanuel.",
-                verseReference = "Isaiah 7:14"
+                question = "In Daniel's vision of the four beasts, what did the third beast like a leopard have on its back?",
+                options = listOf("Two horns", "Four wings of a bird", "Iron teeth", "Ten horns"),
+                correctAnswer = 1,
+                explanation = "The third beast was like a leopard, with four wings of a bird on its back and four heads. (Daniel 7:6)",
+                verseReference = "Daniel 7:6"
+            ),
+            QuizQuestion(
+                question = "Which prophet explicitly addresses Zerubbabel the governor and Joshua the high priest?",
+                options = listOf("Malachi", "Haggai", "Jonah", "Nahum"),
+                correctAnswer = 1,
+                explanation = "Haggai spoke the word of the LORD to Zerubbabel... and to Joshua... (Haggai 1:1)",
+                verseReference = "Haggai 1:1"
+            ),
+            QuizQuestion(
+                question = "Who prophesied that the Messiah would be 'cut off' but not for himself?",
+                options = listOf("Isaiah", "Daniel", "Jeremiah", "Ezekiel"),
+                correctAnswer = 1,
+                explanation = "Daniel 9:26 states 'And after the sixty-two weeks, an anointed one shall be cut off and shall have nothing.'",
+                verseReference = "Daniel 9:26"
             )
         )
     }
-    // Biblical Theology (Level 25)
+    // Biblical Theology (Level 25) - Hard Mode
     private fun getBiblicalTheologyQuestions(level: Int): List<QuizQuestion> {
         return listOf(
             QuizQuestion(
-                question = "What does 'Justification' mean?",
-                options = listOf("Making holy", "Declared righteous", "Forgiven", "Born again"),
+                question = "What does the theological term 'Kenosis' refer to?",
+                options = listOf("Christ's resurrection", "Christ's self-emptying", "Christ's second coming", "Christ's ascension"),
                 correctAnswer = 1,
-                explanation = "Justification is the legal declaration by God that a sinner is righteous through faith in Christ.",
-                verseReference = "Romans 5:1"
+                explanation = "Kenosis refers to Christ 'emptying himself' by taking the form of a servant (Philippians 2:7).",
+                verseReference = "Philippians 2:7"
             ),
             QuizQuestion(
-                question = "What is 'Sanctification'?",
-                options = listOf("The process of becoming holy", "The moment of salvation", "Baptism", "Communion"),
+                question = "What Greek term is used in 2 Timothy 3:16 to describe Scripture?",
+                options = listOf("Theopneustos", "Logos", "Rhema", "Graphe"),
                 correctAnswer = 0,
-                explanation = "Sanctification is the ongoing process of being made holy and like Christ.",
-                verseReference = "1 Thessalonians 4:3"
+                explanation = "Theopneustos means 'God-breathed' or 'inspired by God'.",
+                verseReference = "2 Timothy 3:16"
             ),
             QuizQuestion(
-                question = "What is the 'Incarnation'?",
-                options = listOf("Jesus rising from the dead", "God becoming man", "The Holy Spirit coming", "Jesus ascending"),
+                question = "What is 'Propitiation'?",
+                options = listOf("Cleansing from sin", "Turning away God's wrath", "Adoption as sons", "Sanctification"),
                 correctAnswer = 1,
-                explanation = "The Incarnation refers to the eternal Son of God taking on human flesh.",
-                verseReference = "John 1:14"
+                explanation = "Propitiation (Hilasterion) means satisfying or turning away God's wrath through a sacrifice (Romans 3:25).",
+                verseReference = "Romans 3:25"
             ),
             QuizQuestion(
-                question = "What does 'Grace' mean?",
-                options = listOf("Unmerited favor", "Obedience", "Power", "Love"),
-                correctAnswer = 0,
-                explanation = "Grace is God's unmerited favor toward undeserving sinners.",
-                verseReference = "Ephesians 2:8"
+                question = "In the Council of Chalcedon, what was defined regarding Christ?",
+                options = listOf("He is two persons", "He has one nature", "He is one person with two natures", "He is a created being"),
+                correctAnswer = 2,
+                explanation = "Chalcedon defined Christ as one person with two distinct natures (divine and human), unconfused and undivided.",
+                verseReference = "N/A"
             ),
             QuizQuestion(
-                question = "What is the 'Trinity'?",
-                options = listOf("Three Gods", "One God in three persons", "God, angels, and men", "Jesus, Mary, and Joseph"),
+                question = "What does 'Imputation' mean in the context of justification?",
+                options = listOf("Infusing righteousness", "Crediting righteousness to an account", "Erasing sin", "Making someone perfect"),
                 correctAnswer = 1,
-                explanation = "The Trinity is the doctrine that there is one God who exists as three distinct persons.",
-                verseReference = "Matthew 28:19"
+                explanation = "Imputation means crediting Christ's righteousness to the believer's account (Romans 4:6-8).",
+                verseReference = "Romans 4:6-8"
             )
         )
     }
@@ -1422,43 +1418,43 @@ object QuestionBank {
             )
         )
     }
-    // Biblical Archaeology (Level 27)
+    // Biblical Archaeology (Level 27) - Hard Mode
     private fun getBiblicalArchaeologyQuestions(level: Int): List<QuizQuestion> {
         return listOf(
             QuizQuestion(
-                question = "What major discovery in 1947 included ancient biblical manuscripts?",
-                options = listOf("Rosetta Stone", "Dead Sea Scrolls", "Tel Dan Stele", "Pilate Stone"),
+                question = "The 'Black Obelisk of Shalmaneser III' depicts which Israelite king bowing down?",
+                options = listOf("Ahab", "Jehu", "Omri", "Jeroboam II"),
                 correctAnswer = 1,
-                explanation = "The Dead Sea Scrolls were discovered in caves at Qumran in 1947.",
+                explanation = "It depicts Jehu paying tribute to the Assyrian king, the only known image of an Israelite king.",
                 verseReference = "N/A"
             ),
             QuizQuestion(
-                question = "Which artifact mentions 'House of David' outside the Bible?",
-                options = listOf("Moabite Stone", "Tel Dan Stele", "Cyrus Cylinder", "Merneptah Stele"),
+                question = "The 'Ketef Hinnom Silver Scrolls' contain the oldest known text of what?",
+                options = listOf("The Ten Commandments", "The Shema", "The Priestly Blessing", "Psalm 23"),
+                correctAnswer = 2,
+                explanation = "They contain the Priestly Blessing from Numbers 6:24-26, dating to c. 600 BC.",
+                verseReference = "Numbers 6:24-26"
+            ),
+            QuizQuestion(
+                question = "Which Assyrian king's prism boasts, 'Hezekiah the Judahite I shut up... like a bird in a cage'?",
+                options = listOf("Sargon II", "Sennacherib", "Tiglath-Pileser III", "Esarhaddon"),
                 correctAnswer = 1,
-                explanation = "The Tel Dan Stele contains an inscription referring to the 'House of David'.",
+                explanation = "Sennacherib's Prism details his siege of Jerusalem in 701 BC.",
+                verseReference = "2 Kings 18-19"
+            ),
+            QuizQuestion(
+                question = "The 'Moabite Stone' (Mesha Stele) mentions which King of Israel whom Mesha rebelled against?",
+                options = listOf("Omri", "Ahab", "Jehu", "Joram"),
+                correctAnswer = 0,
+                explanation = "It explicitly mentions Omri, king of Israel, having oppressed Moab.",
+                verseReference = "2 Kings 3:4"
+            ),
+            QuizQuestion(
+                question = "The 'Pilate Stone' discovered at Caesarea Maritima confirms Pilate held what title?",
+                options = listOf("Procurator", "Prefect", "Governor", "Tetrarch"),
+                correctAnswer = 1,
+                explanation = "The inscription identifies him as 'Prefect of Judea' (Praefectus Iudaeae).",
                 verseReference = "N/A"
-            ),
-            QuizQuestion(
-                question = "Hezekiah's Tunnel was built to bring water into which city?",
-                options = listOf("Jericho", "Jerusalem", "Samaria", "Bethlehem"),
-                correctAnswer = 1,
-                explanation = "King Hezekiah dug a tunnel to bring water from the Gihon Spring into Jerusalem.",
-                verseReference = "2 Kings 20:20"
-            ),
-            QuizQuestion(
-                question = "The Pool of Siloam is associated with which miracle?",
-                options = listOf("Healing a blind man", "Healing a leper", "Walking on water", "Feeding 5000"),
-                correctAnswer = 0,
-                explanation = "Jesus told the man born blind to wash in the Pool of Siloam.",
-                verseReference = "John 9:7"
-            ),
-            QuizQuestion(
-                question = "Which city's walls fell down after the Israelites marched around them?",
-                options = listOf("Jericho", "Ai", "Bethel", "Hazor"),
-                correctAnswer = 0,
-                explanation = "The walls of Jericho fell after the Israelites marched around them for seven days.",
-                verseReference = "Joshua 6:20"
             )
         )
     }
@@ -1542,43 +1538,43 @@ object QuestionBank {
             )
         )
     }
-    // Biblical Mastery (Level 30)
+    // Biblical Mastery (Level 30) - Very Hard
     private fun getBiblicalMasteryQuestions(level: Int): List<QuizQuestion> {
         return listOf(
             QuizQuestion(
-                question = "How many years was the Babylonian captivity?",
-                options = listOf("50", "70", "100", "400"),
+                question = "Who fell out of a third-story window while Paul was preaching until midnight?",
+                options = listOf("Tychicus", "Eutychus", "Archippus", "Epaphras"),
                 correctAnswer = 1,
-                explanation = "Jeremiah prophesied a 70-year captivity in Babylon.",
-                verseReference = "Jeremiah 25:11"
+                explanation = "Eutychus, a young man, sank into a deep sleep and fell from the third story. (Acts 20:9)",
+                verseReference = "Acts 20:9"
             ),
             QuizQuestion(
-                question = "Who is Melchizedek?",
-                options = listOf("King of Salem and Priest", "King of Sodom", "A prophet", "Abraham's son"),
-                correctAnswer = 0,
-                explanation = "Melchizedek was King of Salem and priest of God Most High, a type of Christ.",
-                verseReference = "Genesis 14:18"
-            ),
-            QuizQuestion(
-                question = "What is the 'Protoevangelium'?",
-                options = listOf("The first gospel promise", "The first sacrifice", "The first sin", "The first miracle"),
-                correctAnswer = 0,
-                explanation = "Protoevangelium (Genesis 3:15) is the first announcement that the seed of the woman would crush the serpent's head.",
-                verseReference = "Genesis 3:15"
-            ),
-            QuizQuestion(
-                question = "Who were the parents of John the Baptist?",
-                options = listOf("Joseph and Mary", "Zechariah and Elizabeth", "Simeon and Anna", "Abraham and Sarah"),
-                correctAnswer = 1,
-                explanation = "Zechariah (a priest) and Elizabeth were the parents of John the Baptist.",
-                verseReference = "Luke 1:5-13"
-            ),
-            QuizQuestion(
-                question = "Which chapter is known as the 'Hall of Faith'?",
-                options = listOf("Romans 8", "1 Corinthians 13", "Hebrews 11", "Psalms 23"),
+                question = "Who killed the obesity-stricken King Eglon of Moab?",
+                options = listOf("Shamgar", "Barak", "Ehud", "Othniel"),
                 correctAnswer = 2,
-                explanation = "Hebrews 11 lists the heroes of faith and is known as the 'Hall of Faith'.",
-                verseReference = "Hebrews 11"
+                explanation = "Ehud the son of Gera, a left-handed man, killed Eglon the king of Moab. (Judges 3:15-22)",
+                verseReference = "Judges 3:15"
+            ),
+            QuizQuestion(
+                question = "What was the name of the bronze serpent Moses made, which the Israelites later worshipped?",
+                options = listOf("Leviathan", "Nehushtan", "Rahab", "Behemoth"),
+                correctAnswer = 1,
+                explanation = "Hezekiah broke in pieces the bronze serpent, for the people called it Nehushtan. (2 Kings 18:4)",
+                verseReference = "2 Kings 18:4"
+            ),
+            QuizQuestion(
+                question = "Who was the father of the prophet Isaiah?",
+                options = listOf("Amos", "Amoz", "Hilkiah", "Beeri"),
+                correctAnswer = 1,
+                explanation = "The vision of Isaiah the son of Amoz. (Isaiah 1:1) Note: Amoz is distinct from the prophet Amos.",
+                verseReference = "Isaiah 1:1"
+            ),
+            QuizQuestion(
+                question = "Which chapter of the Bible is the longest?",
+                options = listOf("Psalm 119", "Psalm 117", "Numbers 7", "Matthew 26"),
+                correctAnswer = 0,
+                explanation = "Psalm 119 is the longest chapter in the Bible with 176 verses.",
+                verseReference = "N/A"
             )
         )
     }
