@@ -1,6 +1,7 @@
 package com.example.faithquiz.data.repository
 
 import android.content.Context
+import dagger.hilt.android.qualifiers.ApplicationContext
 import com.example.faithquiz.data.local.GameProgressDao
 import com.example.faithquiz.data.local.LevelProgressDao
 import com.example.faithquiz.data.model.GameProgress
@@ -15,7 +16,7 @@ import javax.inject.Singleton
 class GameProgressRepository @Inject constructor(
     private val gameProgressDao: GameProgressDao,
     private val levelProgressDao: LevelProgressDao,
-    private val context: Context
+    @ApplicationContext private val context: Context
 ) {
     fun getGameProgress(): Flow<GameProgress?> {
         return gameProgressDao.getGameProgress()

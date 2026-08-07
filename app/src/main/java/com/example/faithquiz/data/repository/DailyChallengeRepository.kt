@@ -1,6 +1,7 @@
 package com.example.faithquiz.data.repository
 
 import android.content.Context
+import dagger.hilt.android.qualifiers.ApplicationContext
 import com.example.faithquiz.data.local.GameProgressDao
 import com.example.faithquiz.data.local.QuestionDao
 import com.example.faithquiz.data.model.DailyChallenge
@@ -19,7 +20,7 @@ import javax.inject.Singleton
 class DailyChallengeRepository @Inject constructor(
     private val gameProgressDao: GameProgressDao,
     private val questionDao: QuestionDao,
-    private val context: Context
+    @ApplicationContext private val context: Context
 ) {
     private val dateFormatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
 

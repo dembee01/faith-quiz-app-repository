@@ -1,6 +1,7 @@
 package com.example.faithquiz.data.repository
 
 import android.content.Context
+import dagger.hilt.android.qualifiers.ApplicationContext
 import com.example.faithquiz.data.local.LeaderboardDao
 import com.example.faithquiz.data.model.LeaderboardEntry
 import kotlinx.coroutines.flow.Flow
@@ -10,7 +11,7 @@ import javax.inject.Singleton
 @Singleton
 class LeaderboardRepository @Inject constructor(
     private val leaderboardDao: LeaderboardDao,
-    private val context: Context
+    @ApplicationContext private val context: Context
 ) {
     fun getTopScores(): Flow<List<LeaderboardEntry>> {
         return leaderboardDao.getTopScores()

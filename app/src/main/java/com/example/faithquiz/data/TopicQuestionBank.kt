@@ -139,10 +139,10 @@ object TopicQuestionBank {
             explanation = "John 1:1 begins with 'In the beginning was the Word, and the Word was with God, and the Word was God.'"
         ),
         QuizQuestion(
-            question = "Who was the first disciple Jesus called?",
+            question = "According to John 1, which named disciple first followed Jesus?",
             options = listOf("Peter", "Andrew", "John", "James"),
             correctAnswer = 1,
-            explanation = "Andrew was the first disciple called, and he brought his brother Peter to Jesus."
+            explanation = "In John 1, Andrew is the first named disciple among the two who followed Jesus; he then brought Simon Peter to Jesus."
         ),
         QuizQuestion(
             question = "What was Jesus' first miracle according to John's Gospel?",
@@ -175,14 +175,14 @@ object TopicQuestionBank {
             explanation = "Jesus told the Pharisee Nicodemus that he must be born again to see the kingdom of God (John 3)."
         ),
         QuizQuestion(
-            question = "Who was the first person to see Jesus after His resurrection?",
+            question = "According to John 20, whom did the risen Jesus first appear to?",
             options = listOf("Peter", "Mary Magdalene", "John", "Thomas"),
             correctAnswer = 1,
-            explanation = "Mary Magdalene was the first person to see Jesus after His resurrection."
+            explanation = "John 20 records Jesus appearing to Mary Magdalene after the resurrection."
         ),
         QuizQuestion(
             question = "What does the name 'Immanuel' mean?",
-            options = listOf("God with us", "God saves", "God is love", "The Annointed One"),
+            options = listOf("God with us", "God saves", "God is love", "The Anointed One"),
             correctAnswer = 0,
             explanation = "Immanuel means 'God with us' (Matthew 1:23)."
         ),
@@ -241,7 +241,7 @@ object TopicQuestionBank {
             explanation = "Jesus made this declaration in John 14:6."
         ),
         QuizQuestion(
-            question = "Who was the high priest who presided over Jesus' trial?",
+            question = "Who was the official high priest during Jesus' trial?",
             options = listOf("Annas", "Caiaphas", "Pilate", "Herod"),
             correctAnswer = 1,
             explanation = "Caiaphas was the high priest who prophesied it was better for one man to die for the people."
@@ -265,7 +265,7 @@ object TopicQuestionBank {
             explanation = "Pilate washed his hands before the crowd, claiming innocence of Jesus' blood."
         ),
         QuizQuestion(
-            question = "Who were the first visitors to the empty tomb?",
+            question = "According to Matthew 28, which women are named as visiting the empty tomb?",
             options = listOf("Peter and John", "Mary Magdalene and the other Mary", "The Roman guards", "The Pharisees"),
             correctAnswer = 1,
             explanation = "The women, including Mary Magdalene, went to the tomb early on the first day of the week."
@@ -277,10 +277,10 @@ object TopicQuestionBank {
             explanation = "Jesus broke the bread and said, 'Take and eat; this is my body.'"
         ),
         QuizQuestion(
-            question = "Which Gospel writer was not one of the twelve disciples?",
+            question = "Which Gospel writer was traditionally identified as a physician and was not one of the Twelve?",
             options = listOf("Matthew", "Mark", "Luke", "John"),
             correctAnswer = 2,
-            explanation = "Luke was not one of the Twelve; he was a companion of Paul and a historian."
+            explanation = "Luke was traditionally identified as a physician and a companion of Paul; he was not one of the Twelve. Mark was not one of the Twelve either, so the original wording was ambiguous."
         ),
         QuizQuestion(
             question = "Who helped Jesus carry His cross?",
@@ -391,7 +391,7 @@ object TopicQuestionBank {
             explanation = "Jesus promised the Helper (Paraclete), which is the Holy Spirit."
         ),
         QuizQuestion(
-            question = "Who blessed the baby Jesus in the temple?",
+            question = "Who took the baby Jesus in his arms and praised God in the temple?",
             options = listOf("Zacharias", "Simeon", "Joseph", "Nicodemus"),
             correctAnswer = 1,
             explanation = "Simeon took Jesus in his arms and praised God (Luke 2:28)."
@@ -444,10 +444,10 @@ object TopicQuestionBank {
             explanation = "Amos was a shepherd and dresser of sycamore figs from Tekoa before he was called to prophesy to Israel."
         ),
         QuizQuestion(
-            question = "God commanded Hosea to marry a woman named Gomer. What was she?",
-            options = listOf("A prophetess", "A queen", "An adulterous wife", "A widow"),
+            question = "How does Hosea 1:2 describe the woman Hosea was commanded to marry?",
+            options = listOf("A prophetess", "A queen", "A wife of whoredom", "A widow"),
             correctAnswer = 2,
-            explanation = "Hosea was commanded to marry Gomer, an unfaithful woman, to illustrate Israel's unfaithfulness to God."
+            explanation = "Hosea 1:2 uses the phrase 'wife of whoredom'; the marriage illustrates Israel's unfaithfulness to God."
         ),
         QuizQuestion(
             question = "Which prophet predicted the outpouring of the Holy Spirit on 'all flesh'?",
@@ -690,10 +690,10 @@ object TopicQuestionBank {
             explanation = "Zechariah 2 describes a man with a measuring line going to measure Jerusalem."
         ),
         QuizQuestion(
-            question = "What was the name of the idol that Dagon bowed down to?",
+            question = "Before what did the statue of Dagon fall facedown in the Philistine temple?",
             options = listOf("The Golden Calf", "The Ark of the Covenant", "Baal", "Molech"),
             correctAnswer = 1,
-            explanation = "When the Philistines placed the Ark in Dagon's temple, the statue of Dagon fell face down before it."
+            explanation = "When the Philistines placed the Ark in Dagon's temple, the statue of Dagon fell facedown before the Ark (1 Samuel 5:3–4)."
         ),
         QuizQuestion(
             question = "Which prophet said the Lord requires us 'To act justly and to love mercy and to walk humbly with your God'?",

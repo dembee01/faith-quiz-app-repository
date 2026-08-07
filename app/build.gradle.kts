@@ -15,6 +15,8 @@ val keystoreProperties = Properties().apply {
         load(FileInputStream(keystorePropertiesFile))
     }
 }
+val hasReleaseSigning = listOf("storeFile", "storePassword", "keyAlias", "keyPassword")
+    .all { keystoreProperties.getProperty(it).isNullOrBlank().not() }
 
 android {
     namespace = "com.example.faithquiz"
@@ -34,12 +36,14 @@ android {
     }
 
     signingConfigs {
-        create("release") {
-            storeFile = file("release-keystore.jks")
-            storeType = "PKCS12"
-            storePassword = "FaithQuiz#2025"
-            keyAlias = "faithquiz"
-            keyPassword = "FaithQuiz#2025"
+        if (hasReleaseSigning) {
+            create("release") {
+                storeFile = rootProject.file(keystoreProperties.getProperty("storeFile"))
+                storeType = keystoreProperties.getProperty("storeType", "PKCS12")
+                storePassword = keystoreProperties.getProperty("storePassword")
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+            }
         }
     }
     
@@ -47,7 +51,9 @@ android {
         release {
             isMinifyEnabled = false
             isShrinkResources = false
-            signingConfig = signingConfigs.getByName("release")
+            if (hasReleaseSigning) {
+                signingConfig = signingConfigs.getByName("release")
+            }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

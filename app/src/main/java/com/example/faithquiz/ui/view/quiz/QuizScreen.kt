@@ -30,7 +30,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.faithquiz.R
 import com.example.faithquiz.data.QuestionBank
@@ -108,7 +108,7 @@ fun QuizScreen(
     var lastProcessedQuestionIndex by rememberSaveable(level, mode) { mutableIntStateOf(-1) }
     
     // Timer ViewModel
-    val timerViewModel: TimerViewModel = viewModel()
+    val timerViewModel: TimerViewModel = hiltViewModel()
     val currentQuestionTime by timerViewModel.currentQuestionTime.collectAsState()
     val totalLevelTime by timerViewModel.totalLevelTime.collectAsState()
 

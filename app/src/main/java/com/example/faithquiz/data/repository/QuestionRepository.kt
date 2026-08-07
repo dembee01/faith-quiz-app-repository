@@ -1,6 +1,7 @@
 package com.example.faithquiz.data.repository
 
 import android.content.Context
+import dagger.hilt.android.qualifiers.ApplicationContext
 import com.example.faithquiz.data.local.QuestionDao
 import com.example.faithquiz.data.model.Question
 import kotlinx.coroutines.flow.Flow
@@ -10,7 +11,7 @@ import javax.inject.Singleton
 @Singleton
 class QuestionRepository @Inject constructor(
     private val questionDao: QuestionDao,
-    private val context: Context
+    @ApplicationContext private val context: Context
 ) {
     fun getAllQuestions(): Flow<List<Question>> = questionDao.getAllQuestions()
 

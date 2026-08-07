@@ -222,16 +222,16 @@ object QuestionBank {
             explanation = "John the Baptist baptized Jesus in the Jordan River."
         ),
         QuizQuestion(
-            question = "How many disciples did Jesus choose?",
+            question = "How many apostles did Jesus appoint?",
             options = listOf("10", "12", "15", "20"),
             correctAnswer = 1,
-            explanation = "Jesus chose 12 disciples to be his closest followers and apostles."
+            explanation = "Jesus appointed twelve apostles, whom he also named (Luke 6:13)."
         ),
         QuizQuestion(
-            question = "What was Jesus' first miracle?",
+            question = "According to John's Gospel, what was Jesus' first sign?",
             options = listOf("Healing a blind man", "Walking on water", "Turning water to wine", "Feeding 5000"),
             correctAnswer = 2,
-            explanation = "Jesus' first miracle was turning water into wine at a wedding in Cana."
+            explanation = "John identifies the turning of water into wine at Cana as the first of Jesus' signs (John 2:11)."
         ),
         QuizQuestion(
             question = "Who denied Jesus three times?",
@@ -244,7 +244,7 @@ object QuestionBank {
     // Level 5: Jesus' Teachings
     private val level5Questions = listOf(
         QuizQuestion(
-            question = "What is the first beatitude?",
+            question = "What is the first Beatitude in Matthew 5?",
             options = listOf("Blessed are the meek", "Blessed are the poor in spirit", "Blessed are the peacemakers", "Blessed are the merciful"),
             correctAnswer = 1,
             explanation = "The first beatitude is 'Blessed are the poor in spirit, for theirs is the kingdom of heaven.'"
@@ -278,16 +278,16 @@ object QuestionBank {
     // Continue with remaining levels (6-30) with progressively harder content
     private val level6Questions = listOf(
         QuizQuestion(
-            question = "Who wrote most of the New Testament letters?",
+            question = "Who is traditionally credited with thirteen New Testament letters?",
             options = listOf("Peter", "John", "Paul", "James"),
             correctAnswer = 2,
             explanation = "The apostle Paul wrote 13 of the 27 New Testament books."
         ),
         QuizQuestion(
-            question = "What was Paul's name before his conversion?",
+            question = "What Jewish name does Acts use for Paul before Acts 13?",
             options = listOf("Saul", "Simon", "Samuel", "Stephen"),
             correctAnswer = 0,
-            explanation = "Paul was originally named Saul and persecuted Christians before his conversion."
+            explanation = "Acts calls him Saul before it begins using the name Paul (Acts 13:9 says that Saul was also called Paul)."
         ),
         QuizQuestion(
             question = "On which road did Paul meet Jesus?",
@@ -296,7 +296,7 @@ object QuestionBank {
             explanation = "Paul met the risen Jesus on the road to Damascus, leading to his conversion."
         ),
         QuizQuestion(
-            question = "Who was the first Christian martyr?",
+            question = "Who is the first Christian martyr recorded in Acts?",
             options = listOf("James", "Stephen", "Peter", "John"),
             correctAnswer = 1,
             explanation = "Stephen was the first Christian martyr, stoned for his faith and testimony."
@@ -330,10 +330,10 @@ object QuestionBank {
             explanation = "'Christ' means 'Anointed One' or 'Messiah' in Greek."
         ),
         QuizQuestion(
-            question = "Who wrote the book of Revelation?",
+            question = "Who identifies himself as the author of the book of Revelation?",
             options = listOf("Paul", "Peter", "John", "Luke"),
             correctAnswer = 2,
-            explanation = "The apostle John wrote the book of Revelation while on the island of Patmos."
+            explanation = "Revelation identifies its author as John, who received the vision while on Patmos (Revelation 1:1, 1:9)."
         ),
         QuizQuestion(
             question = "What are the first four books of the New Testament called?",
@@ -345,10 +345,10 @@ object QuestionBank {
     
     private val level8Questions = listOf(
         QuizQuestion(
-            question = "How many books are in the Old Testament?",
+            question = "How many books are in the Protestant Old Testament?",
             options = listOf("37", "39", "41", "43"),
             correctAnswer = 1,
-            explanation = "There are 39 books in the Old Testament."
+            explanation = "The Protestant Old Testament contains 39 books; other Christian traditions organize or include additional books differently."
         ),
         QuizQuestion(
             question = "Which book is known as the 'book of praise'?",
@@ -357,7 +357,7 @@ object QuestionBank {
             explanation = "Psalms is known as the book of praise and worship."
         ),
         QuizQuestion(
-            question = "Who wrote most of the Psalms?",
+            question = "Who is traditionally credited with writing the most Psalms?",
             options = listOf("Solomon", "David", "Moses", "Samuel"),
             correctAnswer = 1,
             explanation = "King David wrote about half of the 150 Psalms."
@@ -381,10 +381,10 @@ object QuestionBank {
     // Level 9: Wisdom Literature (Job, Psalms, Proverbs, Ecclesiastes, Song of Songs)
     private val level9Questions = listOf(
         QuizQuestion(
-            question = "'The fear of the LORD is the beginning of wisdom' is found in which book?",
-            options = listOf("Psalms", "Proverbs", "Ecclesiastes", "Job"),
-            correctAnswer = 1,
-            explanation = "Proverbs 9:10 states that the fear of the LORD is the beginning of wisdom."
+            question = "According to Proverbs 9:10, what is the beginning of wisdom?",
+            options = listOf("The fear of the LORD", "Knowledge", "Understanding", "Obedience"),
+            correctAnswer = 0,
+            explanation = "Proverbs 9:10 says, 'The fear of the LORD is the beginning of wisdom.' Psalm 111:10 uses similar wording."
         ),
         QuizQuestion(
             question = "Who is the central character who suffers greatly yet remains faithful?",
@@ -490,7 +490,7 @@ object QuestionBank {
         QuizQuestion(
             question = "Who married Gomer as a living parable of Israel's unfaithfulness?",
             options = listOf("Hosea", "Amos", "Malachi", "Zephaniah"),
-            correctAnswer = 1,
+            correctAnswer = 0,
             explanation = "God commanded Hosea to marry Gomer (Hosea 1)."
         ),
         QuizQuestion(
@@ -560,7 +560,7 @@ object QuestionBank {
             explanation = "Amos 1:1 records his background."
         ),
         QuizQuestion(
-            question = "Who first fled toward Tarshish instead of obeying God's call?",
+            question = "Who fled toward Tarshish instead of obeying God's call?",
             options = listOf("Jonah", "Hosea", "Micah", "Zechariah"),
             correctAnswer = 0,
             explanation = "Jonah attempted to flee from God's presence (Jonah 1)."
@@ -709,7 +709,7 @@ object QuestionBank {
     private fun getEarlyChurchQuestions(level: Int): List<QuizQuestion> {
         return listOf(
             QuizQuestion(
-                question = "Who was chosen as one of the first seven deacons along with Stephen?",
+                question = "Who was chosen as one of the seven to serve along with Stephen in Acts 6?",
                 options = listOf("Philip", "Barnabas", "Silas", "Timothy"),
                 correctAnswer = 0,
                 explanation = "Philip was one of the seven chosen to serve tables in the early church.",
@@ -725,10 +725,10 @@ object QuestionBank {
                 verseText = "When the day of Pentecost arrived, they were all together in one place."
             ),
             QuizQuestion(
-                question = "Who was the first Gentile convert?",
+                question = "Which Roman centurion received Peter's message in Acts 10?",
                 options = listOf("Cornelius", "Lydia", "The Ethiopian eunuch", "Sergius Paulus"),
                 correctAnswer = 0,
-                explanation = "Cornelius was the first Gentile convert, baptized by Peter.",
+                explanation = "Cornelius, a centurion, received Peter's message; the Holy Spirit came upon his household (Acts 10).",
                 verseReference = "Acts 10:1-2",
                 verseText = "At Caesarea there was a man named Cornelius, a centurion of what was known as the Italian Cohort."
             ),
@@ -765,18 +765,18 @@ object QuestionBank {
                 verseText = "circumcised on the eighth day... of the tribe of Benjamin."
             ),
             QuizQuestion(
-                question = "Which city was the center of early Christianity?",
+                question = "Which city was the center of the earliest Christian community in Acts 1–7?",
                 options = listOf("Rome", "Jerusalem", "Antioch", "Corinth"),
                 correctAnswer = 1,
-                explanation = "Jerusalem was the center of early Christianity, where the apostles first preached.",
+                explanation = "Acts 1–7 centers the earliest Christian community and the apostles' preaching in Jerusalem.",
                 verseReference = "Acts 1:4",
                 verseText = "And while staying with them he ordered them not to depart from Jerusalem."
             ),
             QuizQuestion(
-                question = "Who was the first Gentile church?",
+                question = "In which city were the disciples first called Christians?",
                 options = listOf("Antioch", "Rome", "Corinth", "Ephesus"),
                 correctAnswer = 0,
-                explanation = "Antioch was the first major Gentile church and where believers were first called 'Christians'.",
+                explanation = "Acts says the disciples were first called Christians in Antioch.",
                 verseReference = "Acts 11:26",
                 verseText = "And in Antioch the disciples were first called Christians."
             ),
@@ -789,7 +789,7 @@ object QuestionBank {
                 verseText = "And day by day, attending the temple together and breaking bread in their homes."
             ),
             QuizQuestion(
-                question = "Who was the first Gentile to receive the Holy Spirit?",
+                question = "Which Roman centurion and his household received the Holy Spirit while Peter was speaking in Acts 10?",
                 options = listOf("Cornelius", "Lydia", "The Ethiopian eunuch", "Sergius Paulus"),
                 correctAnswer = 0,
                 explanation = "Cornelius and his household were the first Gentiles to receive the Holy Spirit.",
@@ -805,18 +805,18 @@ object QuestionBank {
                 verseText = "He killed James the brother of John with the sword."
             ),
             QuizQuestion(
-                question = "What was the first miracle in the early church?",
+                question = "What healing did Peter and John perform at the Beautiful Gate?",
                 options = listOf("Healing the lame man", "Raising the dead", "Walking on water", "Feeding 5000"),
                 correctAnswer = 0,
-                explanation = "Peter and John healed a lame man at the Beautiful Gate of the temple.",
+                explanation = "Peter and John healed a man lame from birth at the Beautiful Gate of the temple (Acts 3:1–10).",
                 verseReference = "Acts 3:6-8",
                 verseText = "But Peter said, 'I have no silver and gold, but what I do have I give to you. In the name of Jesus Christ of Nazareth, rise up and walk!'"
             ),
             QuizQuestion(
-                question = "Who was the first Gentile missionary?",
+                question = "Whom did Jesus say he would send to carry his name before Gentiles?",
                 options = listOf("Paul", "Barnabas", "Peter", "Philip"),
                 correctAnswer = 0,
-                explanation = "Paul was the first major missionary to the Gentiles, though Peter also ministered to them.",
+                explanation = "Jesus called Paul a chosen instrument to carry his name before Gentiles, kings, and Israelites (Acts 9:15).",
                 verseReference = "Acts 9:15",
                 verseText = "But the Lord said to him, 'Go, for he is a chosen instrument of mine to carry my name before the Gentiles.'"
             ),
@@ -835,10 +835,10 @@ object QuestionBank {
     private fun getPaulsLettersQuestions(level: Int): List<QuizQuestion> {
         return listOf(
             QuizQuestion(
-                question = "Which letter did Paul write from prison?",
+                question = "Which of these is traditionally classified as one of Paul's Prison Epistles?",
                 options = listOf("Romans", "Galatians", "Philippians", "1 Corinthians"),
                 correctAnswer = 2,
-                explanation = "Paul wrote Philippians, Colossians, Philemon, and Ephesians from prison.",
+                explanation = "Philippians is traditionally classified with Ephesians, Colossians, and Philemon as a Prison Epistle.",
                 verseReference = "Philippians 1:7",
                 verseText = "It is right for me to feel this way about you all, because I hold you in my heart, for you are all partakers with me of grace, both in my imprisonment and in the defense and confirmation of the gospel."
             ),
@@ -881,10 +881,10 @@ object QuestionBank {
     private fun getGeneralLettersQuestions(level: Int): List<QuizQuestion> {
         return listOf(
             QuizQuestion(
-                question = "Who wrote the letter of James?",
+                question = "Traditionally, which James is identified as the author of the letter of James?",
                 options = listOf("James, son of Zebedee", "James, brother of Jesus", "James, son of Alphaeus", "James the Less"),
                 correctAnswer = 1,
-                explanation = "James, the brother of Jesus, wrote the letter of James.",
+                explanation = "Christian tradition commonly identifies the author as James, the brother of Jesus; the letter itself names only James.",
                 verseReference = "James 1:1",
                 verseText = "James, a servant of God and of the Lord Jesus Christ, To the twelve tribes in the Dispersion."
             ),
@@ -913,7 +913,7 @@ object QuestionBank {
                 verseText = "Beloved, let us love one another, for love is from God, and whoever loves has been born of God and knows God."
             ),
             QuizQuestion(
-                question = "Which letter is about Christian maturity?",
+                question = "Which New Testament letter warns against remaining spiritually immature and calls its readers toward maturity?",
                 options = listOf("Hebrews", "James", "1 Peter", "1 John"),
                 correctAnswer = 0,
                 explanation = "Hebrews encourages believers to move from milk to solid food, from immaturity to maturity.",
@@ -951,10 +951,10 @@ object QuestionBank {
                 verseText = "The LORD came down on Mount Sinai, to the top of the mountain."
             ),
             QuizQuestion(
-                question = "Which city was known as the 'City of David'?",
+                question = "Which city did David capture and call the City of David?",
                 options = listOf("Jerusalem", "Bethlehem", "Hebron", "Nazareth"),
                 correctAnswer = 0,
-                explanation = "Jerusalem was known as the City of David after David captured it.",
+                explanation = "After David captured the stronghold of Zion, it was called the City of David (2 Samuel 5:7). Bethlehem is also called the City of David in Luke 2:4, so the wording names this specific event.",
                 verseReference = "2 Samuel 5:7",
                 verseText = "Nevertheless, David took the stronghold of Zion, that is, the city of David."
             ),
@@ -981,7 +981,7 @@ object QuestionBank {
                 verseText = "And when Jesus entered Peter's house, he saw his mother-in-law lying sick with a fever."
             ),
             QuizQuestion(
-                question = "How many people did Jesus feed with 5 loaves and 2 fish?",
+                question = "About how many men did Jesus feed with five loaves and two fish, not counting women and children?",
                 options = listOf("500", "1000", "5000", "10000"),
                 correctAnswer = 2,
                 explanation = "Jesus fed 5000 men (plus women and children) with 5 loaves and 2 fish.",
@@ -1123,10 +1123,10 @@ object QuestionBank {
                 verseReference = "Ruth 4:17"
             ),
             QuizQuestion(
-                question = "Which judge made a vow that cost him his daughter?",
+                question = "Which judge made a rash vow involving whoever first came out of his house?",
                 options = listOf("Gideon", "Samson", "Jephthah", "Barak"),
                 correctAnswer = 2,
-                explanation = "Jephthah made a rash vow to sacrifice whatever came out of his house.",
+                explanation = "Jephthah made a rash vow concerning whoever came out of his house; his daughter was the one who met him (Judges 11:30–35).",
                 verseReference = "Judges 11:30-31"
             ),
             QuizQuestion(
@@ -1156,7 +1156,7 @@ object QuestionBank {
                 verseReference = "Genesis 5:27"
             ),
             QuizQuestion(
-                question = "How many years did the invalid man wait by the pool of Bethesda?",
+                question = "For how many years had the man at the pool of Bethesda been disabled?",
                 options = listOf("12 years", "38 years", "40 years", "50 years"),
                 correctAnswer = 1,
                 explanation = "One man was there who had been an invalid for thirty-eight years. (John 5:5)",
@@ -1517,7 +1517,7 @@ object QuestionBank {
             ),
             QuizQuestion(
                 question = "What is the 'Hypostatic Union'?",
-                options = listOf("Church unity", "Jesus as 100% God and 100% Man", "Marriage", "The Trinity"),
+                options = listOf("Church unity", "Jesus as fully God and fully human in one person", "Marriage", "The Trinity"),
                 correctAnswer = 1,
                 explanation = "Hypostatic Union describes the union of Christ's divine and human natures in one person.",
                 verseReference = "Philippians 2:6-7"
@@ -1549,14 +1549,14 @@ object QuestionBank {
                 verseReference = "Acts 20:9"
             ),
             QuizQuestion(
-                question = "Who killed the obesity-stricken King Eglon of Moab?",
+                question = "Which Israelite judge killed King Eglon of Moab?",
                 options = listOf("Shamgar", "Barak", "Ehud", "Othniel"),
                 correctAnswer = 2,
                 explanation = "Ehud the son of Gera, a left-handed man, killed Eglon the king of Moab. (Judges 3:15-22)",
                 verseReference = "Judges 3:15"
             ),
             QuizQuestion(
-                question = "What was the name of the bronze serpent Moses made, which the Israelites later worshipped?",
+                question = "What name does 2 Kings 18:4 give to the bronze serpent Moses made?",
                 options = listOf("Leviathan", "Nehushtan", "Rahab", "Behemoth"),
                 correctAnswer = 1,
                 explanation = "Hezekiah broke in pieces the bronze serpent, for the people called it Nehushtan. (2 Kings 18:4)",

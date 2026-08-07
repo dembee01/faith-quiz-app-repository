@@ -18,6 +18,11 @@ data class ShuffledQuestion(
 ) {
     companion object {
         fun fromQuestion(question: Question): ShuffledQuestion {
+            require(question.choices.isNotEmpty()) { "A quiz question must have at least one choice." }
+            require(question.correctAnswerIndex in question.choices.indices) {
+                "The correct answer index must refer to one of the question choices."
+            }
+
             val shuffledOptions = question.choices.toMutableList()
             val correctAnswer = shuffledOptions[question.correctAnswerIndex]
             

@@ -1,6 +1,7 @@
 package com.example.faithquiz.data.repository
 
 import android.content.Context
+import dagger.hilt.android.qualifiers.ApplicationContext
 import com.example.faithquiz.data.local.GameProgressDao
 import com.example.faithquiz.data.model.PowerUp
 import com.example.faithquiz.data.model.PowerUpType
@@ -13,7 +14,7 @@ import javax.inject.Singleton
 @Singleton
 class PowerUpRepository @Inject constructor(
     private val gameProgressDao: GameProgressDao,
-    private val context: Context
+    @ApplicationContext private val context: Context
 ) {
     fun getAvailablePowerUps(): Flow<List<PowerUp>> {
         return gameProgressDao.getGameProgress().map { gameProgress ->

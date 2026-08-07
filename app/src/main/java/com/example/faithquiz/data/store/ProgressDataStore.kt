@@ -54,6 +54,7 @@ object ProgressDataStore {
 	private val KEY_TOPIC_CURRENT_Q = intPreferencesKey("topic_current_q")
 	private val KEY_TOPIC_SCORE = intPreferencesKey("topic_current_score")
 	private val KEY_TOPIC_ID = stringPreferencesKey("topic_current_id")
+	private val KEY_TOPIC_SEED = longPreferencesKey("topic_question_seed")
 
 	// SRS scheduling keys
 	private val KEY_SRS_DUE = stringPreferencesKey("srs_due_map") // key->epochDay CSV entries key:day
@@ -132,6 +133,10 @@ object ProgressDataStore {
 			prefs.remove(KEY_SESSION_TIME)
 			prefs.remove(KEY_SESSION_SEED)
 			prefs.remove(KEY_SESSION_LIVES)
+			prefs.remove(KEY_TOPIC_ID)
+			prefs.remove(KEY_TOPIC_CURRENT_Q)
+			prefs.remove(KEY_TOPIC_SCORE)
+			prefs.remove(KEY_TOPIC_SEED)
 		}
 	}
 	// ----------------------------------------------------
@@ -556,21 +561,36 @@ object ProgressDataStore {
 	}
 
 	// --- Topic session state ---
-	fun observeTopicSession(context: Context): Flow<Triple<String, Int, Int>> {
+	data class TopicQuizSession(
+		val topic: String,
+		val currentIndex: Int,
+		val score: Int,
+		val seed: Long
+	)
+
+	fun observeTopicSession(context: Context): Flow<TopicQuizSession> {
 		return context.progressDataStore.data.map { prefs ->
-			Triple(
-				prefs[KEY_TOPIC_ID] ?: "",
-				prefs[KEY_TOPIC_CURRENT_Q] ?: 0,
-				prefs[KEY_TOPIC_SCORE] ?: 0
+			TopicQuizSession(
+				topic = prefs[KEY_TOPIC_ID] ?: "",
+				currentIndex = prefs[KEY_TOPIC_CURRENT_Q] ?: 0,
+				score = prefs[KEY_TOPIC_SCORE] ?: 0,
+				seed = prefs[KEY_TOPIC_SEED] ?: 0L
 			)
 		}
 	}
 
-	suspend fun saveTopicSession(context: Context, topic: String, currentIndex: Int, score: Int) {
+	suspend fun saveTopicSession(
+		context: Context,
+		topic: String,
+		currentIndex: Int,
+		score: Int,
+		seed: Long
+	) {
 		context.progressDataStore.edit { prefs ->
 			prefs[KEY_TOPIC_ID] = topic
 			prefs[KEY_TOPIC_CURRENT_Q] = currentIndex
 			prefs[KEY_TOPIC_SCORE] = score
+			prefs[KEY_TOPIC_SEED] = seed
 		}
 	}
 
@@ -579,6 +599,7 @@ object ProgressDataStore {
 			prefs[KEY_TOPIC_ID] = ""
 			prefs[KEY_TOPIC_CURRENT_Q] = 0
 			prefs[KEY_TOPIC_SCORE] = 0
+			prefs.remove(KEY_TOPIC_SEED)
 		}
 	}
 	

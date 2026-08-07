@@ -30,7 +30,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.faithquiz.R
 import com.example.faithquiz.data.TopicQuestionBank
@@ -65,30 +65,52 @@ fun TopicQuizScreen(
         TopicQuestionBank.TopicType.PARABLES -> "Parables Quiz"
     }
 
-    // Stable random seed
-    val randomSeed = rememberSaveable(topicType) { Random.nextLong() }
+    val session by ProgressDataStore.observeTopicSession(context).collectAsState(initial = null)
+    if (session == null) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Brush.verticalGradient(listOf(DeepRoyalPurple, Color.Black))),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator(color = GlowingGold)
+        }
+        return
+    }
 
-    val questions = remember(topicType, randomSeed) { 
+    // Resume Logic
+    val incomingTopicId = topic.lowercase()
+    val savedSession = session!!
+    val isResuming = savedSession.topic == incomingTopicId && savedSession.seed != 0L
+    val randomSeed = rememberSaveable(incomingTopicId, savedSession.seed) {
+        if (isResuming) savedSession.seed else Random.nextLong()
+    }
+
+    val questions = remember(topicType, randomSeed) {
         TopicQuestionBank.getQuestionsForTopic(topicType)
             .mapIndexed { i, q -> shuffleOptions(q, Random(randomSeed + i)) }
-            .shuffled(Random(randomSeed)) 
+            .shuffled(Random(randomSeed))
     }
-    
-    // Resume Logic
-    val session by ProgressDataStore.observeTopicSession(context).collectAsState(initial = Triple("", 0, 0))
-    val incomingTopicId = topic.lowercase()
 
-    val isResuming = session.first == incomingTopicId
-    
-    var currentQuestionIndex by rememberSaveable(incomingTopicId) { mutableIntStateOf(if (isResuming) session.second.coerceIn(0, questions.lastIndex) else 0) }
-    var selectedAnswer by rememberSaveable(incomingTopicId) { mutableIntStateOf(-1) }
-    var showAnswerFeedback by rememberSaveable(incomingTopicId) { mutableStateOf(false) }
-    var score by rememberSaveable(incomingTopicId) { mutableIntStateOf(if (isResuming) session.third.coerceIn(0, 50) else 0) }
-    var isQuizCompleted by rememberSaveable { mutableStateOf(false) }
-    var totalElapsedSeconds by rememberSaveable { mutableIntStateOf(0) }
+    var currentQuestionIndex by rememberSaveable(incomingTopicId, randomSeed) {
+        mutableIntStateOf(
+            if (isResuming && questions.isNotEmpty()) {
+                savedSession.currentIndex.coerceIn(0, questions.lastIndex)
+            } else {
+                0
+            }
+        )
+    }
+    var selectedAnswer by rememberSaveable(incomingTopicId, randomSeed) { mutableIntStateOf(-1) }
+    var showAnswerFeedback by rememberSaveable(incomingTopicId, randomSeed) { mutableStateOf(false) }
+    var score by rememberSaveable(incomingTopicId, randomSeed) {
+        mutableIntStateOf(if (isResuming) savedSession.score.coerceIn(0, questions.size) else 0)
+    }
+    var isQuizCompleted by rememberSaveable(incomingTopicId, randomSeed) { mutableStateOf(false) }
+    var totalElapsedSeconds by rememberSaveable(incomingTopicId, randomSeed) { mutableIntStateOf(0) }
 
     // Timer ViewModel
-    val timerViewModel: TimerViewModel = viewModel()
+    val timerViewModel: TimerViewModel = hiltViewModel()
     val currentQuestionTime by timerViewModel.currentQuestionTime.collectAsState()
     val totalLevelTime by timerViewModel.totalLevelTime.collectAsState()
 
@@ -127,7 +149,7 @@ fun TopicQuizScreen(
     // Persist session
     LaunchedEffect(currentQuestionIndex, score, isQuizCompleted) {
         if (!isQuizCompleted) {
-            ProgressDataStore.saveTopicSession(context, incomingTopicId, currentQuestionIndex, score)
+            ProgressDataStore.saveTopicSession(context, incomingTopicId, currentQuestionIndex, score, randomSeed)
         }
     }
 

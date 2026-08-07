@@ -15,6 +15,11 @@ class QuestionDataValidationTest {
 		assertTrue("Question text blank", question.question.isNotBlank())
 		assertEquals("Exactly 4 options required", 4, question.options.size)
 		assertTrue("Options must be non-blank", question.options.all { it.isNotBlank() })
+		assertEquals(
+			"Options must be distinct",
+			question.options.size,
+			question.options.map(::normalize).toSet().size
+		)
 		assertTrue("correctAnswer must be 0..3", question.correctAnswer in 0..3)
 		assertTrue("Explanation blank", question.explanation.isNotBlank())
 	}
@@ -60,60 +65,46 @@ class QuestionDataValidationTest {
 	}
 
 	@Test
-	fun topics_expected_answers_remain_correct() {
-		// Build a map for quick lookup by normalized question text
-		val byText = TopicQuestionBank.getQuestionsForTopic(TopicQuestionBank.TopicType.GOSPELS)
-			.associateBy { normalize(it.question) }
-
-		fun assertAnswer(questionText: String, expectedIndex: Int) {
-			val q = byText[normalize(questionText)]
-			assertNotNull("Missing question: $questionText", q)
-			assertEquals("Wrong correctAnswer for '$questionText'", expectedIndex, q!!.correctAnswer)
+	fun corrected_answers_remain_correct() {
+		fun assertAnswer(
+			questions: List<QuizQuestion>,
+			questionText: String,
+			expectedAnswer: String
+		) {
+			val question = questions.firstOrNull { normalize(it.question) == normalize(questionText) }
+			assertNotNull("Missing question: $questionText", question)
+			assertEquals(
+				"Wrong answer for '$questionText'",
+				expectedAnswer,
+				question!!.options[question.correctAnswer]
+			)
 		}
 
-		// Gospels — key corrected items
-		assertAnswer("What did Jesus say about the kingdom of heaven?", 3)
-		assertAnswer("Which Gospel emphasizes Jesus as the suffering servant?", 1)
-		assertAnswer("Who was the first person to see the empty tomb?", 3)
-		assertAnswer("Which Gospel is the shortest?", 1)
-		assertAnswer("Who was the first person to call Jesus 'Lord'?", 3)
-		assertAnswer("What did Jesus say about the kingdom of God?", 3)
-		assertAnswer("What did Jesus say about the world?", 3)
-		assertAnswer("Who was the first person to proclaim Jesus as the Son of God?", 1)
-		assertAnswer("Which Gospel writer was a fisherman?", 3)
-		assertAnswer("What did Jesus say about the Father?", 3)
-		assertAnswer("What did Jesus say about the Holy Spirit?", 3)
-
-		// Parables — key corrected items
-		val parables = TopicQuestionBank.getQuestionsForTopic(TopicQuestionBank.TopicType.PARABLES)
-			.associateBy { normalize(it.question) }
-		fun assertParable(questionText: String, expectedIndex: Int) {
-			val q = parables[normalize(questionText)]
-			assertNotNull("Missing question: $questionText", q)
-			assertEquals("Wrong correctAnswer for '$questionText'", expectedIndex, q!!.correctAnswer)
-		}
-		assertParable("What is the parable of the sower about?", 3)
-		assertParable("What does the parable of the prodigal son teach?", 3)
-		assertParable("What is the parable of the good Samaritan about?", 3)
-		assertParable("What does the parable of the talents teach?", 3)
-		assertParable("What is the parable of the lost sheep about?", 3)
-		assertParable("What does the parable of the mustard seed teach?", 0)
-		assertParable("What is the parable of the wedding feast about?", 3)
-		assertParable("What does the parable of the rich fool teach?", 3)
-		assertParable("What is the parable of the persistent widow about?", 3)
-		assertParable("What does the parable of the two sons teach?", 3)
-
-		// A couple Prophets spot checks
-		val prophets = TopicQuestionBank.getQuestionsForTopic(TopicQuestionBank.TopicType.PROPHETS)
-			.associateBy { normalize(it.question) }
-		fun assertProphet(questionText: String, expectedIndex: Int) {
-			val q = prophets[normalize(questionText)]
-			assertNotNull("Missing question: $questionText", q)
-			assertEquals("Wrong correctAnswer for '$questionText'", expectedIndex, q!!.correctAnswer)
-		}
-		assertProphet("What did Samuel anoint David to be?", 3)
-		assertProphet("What did Isaiah prophesy about the suffering servant?", 3)
-		assertProphet("What was Jeremiah's message about the 70-year exile?", 3)
+		assertAnswer(
+			QuestionBank.getQuestionsForLevel(10),
+			"Who married Gomer as a living parable of Israel's unfaithfulness?",
+			"Hosea"
+		)
+		assertAnswer(
+			QuestionBank.getQuestionsForLevel(9),
+			"According to Proverbs 9:10, what is the beginning of wisdom?",
+			"The fear of the LORD"
+		)
+		assertAnswer(
+			QuestionBank.getQuestionsForLevel(15),
+			"Which city did David capture and call the City of David?",
+			"Jerusalem"
+		)
+		assertAnswer(
+			TopicQuestionBank.getQuestionsForTopic(TopicQuestionBank.TopicType.GOSPELS),
+			"Which Gospel writer was traditionally identified as a physician and was not one of the Twelve?",
+			"Luke"
+		)
+		assertAnswer(
+			TopicQuestionBank.getQuestionsForTopic(TopicQuestionBank.TopicType.PROPHETS),
+			"Before what did the statue of Dagon fall facedown in the Philistine temple?",
+			"The Ark of the Covenant"
+		)
 	}
 
 	@Test

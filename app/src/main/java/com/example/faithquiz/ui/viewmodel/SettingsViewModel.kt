@@ -52,8 +52,6 @@ class SettingsViewModel @Inject constructor(
             dataStoreRepository.resetProgress()
             // Reset GameProgress and LevelProgress
             gameProgressRepository.resetAllProgress()
-            // Reload settings
-            loadSettings()
         }
     }
 }
