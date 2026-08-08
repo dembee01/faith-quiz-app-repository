@@ -29,6 +29,7 @@ import com.example.faithquiz.ui.theme.Typography
 import com.example.faithquiz.ui.theme.Dimensions
 import com.example.faithquiz.ui.theme.CorrectAnswerGreen
 import com.example.faithquiz.ui.theme.WrongAnswerRed
+import java.util.Locale
 
 @Composable
 fun ProfessionalResultsScreen(
@@ -178,7 +179,6 @@ fun ProfessionalResultsScreen(
                     Text("MENU", fontWeight = FontWeight.Bold)
                 }
                 
-                val nextButtonText = if (percentage >= 60) "NEXT" else "TRY AGAIN"
                 val showNextButton = onNext != null || onRetry != null || percentage >= 60 || level > 0 // Always show for standard quiz
                 
                 if (showNextButton) {
@@ -255,7 +255,7 @@ fun StatCard(label: String, value: String, modifier: Modifier = Modifier) {
 private fun formatTime(seconds: Long): String {
     val mins = seconds / 60
     val secs = seconds % 60
-    return String.format("%02d:%02d", mins, secs)
+    return String.format(Locale.getDefault(), "%02d:%02d", mins, secs)
 }
 
 private fun getRating(percentage: Int): String {

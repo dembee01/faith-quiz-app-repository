@@ -29,6 +29,7 @@ import androidx.navigation.NavController
 import com.example.faithquiz.R
 import com.example.faithquiz.data.store.ProgressDataStore
 import com.example.faithquiz.ui.theme.*
+import com.example.faithquiz.util.CrashReporter
 import kotlinx.coroutines.launch
 
 @Composable
@@ -40,11 +41,15 @@ fun SettingsScreen(
     
     // State for dialogs
     var showThemeDialog by remember { mutableStateOf(false) }
+    var showTextScaleDialog by remember { mutableStateOf(false) }
     var showResetDialog by remember { mutableStateOf(false) }
     var showAboutDialog by remember { mutableStateOf(false) }
     
     // State for settings
     val currentTheme by ProgressDataStore.observeThemeMode(context).collectAsState(initial = "light")
+    val textScale by ProgressDataStore.observeTextScale(context).collectAsState(initial = "normal")
+    val reduceMotion by ProgressDataStore.observeReduceMotion(context).collectAsState(initial = false)
+    val crashReporting by ProgressDataStore.observeCrashReportingEnabled(context).collectAsState(initial = false)
     
     Box(
         modifier = Modifier
@@ -94,6 +99,24 @@ fun SettingsScreen(
                 icon = Icons.Filled.DarkMode,
                 onClick = { showThemeDialog = true }
             )
+
+            Spacer(modifier = Modifier.height(24.dp))
+            DivineSectionHeader("ACCESSIBILITY")
+            DivineSettingItem(
+                title = "Text size",
+                subtitle = if (textScale == "large") "Large" else "Standard",
+                icon = Icons.Filled.TextFields,
+                onClick = { showTextScaleDialog = true }
+            )
+            DivineSwitchSettingItem(
+                title = "Reduce motion",
+                subtitle = "Show content without typing and entrance animations",
+                icon = Icons.Filled.MotionPhotosOff,
+                checked = reduceMotion,
+                onCheckedChange = { enabled ->
+                    scope.launch { ProgressDataStore.setReduceMotion(context, enabled) }
+                }
+            )
             
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -105,6 +128,21 @@ fun SettingsScreen(
                 icon = Icons.Filled.DeleteForever,
                 iconTint = WrongAnswerRed,
                 onClick = { showResetDialog = true }
+            )
+
+            DivineSwitchSettingItem(
+                title = "Crash reporting",
+                subtitle = if (CrashReporter.isConfigured) {
+                    "Privately send technical crash details; no personal data"
+                } else {
+                    "Unavailable until a Sentry DSN is supplied at build time"
+                },
+                icon = Icons.Filled.BugReport,
+                checked = crashReporting && CrashReporter.isConfigured,
+                enabled = CrashReporter.isConfigured,
+                onCheckedChange = { enabled ->
+                    scope.launch { ProgressDataStore.setCrashReportingEnabled(context, enabled) }
+                }
             )
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -136,6 +174,24 @@ fun SettingsScreen(
                 DivineDialogOption("Dark Mode", currentTheme == "dark") {
                     scope.launch { ProgressDataStore.setThemeMode(context, "dark") }
                     showThemeDialog = false
+                }
+            }
+        }
+    }
+
+    if (showTextScaleDialog) {
+        DivineDialog(
+            title = "Select Text Size",
+            onDismiss = { showTextScaleDialog = false }
+        ) {
+            Column {
+                DivineDialogOption("Standard", textScale == "normal") {
+                    scope.launch { ProgressDataStore.setTextScale(context, "normal") }
+                    showTextScaleDialog = false
+                }
+                DivineDialogOption("Large", textScale == "large") {
+                    scope.launch { ProgressDataStore.setTextScale(context, "large") }
+                    showTextScaleDialog = false
                 }
             }
         }
@@ -328,4 +384,45 @@ fun DivineDialogOption(
 
 private fun String.capitalize(): String {
     return this.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
+}
+
+@Composable
+fun DivineSwitchSettingItem(
+    title: String,
+    subtitle: String,
+    icon: ImageVector,
+    checked: Boolean,
+    enabled: Boolean = true,
+    onCheckedChange: (Boolean) -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = EtherealGlass)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(enabled = enabled) { onCheckedChange(!checked) }
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = if (enabled) GlowingGold else Color.Gray,
+                modifier = Modifier.size(24.dp)
+            )
+            Spacer(Modifier.width(16.dp))
+            Column(Modifier.weight(1f)) {
+                Text(title, style = MaterialTheme.typography.titleMedium, color = Color.White)
+                Text(subtitle, style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.72f))
+            }
+            Switch(
+                checked = checked,
+                onCheckedChange = onCheckedChange,
+                enabled = enabled
+            )
+        }
+    }
 }

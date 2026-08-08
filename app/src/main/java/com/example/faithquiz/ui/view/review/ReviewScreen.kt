@@ -27,8 +27,8 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.faithquiz.R
 import com.example.faithquiz.data.store.ProgressDataStore
+import com.example.faithquiz.ui.navigation.Screen
 import com.example.faithquiz.ui.theme.*
-import kotlinx.coroutines.launch
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
 import java.text.SimpleDateFormat
@@ -37,11 +37,10 @@ import java.util.*
 @Composable
 fun ReviewScreen(navController: NavController) {
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
     
     // Use detailed observation to get decoded objects
     val mistakes by ProgressDataStore.observeMistakesDetailed(context).collectAsState(initial = emptyList())
-    // For now, we'll focus on the detailed list as the primary review method
+    val dueReviews by ProgressDataStore.observeDueReview(context).collectAsState(initial = emptyList())
     
     Box(
         modifier = Modifier
@@ -89,6 +88,42 @@ fun ReviewScreen(navController: NavController) {
                 color = Color.White.copy(alpha = 0.7f),
                 modifier = Modifier.padding(start = 16.dp, bottom = 16.dp)
             )
+
+            if (dueReviews.isNotEmpty()) {
+                val dueLevel = dueReviews.mapNotNull(ProgressDataStore::reviewLevelFromKey).firstOrNull()
+                Card(
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+                    colors = CardDefaults.cardColors(containerColor = GlowingGold.copy(alpha = 0.16f))
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(Modifier.weight(1f)) {
+                            Text(
+                                text = "${dueReviews.size} ${if (dueReviews.size == 1) "item" else "items"} due for review",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = "Short, spaced practice helps difficult answers stick.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color.White.copy(alpha = 0.75f)
+                            )
+                        }
+                        Button(onClick = {
+                            if (dueLevel == null || dueLevel == 0) {
+                                navController.navigate(Screen.DailyChallenge.route)
+                            } else {
+                                navController.navigate(Screen.Quiz.createRoute(dueLevel, "practice"))
+                            }
+                        }) {
+                            Text("Practice")
+                        }
+                    }
+                }
+            }
 
             // Content
             if (mistakes.isEmpty()) {

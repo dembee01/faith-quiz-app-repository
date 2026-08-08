@@ -8,7 +8,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.History
@@ -34,6 +34,7 @@ import com.example.faithquiz.ui.view.components.DivineBackground
 import com.example.faithquiz.util.AudioHelper
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.util.Locale
 
 @Composable
 fun GrandCompletionScreen(
@@ -221,7 +222,7 @@ fun GrandCompletionScreen(
                     ),
                     shape = RoundedCornerShape(12.dp)
                 ) {
-                    Icon(Icons.Default.ArrowForward, contentDescription = null)
+                    Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null)
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = "RETURN TO MENU",
@@ -278,6 +279,6 @@ private fun formatTime(seconds: Long): String {
     val h = seconds / 3600
     val m = (seconds % 3600) / 60
     val s = seconds % 60
-    if (h > 0) return String.format("%d:%02d:%02d", h, m, s)
-    return String.format("%02d:%02d", m, s)
+    if (h > 0) return String.format(Locale.getDefault(), "%d:%02d:%02d", h, m, s)
+    return String.format(Locale.getDefault(), "%02d:%02d", m, s)
 }

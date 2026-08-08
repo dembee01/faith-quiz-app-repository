@@ -49,6 +49,9 @@ object ProgressDataStore {
 
 	// App appearance settings
 	private val KEY_THEME_MODE = stringPreferencesKey("theme_mode") // "light" or "dark"
+	private val KEY_TEXT_SCALE = stringPreferencesKey("text_scale") // "normal" or "large"
+	private val KEY_REDUCE_MOTION = booleanPreferencesKey("reduce_motion")
+	private val KEY_CRASH_REPORTING = booleanPreferencesKey("crash_reporting_enabled")
 
 	// Topic session persistence (resume current question and score)
 	private val KEY_TOPIC_CURRENT_Q = intPreferencesKey("topic_current_q")
@@ -79,6 +82,7 @@ object ProgressDataStore {
 	private val KEY_SESSION_TIME = longPreferencesKey("session_time_elapsed")
 	private val KEY_SESSION_SEED = longPreferencesKey("session_seed")
 	private val KEY_SESSION_LIVES = intPreferencesKey("session_lives")
+	private val KEY_SESSION_REMAINING_SECONDS = intPreferencesKey("session_remaining_seconds")
 
 	data class QuizSession(
 		val level: Int,
@@ -87,7 +91,8 @@ object ProgressDataStore {
 		val score: Int,
 		val time: Long, // Total elapsed seconds
 		val seed: Long,
-		val lives: Int
+		val lives: Int,
+		val remainingSeconds: Int
 	)
 
 	fun observeQuizSession(context: Context): Flow<QuizSession?> {
@@ -103,7 +108,8 @@ object ProgressDataStore {
 					score = prefs[KEY_SESSION_SCORE] ?: 0,
 					time = prefs[KEY_SESSION_TIME] ?: 0L,
 					seed = prefs[KEY_SESSION_SEED] ?: 0L,
-					lives = prefs[KEY_SESSION_LIVES] ?: 0
+					lives = prefs[KEY_SESSION_LIVES] ?: 0,
+					remainingSeconds = prefs[KEY_SESSION_REMAINING_SECONDS] ?: 60
 				)
 			}
 		}
@@ -121,6 +127,7 @@ object ProgressDataStore {
 			prefs[KEY_SESSION_TIME] = session.time
 			prefs[KEY_SESSION_SEED] = session.seed
 			prefs[KEY_SESSION_LIVES] = session.lives
+			prefs[KEY_SESSION_REMAINING_SECONDS] = session.remainingSeconds.coerceAtLeast(0)
 		}
 	}
 
@@ -133,6 +140,7 @@ object ProgressDataStore {
 			prefs.remove(KEY_SESSION_TIME)
 			prefs.remove(KEY_SESSION_SEED)
 			prefs.remove(KEY_SESSION_LIVES)
+			prefs.remove(KEY_SESSION_REMAINING_SECONDS)
 			prefs.remove(KEY_TOPIC_ID)
 			prefs.remove(KEY_TOPIC_CURRENT_Q)
 			prefs.remove(KEY_TOPIC_SCORE)
@@ -219,6 +227,9 @@ object ProgressDataStore {
 			prefs[KEY_LAST_DEVOTION_DAY] = 0L
 			prefs[KEY_SRS_DUE] = "" // Clear SRS data on reset
 			prefs[KEY_THEME_MODE] = "light"
+			prefs[KEY_TEXT_SCALE] = "normal"
+			prefs[KEY_REDUCE_MOTION] = false
+			prefs[KEY_CRASH_REPORTING] = false
 
 			// New: attempts, time, last attempt summary, detailed mistakes
 			prefs[KEY_TOTAL_ATTEMPTS] = 0
@@ -239,6 +250,7 @@ object ProgressDataStore {
 			prefs.remove(KEY_SESSION_TIME)
 			prefs.remove(KEY_SESSION_SEED)
 			prefs.remove(KEY_SESSION_LIVES)
+			prefs.remove(KEY_SESSION_REMAINING_SECONDS)
 		}
 	}
 
@@ -369,6 +381,11 @@ object ProgressDataStore {
 			if (legacySet.add(legacyKey)) {
 				prefs[KEY_MISTAKE_KEYS] = legacySet.joinToString(",")
 			}
+
+			val reviewKey = createReviewKey(level, question)
+			val due = parseDueMap(prefs[KEY_SRS_DUE])
+			due[reviewKey] = epochDayNow() + 1
+			prefs[KEY_SRS_DUE] = serializeDueMap(due)
 		}
 	}
 
@@ -484,9 +501,14 @@ object ProgressDataStore {
 		parseDueMap(prefs[KEY_SRS_DUE]).filter { (_, day) -> day <= today }.keys.toList()
 	}
 
+	fun createReviewKey(level: Int, question: String): String = "$level|${encode(question)}"
+
+	fun reviewLevelFromKey(key: String): Int? = key.substringBefore('|').toIntOrNull()
+
 	suspend fun recordReviewResult(context: Context, key: String, wasCorrect: Boolean) {
 		context.progressDataStore.edit { prefs ->
 			val due = parseDueMap(prefs[KEY_SRS_DUE])
+			if (wasCorrect && key !in due) return@edit
 			val currentDue = due[key] ?: epochDayNow()
 			val nextInterval = when {
 				!wasCorrect -> 1 // repeat tomorrow on failure
@@ -552,6 +574,32 @@ object ProgressDataStore {
 		return context.progressDataStore.data.map { prefs ->
 			prefs[KEY_THEME_MODE] ?: "light"
 		}
+	}
+
+	fun observeTextScale(context: Context): Flow<String> = context.progressDataStore.data.map { prefs ->
+		prefs[KEY_TEXT_SCALE] ?: "normal"
+	}
+
+	suspend fun setTextScale(context: Context, scale: String) {
+		context.progressDataStore.edit { prefs ->
+			prefs[KEY_TEXT_SCALE] = if (scale == "large") "large" else "normal"
+		}
+	}
+
+	fun observeReduceMotion(context: Context): Flow<Boolean> = context.progressDataStore.data.map { prefs ->
+		prefs[KEY_REDUCE_MOTION] ?: false
+	}
+
+	suspend fun setReduceMotion(context: Context, enabled: Boolean) {
+		context.progressDataStore.edit { prefs -> prefs[KEY_REDUCE_MOTION] = enabled }
+	}
+
+	fun observeCrashReportingEnabled(context: Context): Flow<Boolean> = context.progressDataStore.data.map { prefs ->
+		prefs[KEY_CRASH_REPORTING] ?: false
+	}
+
+	suspend fun setCrashReportingEnabled(context: Context, enabled: Boolean) {
+		context.progressDataStore.edit { prefs -> prefs[KEY_CRASH_REPORTING] = enabled }
 	}
 
 	suspend fun setThemeMode(context: Context, mode: String) {

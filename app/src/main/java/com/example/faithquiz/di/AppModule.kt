@@ -25,7 +25,6 @@ object AppModule {
             AppDatabase::class.java,
             "faith_quiz_database"
         )
-        .fallbackToDestructiveMigration()
         .build()
     }
 

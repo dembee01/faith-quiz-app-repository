@@ -47,7 +47,7 @@ object QuestionBank {
         }
         
         // Validate questions and cache them
-        val validatedQuestions = validateQuestions(questions, level)
+        val validatedQuestions = validateQuestions(questions)
         questionCache[level] = validatedQuestions
         return validatedQuestions
     }
@@ -60,12 +60,12 @@ object QuestionBank {
         return (1..30).toList()
     }
     
-    private fun validateQuestions(questions: List<QuizQuestion>, level: Int): List<QuizQuestion> {
+    private fun validateQuestions(questions: List<QuizQuestion>): List<QuizQuestion> {
         if (questions.isEmpty()) {
             return level1Questions
         }
         
-        val validQuestions = questions.filter { question ->
+        val validQuestions = questions.map(QuestionContent::enrich).filter { question ->
             isValidQuestion(question)
         }
         
@@ -660,53 +660,53 @@ object QuestionBank {
             explanation = "Isaiah 11 speaks of the Branch."
         )
     )
-    private val level12Questions = createAdvancedQuestions(12, "Early Church", 15)
-    private val level13Questions = createAdvancedQuestions(13, "Paul's Letters", 15)
-    private val level14Questions = createAdvancedQuestions(14, "General Letters", 15)
-    private val level15Questions = createAdvancedQuestions(15, "Biblical Geography", 15)
-    private val level16Questions = createAdvancedQuestions(16, "Biblical History", 15)
-    private val level17Questions = createAdvancedQuestions(17, "Miracles", 15)
-    private val level18Questions = createAdvancedQuestions(18, "Parables", 15)
-    private val level19Questions = createAdvancedQuestions(19, "Biblical Characters", 15)
-    private val level20Questions = createAdvancedQuestions(20, "Biblical Numbers", 15)
-    private val level21Questions = createAdvancedQuestions(21, "Biblical Symbols", 15)
-    private val level22Questions = createAdvancedQuestions(22, "Biblical Festivals", 15)
-    private val level23Questions = createAdvancedQuestions(23, "Biblical Covenants", 15)
-    private val level24Questions = createAdvancedQuestions(24, "Biblical Prophecy", 15)
-    private val level25Questions = createAdvancedQuestions(25, "Biblical Theology", 15)
-    private val level26Questions = createAdvancedQuestions(26, "Biblical Languages", 15)
-    private val level27Questions = createAdvancedQuestions(27, "Biblical Archaeology", 15)
-    private val level28Questions = createAdvancedQuestions(28, "Biblical Interpretation", 15)
-    private val level29Questions = createAdvancedQuestions(29, "Advanced Theology", 15)
-    private val level30Questions = createAdvancedQuestions(30, "Biblical Mastery", 15)
+    private val level12Questions = createAdvancedQuestions("Early Church", 15)
+    private val level13Questions = createAdvancedQuestions("Paul's Letters", 15)
+    private val level14Questions = createAdvancedQuestions("General Letters", 15)
+    private val level15Questions = createAdvancedQuestions("Biblical Geography", 15)
+    private val level16Questions = createAdvancedQuestions("Biblical History", 15)
+    private val level17Questions = createAdvancedQuestions("Miracles", 15)
+    private val level18Questions = createAdvancedQuestions("Parables", 15)
+    private val level19Questions = createAdvancedQuestions("Biblical Characters", 15)
+    private val level20Questions = createAdvancedQuestions("Biblical Numbers", 15)
+    private val level21Questions = createAdvancedQuestions("Biblical Symbols", 15)
+    private val level22Questions = createAdvancedQuestions("Biblical Festivals", 15)
+    private val level23Questions = createAdvancedQuestions("Biblical Covenants", 15)
+    private val level24Questions = createAdvancedQuestions("Biblical Prophecy", 15)
+    private val level25Questions = createAdvancedQuestions("Biblical Theology", 15)
+    private val level26Questions = createAdvancedQuestions("Biblical Languages", 15)
+    private val level27Questions = createAdvancedQuestions("Biblical Archaeology", 15)
+    private val level28Questions = createAdvancedQuestions("Biblical Interpretation", 15)
+    private val level29Questions = createAdvancedQuestions("Advanced Theology", 15)
+    private val level30Questions = createAdvancedQuestions("Biblical Mastery", 15)
     
-    private fun createAdvancedQuestions(level: Int, topic: String, count: Int): List<QuizQuestion> {
+    private fun createAdvancedQuestions(topic: String, count: Int): List<QuizQuestion> {
         return when (topic) {
-            "Early Church" -> getEarlyChurchQuestions(level)
-            "Paul's Letters" -> getPaulsLettersQuestions(level)
-            "General Letters" -> getGeneralLettersQuestions(level)
-            "Biblical Geography" -> getBiblicalGeographyQuestions(level)
-            "Biblical History" -> getBiblicalHistoryQuestions(level)
-            "Miracles" -> getMiraclesQuestions(level)
-            "Parables" -> getParablesQuestions(level)
-            "Biblical Characters" -> getBiblicalCharactersQuestions(level)
-            "Biblical Numbers" -> getBiblicalNumbersQuestions(level)
-            "Biblical Symbols" -> getBiblicalSymbolsQuestions(level)
-            "Biblical Festivals" -> getBiblicalFestivalsQuestions(level)
-            "Biblical Covenants" -> getBiblicalCovenantsQuestions(level)
-            "Biblical Prophecy" -> getBiblicalProphecyQuestions(level)
-            "Biblical Theology" -> getBiblicalTheologyQuestions(level)
-            "Biblical Languages" -> getBiblicalLanguagesQuestions(level)
-            "Biblical Archaeology" -> getBiblicalArchaeologyQuestions(level)
-            "Biblical Interpretation" -> getBiblicalInterpretationQuestions(level)
-            "Advanced Theology" -> getAdvancedTheologyQuestions(level)
-            "Biblical Mastery" -> getBiblicalMasteryQuestions(level)
-            else -> getEarlyChurchQuestions(level)
+            "Early Church" -> getEarlyChurchQuestions()
+            "Paul's Letters" -> getPaulsLettersQuestions()
+            "General Letters" -> getGeneralLettersQuestions()
+            "Biblical Geography" -> getBiblicalGeographyQuestions()
+            "Biblical History" -> getBiblicalHistoryQuestions()
+            "Miracles" -> getMiraclesQuestions()
+            "Parables" -> getParablesQuestions()
+            "Biblical Characters" -> getBiblicalCharactersQuestions()
+            "Biblical Numbers" -> getBiblicalNumbersQuestions()
+            "Biblical Symbols" -> getBiblicalSymbolsQuestions()
+            "Biblical Festivals" -> getBiblicalFestivalsQuestions()
+            "Biblical Covenants" -> getBiblicalCovenantsQuestions()
+            "Biblical Prophecy" -> getBiblicalProphecyQuestions()
+            "Biblical Theology" -> getBiblicalTheologyQuestions()
+            "Biblical Languages" -> getBiblicalLanguagesQuestions()
+            "Biblical Archaeology" -> getBiblicalArchaeologyQuestions()
+            "Biblical Interpretation" -> getBiblicalInterpretationQuestions()
+            "Advanced Theology" -> getAdvancedTheologyQuestions()
+            "Biblical Mastery" -> getBiblicalMasteryQuestions()
+            else -> getEarlyChurchQuestions()
         }.take(count)
     }
     
     // Early Church Questions (Level 12)
-    private fun getEarlyChurchQuestions(level: Int): List<QuizQuestion> {
+    private fun getEarlyChurchQuestions(): List<QuizQuestion> {
         return listOf(
             QuizQuestion(
                 question = "Who was chosen as one of the seven to serve along with Stephen in Acts 6?",
@@ -832,7 +832,7 @@ object QuestionBank {
     }
     
     // Paul's Letters Questions (Level 13)
-    private fun getPaulsLettersQuestions(level: Int): List<QuizQuestion> {
+    private fun getPaulsLettersQuestions(): List<QuizQuestion> {
         return listOf(
             QuizQuestion(
                 question = "Which of these is traditionally classified as one of Paul's Prison Epistles?",
@@ -878,7 +878,7 @@ object QuestionBank {
     }
     
     // General Letters Questions (Level 14)
-    private fun getGeneralLettersQuestions(level: Int): List<QuizQuestion> {
+    private fun getGeneralLettersQuestions(): List<QuizQuestion> {
         return listOf(
             QuizQuestion(
                 question = "Traditionally, which James is identified as the author of the letter of James?",
@@ -924,7 +924,7 @@ object QuestionBank {
     }
     
     // Biblical Geography Questions (Level 15)
-    private fun getBiblicalGeographyQuestions(level: Int): List<QuizQuestion> {
+    private fun getBiblicalGeographyQuestions(): List<QuizQuestion> {
         return listOf(
             QuizQuestion(
                 question = "Which city is known as the 'City of Palms'?",
@@ -970,7 +970,7 @@ object QuestionBank {
     }
     
     // Miracles Questions (Level 17)
-    private fun getMiraclesQuestions(level: Int): List<QuizQuestion> {
+    private fun getMiraclesQuestions(): List<QuizQuestion> {
         return listOf(
             QuizQuestion(
                 question = "Whose mother-in-law did Jesus heal of a fever?",
@@ -1016,7 +1016,7 @@ object QuestionBank {
     }
     
     // Parables Questions (Level 18)
-    private fun getParablesQuestions(level: Int): List<QuizQuestion> {
+    private fun getParablesQuestions(): List<QuizQuestion> {
         return listOf(
             QuizQuestion(
                 question = "In the Parable of the Sower, what does the seed represent?",
@@ -1059,7 +1059,7 @@ object QuestionBank {
     
     // Placeholder functions for other topics (to be implemented)
     // Biblical History (Level 16)
-    private fun getBiblicalHistoryQuestions(level: Int): List<QuizQuestion> {
+    private fun getBiblicalHistoryQuestions(): List<QuizQuestion> {
         return listOf(
             QuizQuestion(
                 question = "Which empire destroyed the First Temple in 586 BC?",
@@ -1099,7 +1099,7 @@ object QuestionBank {
         )
     }
     // Biblical Characters (Level 19)
-    private fun getBiblicalCharactersQuestions(level: Int): List<QuizQuestion> {
+    private fun getBiblicalCharactersQuestions(): List<QuizQuestion> {
         return listOf(
             QuizQuestion(
                 question = "Who climbed a sycamore tree to see Jesus?",
@@ -1139,7 +1139,7 @@ object QuestionBank {
         )
     }
     // Biblical Numbers (Level 20) - Hard Mode
-    private fun getBiblicalNumbersQuestions(level: Int): List<QuizQuestion> {
+    private fun getBiblicalNumbersQuestions(): List<QuizQuestion> {
         return listOf(
             QuizQuestion(
                 question = "Exactly how many fish were caught in the miraculous catch recorded in John 21?",
@@ -1179,7 +1179,7 @@ object QuestionBank {
         )
     }
     // Biblical Symbols (Level 21)
-    private fun getBiblicalSymbolsQuestions(level: Int): List<QuizQuestion> {
+    private fun getBiblicalSymbolsQuestions(): List<QuizQuestion> {
         return listOf(
             QuizQuestion(
                 question = "What does the 'Lamb of God' represent?",
@@ -1219,7 +1219,7 @@ object QuestionBank {
         )
     }
     // Biblical Festivals (Level 22)
-    private fun getBiblicalFestivalsQuestions(level: Int): List<QuizQuestion> {
+    private fun getBiblicalFestivalsQuestions(): List<QuizQuestion> {
         return listOf(
             QuizQuestion(
                 question = "Which festival celebrates the Israelites' deliverance from Egypt?",
@@ -1259,7 +1259,7 @@ object QuestionBank {
         )
     }
     // Biblical Covenants (Level 23)
-    private fun getBiblicalCovenantsQuestions(level: Int): List<QuizQuestion> {
+    private fun getBiblicalCovenantsQuestions(): List<QuizQuestion> {
         return listOf(
             QuizQuestion(
                 question = "Which covenant is associated with the rainbow?",
@@ -1299,7 +1299,7 @@ object QuestionBank {
         )
     }
     // Biblical Prophecy (Level 24) - Hard Mode
-    private fun getBiblicalProphecyQuestions(level: Int): List<QuizQuestion> {
+    private fun getBiblicalProphecyQuestions(): List<QuizQuestion> {
         return listOf(
             QuizQuestion(
                 question = "Which prophet was told to buy a linen loincloth and hide it by the Euphrates?",
@@ -1339,7 +1339,7 @@ object QuestionBank {
         )
     }
     // Biblical Theology (Level 25) - Hard Mode
-    private fun getBiblicalTheologyQuestions(level: Int): List<QuizQuestion> {
+    private fun getBiblicalTheologyQuestions(): List<QuizQuestion> {
         return listOf(
             QuizQuestion(
                 question = "What does the theological term 'Kenosis' refer to?",
@@ -1379,7 +1379,7 @@ object QuestionBank {
         )
     }
     // Biblical Languages (Level 26)
-    private fun getBiblicalLanguagesQuestions(level: Int): List<QuizQuestion> {
+    private fun getBiblicalLanguagesQuestions(): List<QuizQuestion> {
         return listOf(
             QuizQuestion(
                 question = "What language was the Old Testament primarily written in?",
@@ -1419,7 +1419,7 @@ object QuestionBank {
         )
     }
     // Biblical Archaeology (Level 27) - Hard Mode
-    private fun getBiblicalArchaeologyQuestions(level: Int): List<QuizQuestion> {
+    private fun getBiblicalArchaeologyQuestions(): List<QuizQuestion> {
         return listOf(
             QuizQuestion(
                 question = "The 'Black Obelisk of Shalmaneser III' depicts which Israelite king bowing down?",
@@ -1459,7 +1459,7 @@ object QuestionBank {
         )
     }
     // Biblical Interpretation (Level 28)
-    private fun getBiblicalInterpretationQuestions(level: Int): List<QuizQuestion> {
+    private fun getBiblicalInterpretationQuestions(): List<QuizQuestion> {
         return listOf(
             QuizQuestion(
                 question = "What is a 'Parable'?",
@@ -1499,7 +1499,7 @@ object QuestionBank {
         )
     }
     // Advanced Theology (Level 29)
-    private fun getAdvancedTheologyQuestions(level: Int): List<QuizQuestion> {
+    private fun getAdvancedTheologyQuestions(): List<QuizQuestion> {
         return listOf(
             QuizQuestion(
                 question = "What is 'Sola Fide'?",
@@ -1539,7 +1539,7 @@ object QuestionBank {
         )
     }
     // Biblical Mastery (Level 30) - Very Hard
-    private fun getBiblicalMasteryQuestions(level: Int): List<QuizQuestion> {
+    private fun getBiblicalMasteryQuestions(): List<QuizQuestion> {
         return listOf(
             QuizQuestion(
                 question = "Who fell out of a third-story window while Paul was preaching until midnight?",

@@ -7,7 +7,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -123,7 +123,7 @@ fun JourneyScreen(navController: NavController) {
                 // OR use reverseLayout = true and provide list in NORMAL order (Level 1 first).
                 // Let's use reverseLayout = true.
                 
-                itemsIndexed(JourneyData.levels) { index, node ->
+                items(JourneyData.levels) { node ->
                     val offsetRatio = when (node.level % 4) {
 
                         1 -> 0f

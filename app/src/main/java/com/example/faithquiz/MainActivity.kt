@@ -2,18 +2,18 @@ package com.example.faithquiz
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.rememberNavController
 import com.example.faithquiz.ui.navigation.AppNavigation
 import com.example.faithquiz.ui.theme.FaithQuizTheme
-import com.google.android.play.core.review.ReviewManagerFactory
-import androidx.lifecycle.lifecycleScope
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -21,21 +21,14 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        // Fire-and-forget lightweight review prompt based on simple heuristic
-        lifecycleScope.launch {
-            try {
-                val manager = ReviewManagerFactory.create(this@MainActivity)
-                val request = manager.requestReviewFlow()
-                val reviewInfo = request.await()
-                manager.launchReviewFlow(this@MainActivity, reviewInfo)
-            } catch (_: Exception) { }
-        }
+        enableEdgeToEdge()
 
         setContent {
             FaithQuizTheme {
                 Surface(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .windowInsetsPadding(WindowInsets.safeDrawing),
                     color = MaterialTheme.colorScheme.background
                 ) {
                     val navController = rememberNavController()

@@ -25,6 +25,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -101,8 +102,15 @@ fun QuizScreen(
     var score by rememberSaveable(level, mode) { mutableIntStateOf(if (isRestoring) session!!.score else 0) }
     var isQuizCompleted by rememberSaveable(level, mode) { mutableStateOf(false) }
     var remainingLives by rememberSaveable(level, mode) { mutableIntStateOf(if (isRestoring) session!!.lives else (if (mode == "survival") 3 else 0)) }
-    var remainingSeconds by rememberSaveable(level, mode) { mutableIntStateOf(if (mode == "speed") 60 else 0) } // Speed mode resume TODO?
-    var startedAt by rememberSaveable(level, mode) { mutableLongStateOf(System.currentTimeMillis()) }
+    var remainingSeconds by rememberSaveable(level, mode) {
+        mutableIntStateOf(
+            if (mode == "speed") {
+                if (isRestoring) session!!.remainingSeconds else 60
+            } else {
+                0
+            }
+        )
+    }
     var totalElapsedSeconds by rememberSaveable(level, mode) { mutableIntStateOf(0) }
     
     var lastProcessedQuestionIndex by rememberSaveable(level, mode) { mutableIntStateOf(-1) }
@@ -131,7 +139,7 @@ fun QuizScreen(
     
     // -- Autosave Logic --
     // Save state whenever index, score, or pause changes
-    LaunchedEffect(currentQuestionIndex, score, remainingLives, totalLevelTime, isQuizCompleted) {
+    LaunchedEffect(currentQuestionIndex, score, remainingLives, remainingSeconds, totalLevelTime, isQuizCompleted) {
         if (!isQuizCompleted) {
             ProgressDataStore.saveQuizSession(
                 context,
@@ -142,7 +150,8 @@ fun QuizScreen(
                     score = score,
                     time = totalLevelTime,
                     seed = randomSeed,
-                    lives = remainingLives
+                    lives = remainingLives,
+                    remainingSeconds = remainingSeconds
                 )
             )
         } else {
@@ -365,7 +374,7 @@ fun QuizScreen(
                                 .fillMaxWidth()
                                 .padding(vertical = 6.dp)
                                 .clip(RoundedCornerShape(16.dp))
-                                .clickable(enabled = !showAnswerFeedback) {
+                                .clickable(enabled = !showAnswerFeedback, role = Role.RadioButton) {
                                     if (!showAnswerFeedback) selectedAnswer = index
                                 },
                             color = containerColor,
@@ -434,7 +443,11 @@ fun QuizScreen(
                         )
                         currentQuestion.verseReference?.let { ref ->
                             Spacer(modifier = Modifier.height(4.dp))
-                            Text(text = ref, style = MaterialTheme.typography.labelMedium, color = GlowingGold)
+                            Text(
+                                text = "$ref • ${currentQuestion.translation}",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = GlowingGold
+                            )
                         }
                     }
                 }
@@ -472,6 +485,13 @@ fun QuizScreen(
                                     remainingLives = (remainingLives - 1).coerceAtLeast(0)
                                     if (remainingLives == 0) isQuizCompleted = true
                                 }
+                            }
+                            scope.launch {
+                                ProgressDataStore.recordReviewResult(
+                                    context,
+                                    ProgressDataStore.createReviewKey(level, currentQuestion.question),
+                                    isCorrectSelection
+                                )
                             }
                         }
                     } else {
@@ -525,17 +545,10 @@ private fun shuffleOptions(question: QuizQuestion, random: Random): QuizQuestion
 }
 
 // Map keywords to sound resource IDs for Audio Atmosphere
-fun resolveAmbience(questionText: String): Int {
-    val text = questionText.lowercase()
+fun resolveAmbience(@Suppress("UNUSED_PARAMETER") questionText: String): Int {
     
     // To enable ambience, place mp3 files in res/raw/ and uncomment:
     // val R_raw_rain = R.raw.rain 
     
-    return when {
-         // text.contains("flood") || text.contains("noah") || text.contains("water") -> R.raw.rain
-         // text.contains("desert") || text.contains("moses") || text.contains("wild") -> R.raw.wind
-         // text.contains("temple") || text.contains("priest") -> R.raw.temple_chant
-         // text.contains("star") || text.contains("night") -> R.raw.night_crickets
-         else -> 0 // Silence
-    }
+    return 0
 }

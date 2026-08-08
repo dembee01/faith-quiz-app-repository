@@ -11,6 +11,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Help
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -23,6 +24,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -47,6 +49,7 @@ fun MainMenuScreen(
     val highScore by ProgressDataStore.observeHighScore(context).collectAsState(initial = 0)
     val lastCompleted by ProgressDataStore.observeLastCompletedLevel(context).collectAsState(initial = 1)
     val devotionStreak by ProgressDataStore.observeDevotionStreak(context).collectAsState(initial = 0)
+    val reduceMotion by ProgressDataStore.observeReduceMotion(context).collectAsState(initial = false)
 
     val scrollState = rememberScrollState()
 
@@ -63,7 +66,7 @@ fun MainMenuScreen(
             Spacer(modifier = Modifier.height(32.dp))
 
             // Animated Divine Title
-            DivineAnimateTitle()
+            DivineAnimateTitle(reduceMotion = reduceMotion)
 
             Spacer(modifier = Modifier.height(32.dp))
 
@@ -83,10 +86,22 @@ fun MainMenuScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 DivineMenuCard(
+                    title = "Daily Challenge",
+                    subtitle = "One new question every day",
+                    icon = Icons.Default.CalendarMonth,
+                    delayMs = 50,
+                    reduceMotion = reduceMotion
+                ) {
+                    AudioHelper.playSelect()
+                    navController.navigate(Screen.DailyChallenge.route)
+                }
+
+                DivineMenuCard(
                     title = "The Covenant Journey",
                     subtitle = "Your Biblical Adventure Map",
                     icon = Icons.Default.Map,
-                    delayMs = 100
+                    delayMs = 100,
+                    reduceMotion = reduceMotion
                 ) {
                     AudioHelper.playSelect()
                     navController.navigate(Screen.Journey.route)
@@ -95,8 +110,9 @@ fun MainMenuScreen(
                 DivineMenuCard(
                     title = "Adaptive Levels",
                     subtitle = "Classic Level Selection",
-                    icon = Icons.Default.List,
-                    delayMs = 150
+                    icon = Icons.AutoMirrored.Filled.List,
+                    delayMs = 150,
+                    reduceMotion = reduceMotion
                 ) {
                     AudioHelper.playSelect()
                     navController.navigate(Screen.LevelSelect.route)
@@ -108,7 +124,8 @@ fun MainMenuScreen(
                     title = "Review Wisdom",
                     subtitle = "Study Your Past Answers",
                     icon = Icons.Default.Bookmarks,
-                    delayMs = 200
+                    delayMs = 200,
+                    reduceMotion = reduceMotion
                 ) {
                     AudioHelper.playSelect()
                     navController.navigate(Screen.Review.route)
@@ -119,7 +136,8 @@ fun MainMenuScreen(
                     title = "Topic Scrolls",
                     subtitle = "Specific Books & Themes",
                     icon = Icons.Default.Category,
-                    delayMs = 300
+                    delayMs = 300,
+                    reduceMotion = reduceMotion
                 ) {
                     AudioHelper.playSelect()
                     navController.navigate(Screen.TopicPacks.route)
@@ -130,7 +148,8 @@ fun MainMenuScreen(
                     title = "Leaderboard",
                     subtitle = "See Faithful Servants",
                     icon = Icons.Default.Leaderboard,
-                    delayMs = 400
+                    delayMs = 400,
+                    reduceMotion = reduceMotion
                 ) {
                     AudioHelper.playSelect()
                     navController.navigate(Screen.Leaderboard.route)
@@ -141,7 +160,8 @@ fun MainMenuScreen(
                     title = "Settings",
                     subtitle = "Configure Your Experience",
                     icon = Icons.Default.Settings,
-                    delayMs = 500
+                    delayMs = 500,
+                    reduceMotion = reduceMotion
                 ) {
                     AudioHelper.playSelect()
                     navController.navigate(Screen.Settings.route)
@@ -155,7 +175,7 @@ fun MainMenuScreen(
 }
 
 @Composable
-fun DivineAnimateTitle() {
+fun DivineAnimateTitle(reduceMotion: Boolean = false) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         // "FAITH QUIZ"
         TypewriterText(
@@ -168,7 +188,8 @@ fun DivineAnimateTitle() {
             typingDelay = 150,
             backspaceDelay = 100,
             waitAfterType = 3000,
-            waitAfterBackspace = 1000
+            waitAfterBackspace = 1000,
+            reduceMotion = reduceMotion
         )
         
         Spacer(modifier = Modifier.height(8.dp))
@@ -183,7 +204,8 @@ fun DivineAnimateTitle() {
             typingDelay = 50,
             backspaceDelay = 30,
             waitAfterType = 3000,
-            waitAfterBackspace = 1000
+            waitAfterBackspace = 1000,
+            reduceMotion = reduceMotion
         )
     }
 }
@@ -196,11 +218,16 @@ fun TypewriterText(
     typingDelay: Long = 100,
     backspaceDelay: Long = 50,
     waitAfterType: Long = 2000,
-    waitAfterBackspace: Long = 500
+    waitAfterBackspace: Long = 500,
+    reduceMotion: Boolean = false
 ) {
     var displayedText by remember { mutableStateOf("") }
 
     LaunchedEffect(baseText) {
+        if (reduceMotion) {
+            displayedText = baseText
+            return@LaunchedEffect
+        }
         while (true) {
             // Type in
             for (i in 1..baseText.length) {
@@ -218,7 +245,7 @@ fun TypewriterText(
         }
     }
 
-    Box(contentAlignment = Alignment.Center) {
+    Box(modifier = modifier, contentAlignment = Alignment.Center) {
         // Invisible text to maintain layout size
         Text(
             text = baseText,
@@ -315,24 +342,27 @@ fun DivineMenuCard(
     subtitle: String,
     icon: ImageVector,
     delayMs: Int = 0,
+    reduceMotion: Boolean = false,
     onClick: () -> Unit
 ) {
     var isVisible by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
-        delay(delayMs.toLong())
+        if (!reduceMotion) delay(delayMs.toLong())
         isVisible = true
     }
 
     AnimatedVisibility(
         visible = isVisible,
-        enter = slideInVertically(initialOffsetY = { 50 }, animationSpec = tween(500)) + 
+        enter = if (reduceMotion) EnterTransition.None else {
+            slideInVertically(initialOffsetY = { 50 }, animationSpec = tween(500)) +
                 fadeIn(animationSpec = tween(500))
+        }
     ) {
         Card(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(80.dp)
-                .clickable { onClick() }
+                .clickable(role = Role.Button, onClick = onClick)
                 .border(1.dp, GlowingGold.copy(alpha = 0.5f), RoundedCornerShape(12.dp)),
             shape = RoundedCornerShape(12.dp),
             colors = CardDefaults.cardColors(

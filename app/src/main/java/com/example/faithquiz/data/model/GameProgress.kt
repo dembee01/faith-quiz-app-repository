@@ -30,7 +30,7 @@ data class LevelProgress(
 )
 
 data class DailyChallenge(
-    val question: Question,
+    val question: QuizQuestion,
     val isAvailable: Boolean = true,
     val isCompleted: Boolean = false,
     val date: String // ISO date string

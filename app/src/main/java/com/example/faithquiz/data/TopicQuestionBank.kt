@@ -20,6 +20,7 @@ object TopicQuestionBank {
         }
         // Validate and de-duplicate by normalized question text to avoid repeats or malformed items
         var cleaned = base
+            .map(QuestionContent::enrich)
             .filter { isValidQuestion(it) }
             .distinctBy { normalizeQuestionText(it.question) }
 

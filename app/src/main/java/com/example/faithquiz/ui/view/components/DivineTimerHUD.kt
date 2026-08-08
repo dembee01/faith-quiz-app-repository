@@ -21,6 +21,7 @@ import com.example.faithquiz.ui.theme.DeepRoyalPurple
 import com.example.faithquiz.ui.theme.EtherealGlass
 import com.example.faithquiz.ui.theme.GlowingGold
 import com.example.faithquiz.ui.theme.Typography
+import java.util.Locale
 
 /**
  * Divine Timer HUD - A floating glassmorphism timer overlay for the quiz screen.
@@ -129,5 +130,5 @@ fun DivineTimerHUD(
 private fun formatTime(seconds: Long): String {
     val mins = seconds / 60
     val secs = seconds % 60
-    return String.format("%02d:%02d", mins, secs)
+    return String.format(Locale.getDefault(), "%02d:%02d", mins, secs)
 }

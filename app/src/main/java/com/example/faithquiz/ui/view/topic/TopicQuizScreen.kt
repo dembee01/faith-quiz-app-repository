@@ -25,6 +25,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -288,7 +289,7 @@ fun TopicQuizScreen(
                                     .fillMaxWidth()
                                     .padding(vertical = 6.dp)
                                     .clip(RoundedCornerShape(16.dp))
-                                    .clickable(enabled = !showAnswerFeedback) {
+                                    .clickable(enabled = !showAnswerFeedback, role = Role.RadioButton) {
                                         if (!showAnswerFeedback) selectedAnswer = index
                                     },
                                 color = containerColor,
@@ -352,6 +353,12 @@ fun TopicQuizScreen(
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = Color.White
                             )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "${currentQuestion.verseReference} • ${currentQuestion.translation}",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = GlowingGold
+                            )
                         }
                     }
                 }
@@ -372,6 +379,20 @@ fun TopicQuizScreen(
                                 val isCorrect = selectedAnswer == currentQuestion.correctAnswer
                                 showAnswerFeedback = true
                                 if (isCorrect) score++
+                                scope.launch {
+                                    val reviewKey = ProgressDataStore.createReviewKey(0, currentQuestion.question)
+                                    ProgressDataStore.recordReviewResult(context, reviewKey, isCorrect)
+                                    if (!isCorrect) {
+                                        ProgressDataStore.addMistakeDetailed(
+                                            context,
+                                            0,
+                                            currentQuestion.question,
+                                            currentQuestion.options.getOrNull(selectedAnswer).orEmpty(),
+                                            currentQuestion.options.getOrNull(currentQuestion.correctAnswer).orEmpty(),
+                                            currentQuestion.explanation
+                                        )
+                                    }
+                                }
                             }
                         } else {
                             if (currentQuestionIndex < questions.size - 1) {

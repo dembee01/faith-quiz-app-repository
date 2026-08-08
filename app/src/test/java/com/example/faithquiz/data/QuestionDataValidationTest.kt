@@ -22,6 +22,25 @@ class QuestionDataValidationTest {
 		)
 		assertTrue("correctAnswer must be 0..3", question.correctAnswer in 0..3)
 		assertTrue("Explanation blank", question.explanation.isNotBlank())
+		assertTrue("Source reference blank", question.verseReference?.isNotBlank() == true)
+		assertTrue("Translation metadata blank", question.translation.isNotBlank())
+	}
+
+	@Test
+	fun canonical_database_projection_matches_the_displayed_question_bank() {
+		val canonical = QuestionContent.allLevelQuestions()
+		val expectedCount = QuestionBank.getAvailableLevels()
+			.sumOf { QuestionBank.getQuestionsForLevel(it).size }
+
+		assertEquals(expectedCount, canonical.size)
+		canonical.forEachIndexed { index, (level, question) ->
+			val stored = QuestionContent.asDatabaseQuestion(index + 1, level, question)
+			assertEquals(question.question, stored.question)
+			assertEquals(question.options, stored.choices)
+			assertEquals(question.correctAnswer, stored.correctAnswerIndex)
+			assertTrue(stored.source?.contains(question.translation) == true)
+			assertTrue(stored.tags?.contains("content-v${QuestionContent.VERSION}") == true)
+		}
 	}
 
 	@Test

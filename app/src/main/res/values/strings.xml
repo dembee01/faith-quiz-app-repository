@@ -23,7 +23,7 @@
     <string name="daily_challenge_description">Complete daily Bible challenges to improve your knowledge!</string>
     <string name="devotion_streak">Devotion streak: %1$d</string>
     <string name="learn_more">Learn more</string>
-    <string name="loading">Loading...</string>
+    <string name="loading">Loading…</string>
     <string name="error_loading_questions">Error loading questions</string>
     <string name="no_questions_available">No questions available for this level</string>
     <string name="explanation">Explanation</string>

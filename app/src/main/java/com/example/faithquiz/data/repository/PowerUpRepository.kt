@@ -44,7 +44,7 @@ class PowerUpRepository @Inject constructor(
         gameProgressDao.updatePowerUpsEarned(progress.powerUpsEarned + 1)
     }
 
-    suspend fun usePowerUp(type: PowerUpType): Boolean {
+    suspend fun usePowerUp(): Boolean {
         val currentProgress = gameProgressDao.getGameProgress().first()
         val progress = currentProgress ?: return false
         
