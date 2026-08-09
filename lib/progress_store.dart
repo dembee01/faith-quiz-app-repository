@@ -139,6 +139,7 @@ class ProgressStore extends ChangeNotifier {
   static const _lastQuizDayKey = 'last_quiz_epoch_day';
   static const _devotionStreakKey = 'devotion_streak';
   static const _lastDevotionDayKey = 'last_devotion_epoch_day';
+  static const _lastDailyChallengeDayKey = 'last_daily_challenge_epoch_day';
   static const _adaptiveLevelKey = 'adaptive_level';
   static const _themeKey = 'theme_mode';
   static const _textScaleKey = 'text_scale';
@@ -161,6 +162,7 @@ class ProgressStore extends ChangeNotifier {
   int totalTimeSpentSeconds = 0;
   int dailyStreak = 0;
   int devotionStreak = 0;
+  int lastDailyChallengeDay = -1;
   int adaptiveLevel = 1;
   bool perfectAchievement = false;
   bool streakAchievement = false;
@@ -178,6 +180,7 @@ class ProgressStore extends ChangeNotifier {
 
   int get dueReviewCount => dueReview.entries.where((entry) => entry.value <= _today).length;
   int get _today => DateTime.now().toUtc().millisecondsSinceEpoch ~/ Duration.millisecondsPerDay;
+  bool get isDailyChallengeCompletedToday => lastDailyChallengeDay == _today;
 
   Future<void> load() async {
     _preferences = await SharedPreferences.getInstance();
@@ -190,6 +193,7 @@ class ProgressStore extends ChangeNotifier {
     totalTimeSpentSeconds = prefs.getInt(_totalTimeKey) ?? 0;
     dailyStreak = prefs.getInt(_dailyStreakKey) ?? 0;
     devotionStreak = prefs.getInt(_devotionStreakKey) ?? 0;
+    lastDailyChallengeDay = prefs.getInt(_lastDailyChallengeDayKey) ?? -1;
     adaptiveLevel = prefs.getInt(_adaptiveLevelKey) ?? 1;
     perfectAchievement = prefs.getBool('achievement_perfect_score') ?? false;
     streakAchievement = prefs.getBool('achievement_streak_7') ?? false;
@@ -238,8 +242,10 @@ class ProgressStore extends ChangeNotifier {
       devotionStreak = previous == today - 1 ? devotionStreak + 1 : 1;
       await prefs.setInt(_lastDevotionDayKey, today);
       await prefs.setInt(_devotionStreakKey, devotionStreak);
-      notifyListeners();
     }
+    lastDailyChallengeDay = today;
+    await prefs.setInt(_lastDailyChallengeDayKey, today);
+    notifyListeners();
   }
 
   Future<void> saveQuizSession(QuizSession value) async {
@@ -325,9 +331,10 @@ class ProgressStore extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> recordTopicCompletion(int answered) async {
+  Future<void> recordTopicCompletion(int answered, {int elapsedSeconds = 0}) async {
     totalAnswered += answered;
     totalAttempts += 1;
+    totalTimeSpentSeconds += elapsedSeconds.clamp(0, 86400);
     await _persist();
     notifyListeners();
   }
@@ -342,6 +349,7 @@ class ProgressStore extends ChangeNotifier {
     totalTimeSpentSeconds = 0;
     dailyStreak = 0;
     devotionStreak = 0;
+    lastDailyChallengeDay = -1;
     adaptiveLevel = 1;
     perfectAchievement = false;
     streakAchievement = false;
@@ -381,6 +389,7 @@ class ProgressStore extends ChangeNotifier {
     await prefs.setInt(_totalTimeKey, totalTimeSpentSeconds);
     await prefs.setInt(_dailyStreakKey, dailyStreak);
     await prefs.setInt(_devotionStreakKey, devotionStreak);
+    await prefs.setInt(_lastDailyChallengeDayKey, lastDailyChallengeDay);
     await prefs.setInt(_adaptiveLevelKey, adaptiveLevel);
     await prefs.setBool('achievement_perfect_score', perfectAchievement);
     await prefs.setBool('achievement_streak_7', streakAchievement);
