@@ -1,6 +1,5 @@
 package com.example.faithquiz.ui.view.settings
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -14,21 +13,17 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-
 import androidx.compose.ui.window.Dialog
 import androidx.navigation.NavController
-import com.example.faithquiz.R
 import com.example.faithquiz.data.store.ProgressDataStore
 import com.example.faithquiz.ui.theme.*
+import com.example.faithquiz.ui.view.components.DivineBackground
 import com.example.faithquiz.util.CrashReporter
 import kotlinx.coroutines.launch
 
@@ -38,77 +33,65 @@ fun SettingsScreen(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    
-    // State for dialogs
+
     var showThemeDialog by remember { mutableStateOf(false) }
     var showTextScaleDialog by remember { mutableStateOf(false) }
     var showResetDialog by remember { mutableStateOf(false) }
     var showAboutDialog by remember { mutableStateOf(false) }
-    
-    // State for settings
-    val currentTheme by ProgressDataStore.observeThemeMode(context).collectAsState(initial = "light")
+
+    val currentTheme by ProgressDataStore.observeThemeMode(context).collectAsState(initial = "dark")
     val textScale by ProgressDataStore.observeTextScale(context).collectAsState(initial = "normal")
     val reduceMotion by ProgressDataStore.observeReduceMotion(context).collectAsState(initial = false)
     val crashReporting by ProgressDataStore.observeCrashReportingEnabled(context).collectAsState(initial = false)
-    
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(DeepRoyalPurple, Color.Black)
-                )
-            )
-    ) {
+
+    DivineBackground {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(Dimensions.screenPadding)
+                .padding(horizontal = 22.dp, vertical = 16.dp)
                 .verticalScroll(rememberScrollState())
         ) {
-            // Header
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(8.dp))
+            // Header Top Bar
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(onClick = { navController.popBackStack() }) {
                     Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack, 
-                        contentDescription = "Back", 
-                        tint = GlowingGold
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back",
+                        tint = SlateTextPrimary
                     )
                 }
                 Text(
                     text = "SETTINGS",
-                    style = MaterialTheme.typography.headlineMedium.copy(
-                        fontFamily = FontFamily.Serif,
-                        fontWeight = FontWeight.Bold,
-                        color = GlowingGold
-                    ),
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = SlateTextPrimary,
                     modifier = Modifier.padding(start = 8.dp)
                 )
             }
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
             // Appearance Section
-            DivineSectionHeader("APPEARANCE")
-            DivineSettingItem(
+            SlateSectionHeader("APPEARANCE")
+            SlateSettingItem(
                 title = "Theme",
                 subtitle = "Current: ${currentTheme.capitalize()}",
                 icon = Icons.Filled.DarkMode,
                 onClick = { showThemeDialog = true }
             )
 
-            Spacer(modifier = Modifier.height(24.dp))
-            DivineSectionHeader("ACCESSIBILITY")
-            DivineSettingItem(
+            Spacer(modifier = Modifier.height(20.dp))
+            SlateSectionHeader("ACCESSIBILITY")
+            SlateSettingItem(
                 title = "Text size",
                 subtitle = if (textScale == "large") "Large" else "Standard",
                 icon = Icons.Filled.TextFields,
                 onClick = { showTextScaleDialog = true }
             )
-            DivineSwitchSettingItem(
+            SlateSwitchSettingItem(
                 title = "Reduce motion",
                 subtitle = "Show content without typing and entrance animations",
                 icon = Icons.Filled.MotionPhotosOff,
@@ -117,12 +100,12 @@ fun SettingsScreen(
                     scope.launch { ProgressDataStore.setReduceMotion(context, enabled) }
                 }
             )
-            
-            Spacer(modifier = Modifier.height(24.dp))
+
+            Spacer(modifier = Modifier.height(20.dp))
 
             // Data Section
-            DivineSectionHeader("DATA & STORAGE")
-            DivineSettingItem(
+            SlateSectionHeader("DATA & STORAGE")
+            SlateSettingItem(
                 title = "Reset Progress",
                 subtitle = "Clear all stats and achievements",
                 icon = Icons.Filled.DeleteForever,
@@ -130,7 +113,7 @@ fun SettingsScreen(
                 onClick = { showResetDialog = true }
             )
 
-            DivineSwitchSettingItem(
+            SlateSwitchSettingItem(
                 title = "Crash reporting",
                 subtitle = if (CrashReporter.isConfigured) {
                     "Privately send technical crash details; no personal data"
@@ -145,34 +128,33 @@ fun SettingsScreen(
                 }
             )
 
-            Spacer(modifier = Modifier.height(24.dp))
-            
+            Spacer(modifier = Modifier.height(20.dp))
+
             // About Section
-            DivineSectionHeader("ABOUT")
-            DivineSettingItem(
+            SlateSectionHeader("ABOUT")
+            SlateSettingItem(
                 title = "About Faith Quiz",
                 subtitle = "Version 1.0.0",
                 icon = Icons.Filled.Info,
                 onClick = { showAboutDialog = true }
             )
-            
-            Spacer(modifier = Modifier.height(48.dp))
+
+            Spacer(modifier = Modifier.height(40.dp))
         }
     }
-    
-    // Theme Dialog
+
     if (showThemeDialog) {
-        DivineDialog(
+        SlateDialog(
             title = "Select Theme",
             onDismiss = { showThemeDialog = false }
         ) {
             Column {
-                DivineDialogOption("Light Mode", currentTheme == "light") {
-                    scope.launch { ProgressDataStore.setThemeMode(context, "light") }
+                SlateDialogOption("Dark Mode (Slate Indigo)", currentTheme == "dark") {
+                    scope.launch { ProgressDataStore.setThemeMode(context, "dark") }
                     showThemeDialog = false
                 }
-                DivineDialogOption("Dark Mode", currentTheme == "dark") {
-                    scope.launch { ProgressDataStore.setThemeMode(context, "dark") }
+                SlateDialogOption("Light Mode", currentTheme == "light") {
+                    scope.launch { ProgressDataStore.setThemeMode(context, "light") }
                     showThemeDialog = false
                 }
             }
@@ -180,34 +162,33 @@ fun SettingsScreen(
     }
 
     if (showTextScaleDialog) {
-        DivineDialog(
+        SlateDialog(
             title = "Select Text Size",
             onDismiss = { showTextScaleDialog = false }
         ) {
             Column {
-                DivineDialogOption("Standard", textScale == "normal") {
+                SlateDialogOption("Standard", textScale == "normal") {
                     scope.launch { ProgressDataStore.setTextScale(context, "normal") }
                     showTextScaleDialog = false
                 }
-                DivineDialogOption("Large", textScale == "large") {
+                SlateDialogOption("Large", textScale == "large") {
                     scope.launch { ProgressDataStore.setTextScale(context, "large") }
                     showTextScaleDialog = false
                 }
             }
         }
     }
-    
-    // Reset Dialog
+
     if (showResetDialog) {
-        DivineDialog(
+        SlateDialog(
             title = "Reset Progress?",
             onDismiss = { showResetDialog = false }
         ) {
             Column {
                 Text(
                     text = "Are you sure you want to reset all your progress? This action cannot be undone.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color.White.copy(alpha = 0.8f)
+                    fontSize = 14.sp,
+                    color = SlateTextSecondary
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 Row(
@@ -215,42 +196,43 @@ fun SettingsScreen(
                     horizontalArrangement = Arrangement.End
                 ) {
                     TextButton(onClick = { showResetDialog = false }) {
-                        Text("CANCEL", color = GlowingGold)
+                        Text("CANCEL", color = GoldAccent, fontWeight = FontWeight.Bold)
                     }
                     Spacer(modifier = Modifier.width(8.dp))
                     Button(
-                        onClick = { 
+                        onClick = {
                             scope.launch { ProgressDataStore.reset(context) }
                             showResetDialog = false
                         },
-                        colors = ButtonDefaults.buttonColors(containerColor = WrongAnswerRed)
+                        colors = ButtonDefaults.buttonColors(containerColor = WrongAnswerRed),
+                        shape = RoundedCornerShape(24.dp)
                     ) {
-                        Text("RESET", color = Color.White)
+                        Text("RESET", color = Color.White, fontWeight = FontWeight.Bold)
                     }
                 }
             }
         }
     }
-    
-    // About Dialog
+
     if (showAboutDialog) {
-        DivineDialog(
+        SlateDialog(
             title = "About Faith Quiz",
             onDismiss = { showAboutDialog = false }
         ) {
             Column {
                 Text(
                     text = "Faith Quiz is designed to help you master biblical knowledge through engaging quizzes and challenges.\n\nCreated with faith and code.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color.White.copy(alpha = 0.8f)
+                    fontSize = 14.sp,
+                    color = SlateTextSecondary
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 Button(
                     onClick = { showAboutDialog = false },
-                    colors = ButtonDefaults.buttonColors(containerColor = GlowingGold),
+                    colors = ButtonDefaults.buttonColors(containerColor = SlateCardLight, contentColor = SlateButtonText),
+                    shape = RoundedCornerShape(24.dp),
                     modifier = Modifier.align(Alignment.End)
                 ) {
-                    Text("CLOSE", color = DeepRoyalPurple)
+                    Text("CLOSE", fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -258,34 +240,32 @@ fun SettingsScreen(
 }
 
 @Composable
-fun DivineSectionHeader(title: String) {
+fun SlateSectionHeader(title: String) {
     Text(
         text = title,
-        style = MaterialTheme.typography.labelLarge.copy(
-            fontWeight = FontWeight.Bold,
-            letterSpacing = 2.sp
-        ),
-        color = GlowingGold.copy(alpha = 0.8f),
+        fontSize = 12.sp,
+        fontWeight = FontWeight.Bold,
+        letterSpacing = 1.5.sp,
+        color = GoldAccent,
         modifier = Modifier.padding(vertical = 8.dp)
     )
 }
 
 @Composable
-fun DivineSettingItem(
+fun SlateSettingItem(
     title: String,
     subtitle: String,
     icon: ImageVector,
-    iconTint: Color = GlowingGold,
+    iconTint: Color = GoldAccent,
     onClick: () -> Unit
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp)
-            .clickable { onClick() }
-            .border(1.dp, GlowingGold.copy(alpha = 0.3f), RoundedCornerShape(12.dp)),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = EtherealGlass)
+            .clickable { onClick() },
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = SlateSurface)
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
@@ -301,49 +281,45 @@ fun DivineSettingItem(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = title,
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontFamily = FontFamily.Serif,
-                        fontWeight = FontWeight.Bold
-                    ),
-                    color = Color.White
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = SlateTextPrimary
                 )
                 Text(
                     text = subtitle,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color.White.copy(alpha = 0.7f)
+                    fontSize = 13.sp,
+                    color = SlateTextSecondary
                 )
             }
             Icon(
                 imageVector = Icons.Default.ChevronRight,
                 contentDescription = null,
-                tint = GlowingGold.copy(alpha = 0.5f)
+                tint = SlateTextMuted
             )
         }
     }
 }
 
 @Composable
-fun DivineDialog(
+fun SlateDialog(
     title: String,
     onDismiss: () -> Unit,
     content: @Composable () -> Unit
 ) {
     Dialog(onDismissRequest = onDismiss) {
         Card(
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = DeepRoyalPurple.copy(alpha = 0.95f)),
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = SlateSurface),
             modifier = Modifier
                 .fillMaxWidth()
-                .border(1.dp, GlowingGold, RoundedCornerShape(16.dp))
+                .border(1.dp, SlateCardBorder, RoundedCornerShape(24.dp))
         ) {
-            Column(modifier = Modifier.padding(24.dp)) {
+            Column(modifier = Modifier.padding(22.dp)) {
                 Text(
                     text = title,
-                    style = MaterialTheme.typography.titleLarge.copy(
-                        fontFamily = FontFamily.Serif,
-                        fontWeight = FontWeight.Bold
-                    ),
-                    color = GlowingGold
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = SlateTextPrimary
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 content()
@@ -353,7 +329,7 @@ fun DivineDialog(
 }
 
 @Composable
-fun DivineDialogOption(
+fun SlateDialogOption(
     text: String,
     selected: Boolean,
     onClick: () -> Unit
@@ -362,22 +338,22 @@ fun DivineDialogOption(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() }
-            .padding(vertical = 12.dp),
+            .padding(vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         RadioButton(
             selected = selected,
             onClick = onClick,
             colors = RadioButtonDefaults.colors(
-                selectedColor = GlowingGold,
-                unselectedColor = Color.White.copy(alpha = 0.6f)
+                selectedColor = GoldAccent,
+                unselectedColor = SlateTextMuted
             )
         )
         Spacer(modifier = Modifier.width(8.dp))
         Text(
             text = text,
-            style = MaterialTheme.typography.bodyLarge,
-            color = Color.White
+            fontSize = 15.sp,
+            color = SlateTextPrimary
         )
     }
 }
@@ -387,7 +363,7 @@ private fun String.capitalize(): String {
 }
 
 @Composable
-fun DivineSwitchSettingItem(
+fun SlateSwitchSettingItem(
     title: String,
     subtitle: String,
     icon: ImageVector,
@@ -397,8 +373,8 @@ fun DivineSwitchSettingItem(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = EtherealGlass)
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = SlateSurface)
     ) {
         Row(
             modifier = Modifier
@@ -410,19 +386,24 @@ fun DivineSwitchSettingItem(
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                tint = if (enabled) GlowingGold else Color.Gray,
+                tint = if (enabled) GoldAccent else SlateTextMuted,
                 modifier = Modifier.size(24.dp)
             )
             Spacer(Modifier.width(16.dp))
             Column(Modifier.weight(1f)) {
-                Text(title, style = MaterialTheme.typography.titleMedium, color = Color.White)
-                Text(subtitle, style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.72f))
+                Text(title, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = SlateTextPrimary)
+                Text(subtitle, fontSize = 13.sp, color = SlateTextSecondary)
             }
             Switch(
                 checked = checked,
                 onCheckedChange = onCheckedChange,
-                enabled = enabled
+                enabled = enabled,
+                colors = SwitchDefaults.colors(
+                    checkedThumbColor = SlateBackgroundBottom,
+                    checkedTrackColor = GoldAccent
+                )
             )
         }
     }
 }
+

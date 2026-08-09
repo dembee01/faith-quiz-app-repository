@@ -2,33 +2,23 @@ package com.example.faithquiz.ui.view.results
 
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.faithquiz.ui.navigation.Screen
-import com.example.faithquiz.ui.theme.DeepRoyalPurple
-import com.example.faithquiz.ui.theme.EtherealGlass
-import com.example.faithquiz.ui.theme.GlowingGold
-import com.example.faithquiz.ui.theme.Typography
-import com.example.faithquiz.ui.theme.Dimensions
-import com.example.faithquiz.ui.theme.CorrectAnswerGreen
-import com.example.faithquiz.ui.theme.WrongAnswerRed
+import com.example.faithquiz.ui.theme.*
+import com.example.faithquiz.ui.view.components.DivineBackground
 import java.util.Locale
 
 @Composable
@@ -44,59 +34,49 @@ fun ProfessionalResultsScreen(
 ) {
     val percentage = if (totalQuestions > 0) (score.toFloat() / totalQuestions * 100).toInt() else 0
     val accuracy = score.toFloat() / totalQuestions.coerceAtLeast(1)
-    
-    // Animate the chart
+
     val animatedProgress = remember { Animatable(0f) }
     LaunchedEffect(accuracy) {
         animatedProgress.animateTo(
             targetValue = accuracy,
-            animationSpec = tween(durationMillis = 1500, easing = FastOutSlowInEasing)
+            animationSpec = tween(durationMillis = 1400, easing = FastOutSlowInEasing)
         )
     }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(DeepRoyalPurple, Color.Black)
-                )
-            )
-    ) {
+    DivineBackground {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.height(32.dp))
-            
+            Spacer(modifier = Modifier.height(24.dp))
+
             Text(
                 text = customTitle?.uppercase() ?: "LEVEL $level COMPLETE",
-                style = Typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
-                color = GlowingGold,
-                letterSpacing = 2.sp
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Bold,
+                color = SlateTextPrimary,
+                letterSpacing = 1.5.sp
             )
-            
-            Spacer(modifier = Modifier.height(48.dp))
-            
+
+            Spacer(modifier = Modifier.height(36.dp))
+
             // DONUT CHART
             Box(contentAlignment = Alignment.Center) {
-                Canvas(modifier = Modifier.size(200.dp)) {
-                    val strokeWidth = 20.dp.toPx()
+                Canvas(modifier = Modifier.size(190.dp)) {
+                    val strokeWidth = 18.dp.toPx()
                     val radius = size.minDimension / 2 - strokeWidth / 2
-                    
-                    // Background Ring (Incorrect)
+
                     drawCircle(
-                        color = Color.White.copy(alpha = 0.1f),
+                        color = SlateSurfaceVariant,
                         radius = radius,
                         style = Stroke(width = strokeWidth)
                     )
-                    
-                    // Foreground Ring (Correct)
+
                     drawArc(
                         brush = Brush.sweepGradient(
-                            listOf(GlowingGold.copy(alpha = 0.6f), GlowingGold)
+                            listOf(GoldAccent.copy(alpha = 0.7f), GoldAccent)
                         ),
                         startAngle = -90f,
                         sweepAngle = 360 * animatedProgress.value,
@@ -104,91 +84,92 @@ fun ProfessionalResultsScreen(
                         style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
                     )
                 }
-                
+
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
                         text = "$percentage%",
-                        style = Typography.displayMedium.copy(fontWeight = FontWeight.Bold),
-                        color = Color.White
+                        fontSize = 36.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = SlateTextPrimary
                     )
                     Text(
                         text = "ACCURACY",
-                        style = Typography.labelSmall,
-                        color = Color.White.copy(alpha = 0.6f)
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = SlateTextSecondary,
+                        letterSpacing = 1.sp
                     )
                 }
             }
-            
-            Spacer(modifier = Modifier.height(48.dp))
-            
+
+            Spacer(modifier = Modifier.height(40.dp))
+
             // STATS GRID
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                horizontalArrangement = Arrangement.spacedBy(14.dp)
             ) {
-                StatCard(
+                SlateStatCard(
                     label = "TOTAL SCORE",
                     value = "$score/$totalQuestions",
                     modifier = Modifier.weight(1f)
                 )
-                StatCard(
+                SlateStatCard(
                     label = "TIME SPENT",
                     value = formatTime(timeSpentSeconds.toLong()),
                     modifier = Modifier.weight(1f)
                 )
             }
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
+
+            Spacer(modifier = Modifier.height(14.dp))
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                horizontalArrangement = Arrangement.spacedBy(14.dp)
             ) {
                 val avgTime = if (totalQuestions > 0) timeSpentSeconds / totalQuestions else 0
-                StatCard(
+                SlateStatCard(
                     label = "AVG PACE",
                     value = "${avgTime}s / Q",
                     modifier = Modifier.weight(1f)
                 )
-                // Placeholder for future expanded stats like "Streak"
-                StatCard(
+                SlateStatCard(
                     label = "RATING",
                     value = getRating(percentage),
                     modifier = Modifier.weight(1f)
                 )
             }
-            
+
             Spacer(modifier = Modifier.weight(1f))
-            
+
             // ACTION BUTTONS
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                horizontalArrangement = Arrangement.spacedBy(14.dp)
             ) {
                 Button(
                     onClick = { navController.popBackStack() },
                     modifier = Modifier
                         .weight(1f)
                         .height(56.dp),
-                    shape = RoundedCornerShape(16.dp),
+                    shape = RoundedCornerShape(28.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.White.copy(alpha = 0.1f),
-                        contentColor = Color.White
+                        containerColor = SlateSurfaceVariant,
+                        contentColor = SlateTextPrimary
                     )
                 ) {
-                    Text("MENU", fontWeight = FontWeight.Bold)
+                    Text("MENU", fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 }
-                
-                val showNextButton = onNext != null || onRetry != null || percentage >= 60 || level > 0 // Always show for standard quiz
-                
+
+                val showNextButton = onNext != null || onRetry != null || percentage >= 60 || level > 0
+
                 if (showNextButton) {
-                     Button(
+                    Button(
                         onClick = {
                             when {
                                 onNext != null && percentage >= 60 -> onNext()
                                 onRetry != null && percentage < 60 -> onRetry()
                                 else -> {
-                                    // Default Level Logic
                                     if (percentage >= 60) {
                                         if (level == 30) {
                                             navController.navigate(Screen.GrandCompletion.route) {
@@ -204,33 +185,39 @@ fun ProfessionalResultsScreen(
                                             popUpTo(Screen.LevelSelect.route)
                                         }
                                     }
-
                                 }
                             }
                         },
                         modifier = Modifier
                             .weight(1f)
                             .height(56.dp),
-                        shape = RoundedCornerShape(16.dp),
+                        shape = RoundedCornerShape(28.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = GlowingGold,
-                            contentColor = DeepRoyalPurple
-                        )
+                            containerColor = SlateCardLight,
+                            contentColor = SlateButtonText
+                        ),
+                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
                     ) {
-                        Text(if (percentage >= 60) "NEXT" else "TRY AGAIN", fontWeight = FontWeight.Bold)
+                        Text(
+                            text = if (percentage >= 60) "NEXT" else "TRY AGAIN",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold
+                        )
                     }
                 }
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }
 
 @Composable
-fun StatCard(label: String, value: String, modifier: Modifier = Modifier) {
+fun SlateStatCard(label: String, value: String, modifier: Modifier = Modifier) {
     Card(
         modifier = modifier,
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = EtherealGlass)
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = SlateSurface)
     ) {
         Column(
             modifier = Modifier
@@ -240,13 +227,16 @@ fun StatCard(label: String, value: String, modifier: Modifier = Modifier) {
         ) {
             Text(
                 text = value,
-                style = Typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                color = Color.White
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                color = SlateTextPrimary
             )
+            Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = label,
-                style = Typography.labelSmall,
-                color = Color.White.copy(alpha = 0.6f)
+                fontSize = 11.sp,
+                color = SlateTextSecondary,
+                fontWeight = FontWeight.SemiBold
             )
         }
     }
@@ -261,9 +251,10 @@ private fun formatTime(seconds: Long): String {
 private fun getRating(percentage: Int): String {
     return when {
         percentage == 100 -> "LEGENDARY"
-        percentage >= 90 -> "DIVINE"
+        percentage >= 90 -> "EXCELLENT"
         percentage >= 80 -> "BLESSED"
-        percentage >= 60 -> "FAITHFUL"
+        percentage >= 60 -> "PASSED"
         else -> "SEEKER"
     }
 }
+

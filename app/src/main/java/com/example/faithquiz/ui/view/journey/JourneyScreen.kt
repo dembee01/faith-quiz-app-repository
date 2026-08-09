@@ -2,6 +2,7 @@ package com.example.faithquiz.ui.view.journey
 
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -21,20 +22,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
-import androidx.compose.foundation.Image
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
-
-
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
-
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -47,92 +42,73 @@ import com.example.faithquiz.ui.navigation.Screen
 import com.example.faithquiz.ui.theme.*
 import com.example.faithquiz.ui.view.components.DivineBackground
 
-
-
-
 @Composable
 fun JourneyScreen(navController: NavController) {
     val context = LocalContext.current
     val highestUnlocked by ProgressDataStore.observeHighestUnlockedLevel(context).collectAsState(initial = 1)
-    
-    // Automatically scroll to the current level
+
     val listState = rememberLazyListState()
     LaunchedEffect(highestUnlocked) {
-        // Scroll to the active level (approximate index)
         val index = (highestUnlocked - 1).coerceAtLeast(0)
         listState.animateScrollToItem(index)
     }
 
     DivineBackground {
-
-
         Column(modifier = Modifier.fillMaxSize()) {
-            // Header
+            Spacer(modifier = Modifier.height(8.dp))
+            // Header Top Bar
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(onClick = { navController.popBackStack() }) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Back",
-                        tint = GlowingGold
+                        tint = SlateTextPrimary
                     )
                 }
                 Text(
                     text = "THE COVENANT JOURNEY",
-                    style = MaterialTheme.typography.titleLarge.copy(
-                        fontFamily = FontFamily.Serif,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 1.sp
-                    ),
-                    color = GlowingGold,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = SlateTextPrimary,
                     modifier = Modifier.padding(start = 8.dp)
                 )
             }
-            
-            // Journey Header Image
+
+            // Journey Banner
             Image(
                 painter = painterResource(id = R.drawable.journey_map_header),
                 contentDescription = "Covenant Journey Map",
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(140.dp)
+                    .height(130.dp)
                     .padding(horizontal = 16.dp)
-                    .clip(RoundedCornerShape(16.dp)),
+                    .clip(RoundedCornerShape(20.dp)),
                 contentScale = ContentScale.Crop
             )
-            
-            Spacer(modifier = Modifier.height(8.dp))
+
+            Spacer(modifier = Modifier.height(12.dp))
 
             // Map List
-
             LazyColumn(
                 state = listState,
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(bottom = 32.dp),
-                reverseLayout = true // Start from bottom (Creation) going up? Or standard top-down?
-                // Standard maps usually go BOTTOM to TOP (climbing). Let's try reverse layout.
-                // Level 1 at bottom, Level 30 at top.
+                reverseLayout = true
             ) {
-                // Because we use reverseLayout, index 0 is at the bottom.
-                // But our list is 1..30.
-                // If we want Level 1 at bottom, we should provide list in REVERSE order if using standard layout,
-                // OR use reverseLayout = true and provide list in NORMAL order (Level 1 first).
-                // Let's use reverseLayout = true.
-                
                 items(JourneyData.levels) { node ->
                     val offsetRatio = when (node.level % 4) {
-
                         1 -> 0f
-                        2 -> 0.6f
+                        2 -> 0.55f
                         3 -> 0f
-                        0 -> -0.6f
+                        0 -> -0.55f
                         else -> 0f
                     }
-                    
+
                     JourneyNodeItem(
                         node = node,
                         isUnlocked = node.level <= highestUnlocked,
@@ -141,10 +117,7 @@ fun JourneyScreen(navController: NavController) {
                         offsetRatio = offsetRatio,
                         onNodeClick = {
                             if (node.level <= highestUnlocked) {
-                                // Navigate to Quiz
-                                // We need to add "journey" mode to QuizScreen navigation
                                 navController.navigate(Screen.Quiz.createRoute(node.level, "journey"))
-
                             }
                         }
                     )
@@ -160,16 +133,16 @@ fun JourneyNodeItem(
     isUnlocked: Boolean,
     isCurrent: Boolean,
     isCompleted: Boolean,
-    offsetRatio: Float, // -1 (Left) to 1 (Right)
+    offsetRatio: Float,
     onNodeClick: () -> Unit
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "JourneyNodePulse")
 
     val pulseScale by infiniteTransition.animateFloat(
         initialValue = 1f,
-        targetValue = if (isCurrent) 1.2f else 1f,
+        targetValue = if (isCurrent) 1.15f else 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween(1000),
+            animation = tween(900),
             repeatMode = RepeatMode.Reverse
         ),
         label = "Pulse"
@@ -178,43 +151,34 @@ fun JourneyNodeItem(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(140.dp),
+            .height(136.dp),
         contentAlignment = Alignment.Center
     ) {
-        // Draw Path Connector
-        // This is complex because we need to connect to the previous/next item's position.
-        // For simplicity in this iteration, we'll draw a vertical curving path background?
-        // Or just let the nodes float and add 'dashed lines' via Canvas later.
-        // Let's draw a simple line to the "Center" for now to hint connection?
-        // No, let's just place the nodes first.
-        
         DrawingPathBackground(offsetRatio)
 
-        // Node Content
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier
                 .align(Alignment.Center)
-                .offset(x = (offsetRatio * 100).dp) // simplistic offset
+                .offset(x = (offsetRatio * 90).dp)
                 .clickable(enabled = isUnlocked, onClick = onNodeClick)
         ) {
-            // Circle Node
             Box(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier
-                    .size(if (isCurrent) 80.dp else 70.dp)
+                    .size(if (isCurrent) 76.dp else 68.dp)
                     .scale(if (isCurrent) pulseScale else 1f)
                     .clip(CircleShape)
                     .background(
                         if (isUnlocked) Brush.radialGradient(
-                            colors = listOf(GlowingGold, Color(0xFFDAA520))
+                            colors = listOf(GoldAccent, GoldAccentDark)
                         ) else Brush.radialGradient(
-                            colors = listOf(Color.Gray, Color.DarkGray)
+                            colors = listOf(SlateSurfaceVariant, SlateBackgroundBottom)
                         )
                     )
                     .border(
-                        width = 4.dp,
-                        color = if (isUnlocked) Color.White else Color.Gray,
+                        width = 3.dp,
+                        color = if (isUnlocked) SlateCardLight else SlateCardBorder,
                         shape = CircleShape
                     )
             ) {
@@ -222,78 +186,63 @@ fun JourneyNodeItem(
                     Icon(
                         imageVector = Icons.Default.Star,
                         contentDescription = "Completed",
-                        tint = Color.White,
-                        modifier = Modifier.size(32.dp)
+                        tint = SlateButtonText,
+                        modifier = Modifier.size(30.dp)
                     )
                 } else if (!isUnlocked) {
                     Icon(
                         imageVector = Icons.Default.Lock,
                         contentDescription = "Locked",
-                        tint = Color.LightGray,
-                        modifier = Modifier.size(32.dp)
+                        tint = SlateTextMuted,
+                        modifier = Modifier.size(28.dp)
                     )
                 } else {
-                    // Current / Unlocked but not completed
                     Text(
                         text = "${node.level}",
-                        style = MaterialTheme.typography.headlineMedium.copy(
-                            fontWeight = FontWeight.Bold,
-                            fontFamily = FontFamily.Serif
-                        ),
-                        color = Color.White
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = SlateButtonText
                     )
                 }
             }
-            
-            Spacer(modifier = Modifier.height(8.dp))
-            
-            // Label
+
+            Spacer(modifier = Modifier.height(6.dp))
+
             Text(
                 text = node.title,
-                style = MaterialTheme.typography.labelLarge.copy(
-                    fontWeight = FontWeight.Bold,
-                    shadow = androidx.compose.ui.graphics.Shadow(
-                        color = Color.Black,
-                        blurRadius = 4f
-                    )
-                ),
-                color = if (isUnlocked) GlowingGold else Color.Gray,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold,
+                color = if (isUnlocked) GoldAccent else SlateTextMuted,
                 textAlign = TextAlign.Center
             )
-            
-            // Description (shown only for unlocked levels)
+
             if (isUnlocked) {
                 Text(
                     text = node.description,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color.White.copy(alpha = 0.5f),
+                    fontSize = 12.sp,
+                    color = SlateTextSecondary,
                     textAlign = TextAlign.Center
                 )
             }
-
         }
     }
 }
 
 @Composable
 fun DrawingPathBackground(offsetRatio: Float) {
-    // This is a placeholder for the curve drawing. 
-    // Implementing a continuous bezier curve across distinct lazy items is tricky.
-    // We can draw a dashed line "towards" the center for now to simulate structure.
     Canvas(modifier = Modifier.fillMaxSize()) {
         val centerX = size.width / 2
-        val nodeX = centerX + (offsetRatio * 100).dp.toPx()
-        
-        // Draw a subtle guide line
+        val nodeX = centerX + (offsetRatio * 90).dp.toPx()
+
         drawLine(
-            color = GlowingGold.copy(alpha = 0.2f),
+            color = GoldAccent.copy(alpha = 0.25f),
             start = Offset(centerX, 0f),
             end = Offset(nodeX, size.height / 2),
             strokeWidth = 2.dp.toPx(),
             pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 10f), 0f)
         )
         drawLine(
-            color = GlowingGold.copy(alpha = 0.2f),
+            color = GoldAccent.copy(alpha = 0.25f),
             start = Offset(nodeX, size.height / 2),
             end = Offset(centerX, size.height),
             strokeWidth = 2.dp.toPx(),
@@ -301,3 +250,4 @@ fun DrawingPathBackground(offsetRatio: Float) {
         )
     }
 }
+

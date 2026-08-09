@@ -10,7 +10,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.PresentToAll
@@ -21,21 +20,18 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import com.example.faithquiz.R
 import com.example.faithquiz.data.store.ProgressDataStore
 import com.example.faithquiz.ui.theme.*
+import com.example.faithquiz.ui.view.components.DivineBackground
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -59,22 +55,15 @@ fun ResultsScreen(
     var selectedTab by remember { mutableStateOf(0) }
     val tabs = listOf("Overview", "Mistakes")
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(DeepRoyalPurple, Color.Black)
-                )
-            )
-    ) {
+    DivineBackground {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(Dimensions.screenPadding)
+                .padding(horizontal = 22.dp, vertical = 16.dp)
         ) {
-            // Header
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Header Top Bar
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
@@ -83,24 +72,21 @@ fun ResultsScreen(
                     Icon(
                         imageVector = Icons.Filled.Close,
                         contentDescription = "Close",
-                        tint = GlowingGold
+                        tint = SlateTextPrimary
                     )
                 }
                 Text(
                     text = "QUIZ RESULTS",
-                    style = MaterialTheme.typography.headlineMedium.copy(
-                        fontFamily = FontFamily.Serif,
-                        fontWeight = FontWeight.Bold,
-                        color = GlowingGold
-                    ),
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = SlateTextPrimary,
                     modifier = Modifier.padding(start = 8.dp)
                 )
             }
-            
+
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Tabs
-            DivineTabRow(
+            SlateTabRow(
                 selectedIndex = selectedTab,
                 tabs = tabs,
                 onTabSelected = { selectedTab = it }
@@ -108,7 +94,6 @@ fun ResultsScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Tab Content
             Box(modifier = Modifier.weight(1f)) {
                 when (selectedTab) {
                     0 -> OverviewTab(
@@ -131,7 +116,7 @@ fun ResultsScreen(
 }
 
 @Composable
-private fun DivineTabRow(
+private fun SlateTabRow(
     selectedIndex: Int,
     tabs: List<String>,
     onTabSelected: (Int) -> Unit
@@ -139,9 +124,9 @@ private fun DivineTabRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(48.dp)
-            .background(EtherealGlass, RoundedCornerShape(24.dp))
-            .border(1.dp, GlowingGold.copy(alpha = 0.3f), RoundedCornerShape(24.dp))
+            .height(50.dp)
+            .background(SlateSurface, RoundedCornerShape(28.dp))
+            .border(1.dp, SlateCardBorder, RoundedCornerShape(28.dp))
             .padding(4.dp),
         horizontalArrangement = Arrangement.SpaceAround,
         verticalAlignment = Alignment.CenterVertically
@@ -153,19 +138,18 @@ private fun DivineTabRow(
                     .weight(1f)
                     .fillMaxHeight()
                     .background(
-                        if (isSelected) GlowingGold else Color.Transparent,
-                        RoundedCornerShape(20.dp)
+                        if (isSelected) SlateCardLight else Color.Transparent,
+                        RoundedCornerShape(24.dp)
                     )
                     .clickable { onTabSelected(index) },
                 contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = title.uppercase(),
-                    style = MaterialTheme.typography.labelLarge.copy(
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 1.sp
-                    ),
-                    color = if (isSelected) DeepRoyalPurple else Color.White.copy(alpha = 0.7f)
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.sp,
+                    color = if (isSelected) SlateButtonText else SlateTextSecondary
                 )
             }
         }
@@ -187,19 +171,18 @@ private fun OverviewTab(
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
     ) {
-        // Stats Cards Row 1
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            DivineStatCard(
-                title = "TOTAL\nATTEMPTS",
+            SlateOverviewStatCard(
+                title = "TOTAL ATTEMPTS",
                 value = totalAttempts.toString(),
                 icon = Icons.Filled.PresentToAll,
                 modifier = Modifier.weight(1f)
             )
-            DivineStatCard(
-                title = "HIGH\nSCORE",
+            SlateOverviewStatCard(
+                title = "HIGH SCORE",
                 value = highScore.toString(),
                 icon = Icons.Filled.Star,
                 modifier = Modifier.weight(1f)
@@ -208,42 +191,40 @@ private fun OverviewTab(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Stats Cards Row 2
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            DivineStatCard(
-                title = "QUESTIONS\nANSWERED",
+            SlateOverviewStatCard(
+                title = "QUESTIONS ANSWERED",
                 value = totalAnswered.toString(),
                 icon = Icons.AutoMirrored.Filled.TrendingUp,
                 modifier = Modifier.weight(1f)
             )
-            DivineStatCard(
-                title = "AVG\nSPEED",
-                value = "${avgTimePerQuestionSec}xs",
+            SlateOverviewStatCard(
+                title = "AVG SPEED",
+                value = "${avgTimePerQuestionSec}s / Q",
                 icon = Icons.Filled.Timer,
                 modifier = Modifier.weight(1f)
             )
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(20.dp))
 
-        // Last Attempt Summary
-        DivineSectionHeader("LAST ATTEMPT")
+        SlateOverviewSectionHeader("LAST ATTEMPT")
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .border(1.dp, GlowingGold.copy(alpha = 0.3f), RoundedCornerShape(16.dp)),
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = EtherealGlass)
+                .border(1.dp, SlateCardBorder, RoundedCornerShape(20.dp)),
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(containerColor = SlateSurface)
         ) {
-            Column(modifier = Modifier.padding(20.dp)) {
+            Column(modifier = Modifier.padding(18.dp)) {
                 if (lastAttempt == null) {
                     Text(
                         text = "No attempts recorded yet.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color.White.copy(alpha = 0.7f)
+                        fontSize = 14.sp,
+                        color = SlateTextMuted
                     )
                 } else {
                     Row(
@@ -252,18 +233,17 @@ private fun OverviewTab(
                     ) {
                         Text(
                             text = "LEVEL ${lastAttempt.level}",
-                            style = MaterialTheme.typography.titleMedium.copy(
-                                fontWeight = FontWeight.Bold,
-                                color = GlowingGold
-                            )
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = GoldAccent
                         )
                         Text(
                             text = formatDate(lastAttempt.date),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Color.White.copy(alpha = 0.6f)
+                            fontSize = 12.sp,
+                            color = SlateTextMuted
                         )
                     }
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(6.dp))
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -271,55 +251,56 @@ private fun OverviewTab(
                     ) {
                         Text(
                             text = "Score: ${lastAttempt.score}/${lastAttempt.total}",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = Color.White
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = SlateTextPrimary
                         )
                         Text(
                             text = "${lastAttempt.timeSeconds}s",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = Color.White.copy(alpha = 0.7f)
+                            fontSize = 14.sp,
+                            color = SlateTextSecondary
                         )
                     }
-                    
+
                     Text(
                         text = "Mode: ${if (lastAttempt.mode.isBlank()) "Classic" else lastAttempt.mode.replaceFirstChar { it.titlecase() }}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.White.copy(alpha = 0.5f),
+                        fontSize = 12.sp,
+                        color = SlateTextMuted,
                         modifier = Modifier.padding(top = 4.dp)
                     )
                 }
             }
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(20.dp))
 
-        // Mistakes summary
-        DivineSectionHeader("MISTAKES")
+        SlateOverviewSectionHeader("MISTAKES")
         Card(
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable { onViewMistakes() }
-                .border(1.dp, WrongAnswerRed.copy(alpha = 0.5f), RoundedCornerShape(16.dp)),
-            shape = RoundedCornerShape(16.dp),
+                .border(1.dp, WrongAnswerRed.copy(alpha = 0.4f), RoundedCornerShape(20.dp)),
+            shape = RoundedCornerShape(20.dp),
             colors = CardDefaults.cardColors(
-                containerColor = WrongAnswerRed.copy(alpha = 0.1f)
+                containerColor = WrongAnswerRed.copy(alpha = 0.12f)
             )
         ) {
-            Column(modifier = Modifier.padding(20.dp)) {
+            Column(modifier = Modifier.padding(18.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = "Recorded Mistakes",
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                        color = Color.White
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = SlateTextPrimary
                     )
                     Spacer(modifier = Modifier.weight(1f))
                     Text(
                         text = "$mistakesCount total",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color.White.copy(alpha = 0.8f)
+                        fontSize = 13.sp,
+                        color = SlateTextSecondary
                     )
                 }
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(10.dp))
                 LinearProgressIndicator(
                     progress = {
                         val scale = 50f
@@ -327,17 +308,18 @@ private fun OverviewTab(
                     },
                     modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp)),
                     color = WrongAnswerRed,
-                    trackColor = Color.White.copy(alpha = 0.1f)
+                    trackColor = SlateSurfaceVariant
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = "Tap to review details",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = GlowingGold.copy(alpha = 0.8f)
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = GoldAccent
                 )
             }
         }
-        
+
         Spacer(modifier = Modifier.height(24.dp))
     }
 }
@@ -354,17 +336,18 @@ private fun MistakesTab(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Icon(Icons.Filled.Star, contentDescription = null, tint = GlowingGold, modifier = Modifier.size(48.dp))
+            Icon(Icons.Filled.Star, contentDescription = null, tint = GoldAccent, modifier = Modifier.size(48.dp))
             Spacer(modifier = Modifier.height(16.dp))
             Text(
                 text = "No mistakes recorded yet.",
-                style = MaterialTheme.typography.bodyLarge,
-                color = Color.White.copy(alpha = 0.7f)
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                color = SlateTextPrimary
             )
             Text(
                 text = "Keep up the faithful work!",
-                style = MaterialTheme.typography.bodyMedium,
-                color = Color.White.copy(alpha = 0.5f)
+                fontSize = 14.sp,
+                color = SlateTextSecondary
             )
         }
         return
@@ -375,14 +358,14 @@ private fun MistakesTab(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         items(sorted) { entry ->
-            DivineMistakeCard(entry = entry)
+            SlateMistakeCard(entry = entry)
         }
         item { Spacer(modifier = Modifier.height(24.dp)) }
     }
 }
 
 @Composable
-private fun DivineStatCard(
+private fun SlateOverviewStatCard(
     title: String,
     value: String,
     icon: ImageVector,
@@ -390,9 +373,8 @@ private fun DivineStatCard(
 ) {
     Card(
         modifier = modifier,
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = EtherealGlass),
-        elevation = CardDefaults.cardElevation(0.dp)
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = SlateSurface)
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
@@ -401,36 +383,35 @@ private fun DivineStatCard(
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                tint = GlowingGold,
+                tint = GoldAccent,
                 modifier = Modifier.size(24.dp)
             )
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(6.dp))
             Text(
                 text = value,
-                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-                color = Color.White
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                color = SlateTextPrimary
             )
             Text(
                 text = title,
-                style = MaterialTheme.typography.labelSmall.copy(
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 0.5.sp
-                ),
-                color = Color.White.copy(alpha = 0.6f),
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold,
+                color = SlateTextSecondary,
+                textAlign = TextAlign.Center
             )
         }
     }
 }
 
 @Composable
-private fun DivineMistakeCard(entry: ProgressDataStore.MistakeEntry) {
+private fun SlateMistakeCard(entry: ProgressDataStore.MistakeEntry) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .border(1.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(16.dp)),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = EtherealGlass)
+            .border(1.dp, SlateCardBorder, RoundedCornerShape(20.dp)),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = SlateSurface)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
@@ -440,15 +421,14 @@ private fun DivineMistakeCard(entry: ProgressDataStore.MistakeEntry) {
             ) {
                 Text(
                     text = "LEVEL ${entry.level}",
-                    style = MaterialTheme.typography.labelMedium.copy(
-                        fontWeight = FontWeight.Bold,
-                        color = GlowingGold
-                    )
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = GoldAccent
                 )
                 Text(
                     text = formatDate(entry.date),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = Color.White.copy(alpha = 0.5f)
+                    fontSize = 12.sp,
+                    color = SlateTextMuted
                 )
             }
 
@@ -456,11 +436,9 @@ private fun DivineMistakeCard(entry: ProgressDataStore.MistakeEntry) {
 
             Text(
                 text = entry.question,
-                style = MaterialTheme.typography.bodyLarge.copy(
-                    fontFamily = FontFamily.Serif,
-                    fontWeight = FontWeight.Medium
-                ),
-                color = Color.White,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Bold,
+                color = SlateTextPrimary,
                 maxLines = 3,
                 overflow = TextOverflow.Ellipsis
             )
@@ -469,46 +447,48 @@ private fun DivineMistakeCard(entry: ProgressDataStore.MistakeEntry) {
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = "YOUR ANSWER",
-                        style = MaterialTheme.typography.labelSmall,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
                         color = WrongAnswerRed
                     )
                     Text(
                         text = entry.userAnswer,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = WrongAnswerRed.copy(alpha = 0.9f)
+                        fontSize = 13.sp,
+                        color = SlateTextPrimary
                     )
                 }
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = "CORRECT ANSWER",
-                        style = MaterialTheme.typography.labelSmall,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
                         color = CorrectAnswerGreen
                     )
                     Text(
                         text = entry.correctAnswer,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = CorrectAnswerGreen.copy(alpha = 0.9f)
+                        fontSize = 13.sp,
+                        color = SlateTextPrimary
                     )
                 }
             }
 
             if (entry.explanation.isNotBlank()) {
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(10.dp))
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(Color.Black.copy(alpha = 0.2f), RoundedCornerShape(8.dp))
-                        .padding(8.dp)
+                        .background(SlateBackgroundBottom.copy(alpha = 0.5f), RoundedCornerShape(10.dp))
+                        .padding(10.dp)
                 ) {
                     Text(
                         text = "NOTE: ${entry.explanation}",
-                        style = MaterialTheme.typography.bodySmall.copy(fontStyle = androidx.compose.ui.text.font.FontStyle.Italic),
-                        color = Color.White.copy(alpha = 0.8f)
+                        fontSize = 12.sp,
+                        color = SlateTextSecondary
                     )
                 }
             }
@@ -517,14 +497,13 @@ private fun DivineMistakeCard(entry: ProgressDataStore.MistakeEntry) {
 }
 
 @Composable
-fun DivineSectionHeader(title: String) {
+fun SlateOverviewSectionHeader(title: String) {
     Text(
         text = title,
-        style = MaterialTheme.typography.labelLarge.copy(
-            fontWeight = FontWeight.Bold,
-            letterSpacing = 2.sp
-        ),
-        color = GlowingGold.copy(alpha = 0.8f),
+        fontSize = 12.sp,
+        fontWeight = FontWeight.Bold,
+        letterSpacing = 1.5.sp,
+        color = GoldAccent,
         modifier = Modifier.padding(vertical = 8.dp)
     )
 }
@@ -534,3 +513,4 @@ private fun formatDate(timestamp: Long): String {
     val formatter = SimpleDateFormat("MMM dd", Locale.getDefault())
     return formatter.format(date)
 }
+

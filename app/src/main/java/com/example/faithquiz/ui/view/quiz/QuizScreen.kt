@@ -39,6 +39,7 @@ import com.example.faithquiz.data.model.QuizQuestion
 import com.example.faithquiz.data.store.ProgressDataStore
 import com.example.faithquiz.ui.navigation.Screen
 import com.example.faithquiz.ui.theme.*
+import com.example.faithquiz.ui.view.components.DivineBackground
 import com.example.faithquiz.ui.view.components.DivineTimerHUD
 import com.example.faithquiz.ui.viewmodel.TimerViewModel
 import com.example.faithquiz.util.AudioHelper
@@ -73,10 +74,10 @@ fun QuizScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Brush.verticalGradient(listOf(DeepRoyalPurple, Color.Black))),
+                .background(Brush.verticalGradient(listOf(SlateBackgroundTop, SlateBackgroundBottom))),
             contentAlignment = Alignment.Center
         ) {
-            CircularProgressIndicator(color = GlowingGold)
+            CircularProgressIndicator(color = GoldAccent)
         }
         return
     }
@@ -256,284 +257,281 @@ fun QuizScreen(
 
 
 
-    // Main Container with Royal Gradient Background
-    // Main Container with Royal Gradient Background
-    // DivineBackground {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(DeepRoyalPurple, Color.Black)
-                )
-            )
-    ) {
-
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(Dimensions.screenPadding)
-                .verticalScroll(rememberScrollState())
-        ) {
-            // Spacer for Divine Timer HUD overlay
-            Spacer(modifier = Modifier.height(80.dp))
-
-            // Header
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(onClick = { navController.popBackStack() }) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = stringResource(R.string.back_description),
-                        tint = GlowingGold
-                    )
-                }
-                
-                Text(
-                    text = "LEVEL $level",
-                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                    color = GlowingGold,
-                    letterSpacing = 1.sp
-                )
-                
-                // Mode indicator
-                when (mode) {
-                    "survival" -> Text(
-                        text = "❤ $remainingLives",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = GlowingGold
-                    )
-                    else -> Spacer(modifier = Modifier.width(Dimensions.iconSize))
-                }
-            }
-            
-            Spacer(modifier = Modifier.height(Dimensions.spaceMedium))
-            
-            // Gold Progress Bar
-            LinearProgressIndicator(
-                progress = { 
-                    if (questions.isNotEmpty()) (currentQuestionIndex + 1).toFloat() / questions.size else 0f
-                },
+    // Main Container with Slate Gradient Background
+    DivineBackground {
+        Box(modifier = Modifier.fillMaxSize()) {
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(6.dp)
-                    .clip(RoundedCornerShape(3.dp)),
-                color = GlowingGold,
-                trackColor = EtherealGlass
-            )
-            
-            Spacer(modifier = Modifier.height(Dimensions.spaceLarge))
-            
-            // Question Card with Animation
-            AnimatedContent(
-                targetState = currentQuestion,
-                transitionSpec = {
-                    ContentTransform(
-                        targetContentEnter = fadeIn(animationSpec = tween(500)),
-                        initialContentExit = fadeOut(animationSpec = tween(300))
-                    )
-                },
-                label = "Question Animation"
-            ) { targetQuestion ->
-                Column(modifier = Modifier.fillMaxWidth()) {
+                    .fillMaxSize()
+                    .padding(horizontal = 22.dp)
+                    .verticalScroll(rememberScrollState())
+            ) {
+                // Spacer for Divine Timer HUD overlay
+                Spacer(modifier = Modifier.height(76.dp))
+
+                // Header
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.back_description),
+                            tint = SlateTextPrimary
+                        )
+                    }
+
                     Text(
-                        text = targetQuestion.question,
-                        style = MaterialTheme.typography.headlineSmall.copy(
-                            fontWeight = FontWeight.Bold,
-                            fontFamily = FontFamily.Serif
-                        ),
-                        color = Color.White,
-                        modifier = Modifier.padding(vertical = Dimensions.spaceLarge),
-                        textAlign = TextAlign.Center
+                        text = "LEVEL $level",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = SlateTextPrimary,
+                        letterSpacing = 1.sp
                     )
 
-                    // Options
-                    targetQuestion.options.forEachIndexed { index, option ->
-                        val isSelected = selectedAnswer == index
-                        val isCorrect = index == targetQuestion.correctAnswer
-                        
-                        val borderColor = when {
-                            showAnswerFeedback && isCorrect -> CorrectAnswerGreen
-                            showAnswerFeedback && isSelected && !isCorrect -> WrongAnswerRed
-                            isSelected -> GlowingGold
-                            else -> EtherealGlass
-                        }
-                        
-                        val containerColor = when {
-                            showAnswerFeedback && isCorrect -> CorrectAnswerGreen.copy(alpha = 0.3f)
-                            showAnswerFeedback && isSelected && !isCorrect -> WrongAnswerRed.copy(alpha = 0.3f)
-                            isSelected -> GlowingGold.copy(alpha = 0.2f)
-                            else -> EtherealGlass
-                        }
-
-                        Surface(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 6.dp)
-                                .clip(RoundedCornerShape(16.dp))
-                                .clickable(enabled = !showAnswerFeedback, role = Role.RadioButton) {
-                                    if (!showAnswerFeedback) selectedAnswer = index
-                                },
-                            color = containerColor,
-                            border = BorderStroke(1.dp, borderColor),
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(16.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                // Option Letter Circle
-                                Box(
-                                    modifier = Modifier
-                                        .size(32.dp)
-                                        .background(
-                                            color = if(isSelected || (showAnswerFeedback && isCorrect)) borderColor else Color.White.copy(alpha = 0.1f),
-                                            shape = CircleShape
-                                        ),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        text = "${('A' + index)}",
-                                        style = MaterialTheme.typography.labelLarge,
-                                        color = if(isSelected || (showAnswerFeedback && isCorrect)) Color.Black else Color.White
-                                    )
-                                }
-                                
-                                Spacer(modifier = Modifier.width(16.dp))
-                                
-                                Text(
-                                    text = option,
-                                    color = Color.White.copy(alpha = 0.9f),
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    modifier = Modifier.weight(1f)
-                                )
-                            }
-                        }
+                    // Mode indicator
+                    when (mode) {
+                        "survival" -> Text(
+                            text = "❤ $remainingLives",
+                            fontSize = 17.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = GoldAccent
+                        )
+                        else -> Spacer(modifier = Modifier.width(48.dp))
                     }
                 }
-            }
-            
-            Spacer(modifier = Modifier.height(24.dp))
-            
-            // Explanation Panel (Glassmorphic)
-            if (showAnswerFeedback) {
-                Box(
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                // Gold Progress Bar
+                LinearProgressIndicator(
+                    progress = {
+                        if (questions.isNotEmpty()) (currentQuestionIndex + 1).toFloat() / questions.size else 0f
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(EtherealGlass)
-                        .padding(16.dp)
-                ) {
-                    Column {
-                        Text(
-                            text = "DIVINE INSIGHT",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = GlowingGold,
-                            letterSpacing = 1.sp
+                        .height(6.dp)
+                        .clip(CircleShape),
+                    color = GoldAccent,
+                    trackColor = SlateSurfaceVariant
+                )
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // Question Card with Animation
+                AnimatedContent(
+                    targetState = currentQuestion,
+                    transitionSpec = {
+                        ContentTransform(
+                            targetContentEnter = fadeIn(animationSpec = tween(400)),
+                            initialContentExit = fadeOut(animationSpec = tween(250))
                         )
+                    },
+                    label = "Question Animation"
+                ) { targetQuestion ->
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        Text(
+                            text = targetQuestion.question,
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = SlateTextPrimary,
+                            modifier = Modifier.padding(vertical = 16.dp),
+                            textAlign = TextAlign.Center
+                        )
+
                         Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = currentQuestion.explanation,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = Color.White
-                        )
-                        currentQuestion.verseReference?.let { ref ->
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = "$ref • ${currentQuestion.translation}",
-                                style = MaterialTheme.typography.labelMedium,
-                                color = GlowingGold
-                            )
+
+                        // Choice Options (Full Width Rounded Pills)
+                        targetQuestion.options.forEachIndexed { index, option ->
+                            val isSelected = selectedAnswer == index
+                            val isCorrect = index == targetQuestion.correctAnswer
+
+                            val (containerColor, contentColor, borderColor) = when {
+                                showAnswerFeedback && isCorrect -> Triple(CorrectAnswerGreen, Color.White, CorrectAnswerGreen)
+                                showAnswerFeedback && isSelected && !isCorrect -> Triple(WrongAnswerRed, Color.White, WrongAnswerRed)
+                                isSelected -> Triple(SlateBackgroundTop, Color.White, GoldAccent)
+                                else -> Triple(SlateCardLight, SlateButtonText, SlateCardBorder)
+                            }
+
+                            Surface(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 6.dp)
+                                    .clickable(enabled = !showAnswerFeedback, role = Role.RadioButton) {
+                                        if (!showAnswerFeedback) selectedAnswer = index
+                                    },
+                                shape = RoundedCornerShape(28.dp),
+                                color = containerColor,
+                                border = BorderStroke(1.5.dp, borderColor),
+                                shadowElevation = if (isSelected || (showAnswerFeedback && isCorrect)) 4.dp else 1.dp
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 20.dp, vertical = 14.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(32.dp)
+                                            .clip(CircleShape)
+                                            .background(
+                                                if (isSelected || (showAnswerFeedback && (isCorrect || isSelected)))
+                                                    Color.White.copy(alpha = 0.25f)
+                                                else
+                                                    SlateBackgroundTop.copy(alpha = 0.12f)
+                                            ),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = "${('A' + index)}",
+                                            fontSize = 14.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = contentColor
+                                        )
+                                    }
+
+                                    Spacer(modifier = Modifier.width(16.dp))
+
+                                    Text(
+                                        text = option,
+                                        fontSize = 16.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = contentColor,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                }
+                            }
                         }
                     }
                 }
-            }
-            
-            Spacer(modifier = Modifier.height(24.dp))
 
-            // Action Button
-            val buttonColor = if (showAnswerFeedback) GlowingGold else DeepRoyalPurple
-            val buttonTextColor = if (showAnswerFeedback) DeepRoyalPurple else GlowingGold
-            val buttonText = if (showAnswerFeedback) 
-                if (currentQuestionIndex < questions.size - 1) "NEXT QUESTION" else "FINISH QUIZ"
-            else "SUBMIT ANSWER"
+                Spacer(modifier = Modifier.height(20.dp))
 
-            Button(
-                onClick = {
-                    if (!showAnswerFeedback) {
-                        if (selectedAnswer != -1) {
-                            // Submit Logic
-                            val isCorrectSelection = selectedAnswer == currentQuestion.correctAnswer
-                            showAnswerFeedback = true
-                            timerViewModel.pauseTimer()
-                            if (isCorrectSelection) {
-                                AudioHelper.playCorrect()
-                                AudioHelper.vibrateSuccess(context)
-                                score++
-                            } else {
-                                AudioHelper.playWrong()
-                                AudioHelper.vibrateError(context)
-                                scope.launch {
-
-                                    ProgressDataStore.addMistakeDetailed(context, level, currentQuestion.question, currentQuestion.options.getOrNull(selectedAnswer) ?: "", currentQuestion.options.getOrNull(currentQuestion.correctAnswer) ?: "", currentQuestion.explanation)
-                                }
-                                if (mode == "survival") {
-                                    remainingLives = (remainingLives - 1).coerceAtLeast(0)
-                                    if (remainingLives == 0) isQuizCompleted = true
-                                }
-                            }
-                            scope.launch {
-                                ProgressDataStore.recordReviewResult(
-                                    context,
-                                    ProgressDataStore.createReviewKey(level, currentQuestion.question),
-                                    isCorrectSelection
+                // Explanation Card
+                if (showAnswerFeedback) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(20.dp),
+                        colors = CardDefaults.cardColors(containerColor = SlateSurface)
+                    ) {
+                        Column(modifier = Modifier.padding(18.dp)) {
+                            Text(
+                                text = "EXPLANATION & INSIGHT",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = GoldAccent,
+                                letterSpacing = 1.sp
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(
+                                text = currentQuestion.explanation,
+                                fontSize = 14.sp,
+                                color = SlateTextPrimary
+                            )
+                            currentQuestion.verseReference?.let { ref ->
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text(
+                                    text = "$ref • ${currentQuestion.translation}",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = SlateTextSecondary
                                 )
                             }
                         }
-                    } else {
-                        // Next Logic
-                        if (currentQuestionIndex < questions.size - 1) {
-                            currentQuestionIndex++
-                            selectedAnswer = -1
-                            showAnswerFeedback = false
-                        } else {
-                            isQuizCompleted = true
-                        }
                     }
-                },
-                enabled = selectedAnswer != -1 || showAnswerFeedback,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = buttonColor,
-                    disabledContainerColor = Color.White.copy(alpha = 0.1f),
-                    contentColor = buttonTextColor
-                ),
-                border = if (!showAnswerFeedback) BorderStroke(1.dp, GlowingGold) else null
-            ) {
-                Text(
-                    text = buttonText,
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-                )
-            }
-            
-            Spacer(modifier = Modifier.height(48.dp))
-        }
+                }
 
-        // Divine Timer HUD
-        DivineTimerHUD(
-            questionTimeSeconds = currentQuestionTime,
-            totalTimeSeconds = totalLevelTime,
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .padding(top = 8.dp)
-        )
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // Action Button
+                val buttonColor = if (showAnswerFeedback) GoldAccent else SlateCardLight
+                val buttonTextColor = if (showAnswerFeedback) SlateBackgroundBottom else SlateButtonText
+                val buttonText = if (showAnswerFeedback)
+                    if (currentQuestionIndex < questions.size - 1) "NEXT QUESTION" else "FINISH QUIZ"
+                else "SUBMIT ANSWER"
+
+                Button(
+                    onClick = {
+                        if (!showAnswerFeedback) {
+                            if (selectedAnswer != -1) {
+                                val isCorrectSelection = selectedAnswer == currentQuestion.correctAnswer
+                                showAnswerFeedback = true
+                                timerViewModel.pauseTimer()
+                                if (isCorrectSelection) {
+                                    AudioHelper.playCorrect()
+                                    AudioHelper.vibrateSuccess(context)
+                                    score++
+                                } else {
+                                    AudioHelper.playWrong()
+                                    AudioHelper.vibrateError(context)
+                                    scope.launch {
+                                        ProgressDataStore.addMistakeDetailed(
+                                            context,
+                                            level,
+                                            currentQuestion.question,
+                                            currentQuestion.options.getOrNull(selectedAnswer) ?: "",
+                                            currentQuestion.options.getOrNull(currentQuestion.correctAnswer) ?: "",
+                                            currentQuestion.explanation
+                                        )
+                                    }
+                                    if (mode == "survival") {
+                                        remainingLives = (remainingLives - 1).coerceAtLeast(0)
+                                        if (remainingLives == 0) isQuizCompleted = true
+                                    }
+                                }
+                                scope.launch {
+                                    ProgressDataStore.recordReviewResult(
+                                        context,
+                                        ProgressDataStore.createReviewKey(level, currentQuestion.question),
+                                        isCorrectSelection
+                                    )
+                                }
+                            }
+                        } else {
+                            if (currentQuestionIndex < questions.size - 1) {
+                                currentQuestionIndex++
+                                selectedAnswer = -1
+                                showAnswerFeedback = false
+                            } else {
+                                isQuizCompleted = true
+                            }
+                        }
+                    },
+                    enabled = selectedAnswer != -1 || showAnswerFeedback,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    shape = RoundedCornerShape(28.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = buttonColor,
+                        disabledContainerColor = SlateSurfaceVariant,
+                        contentColor = buttonTextColor,
+                        disabledContentColor = SlateTextMuted
+                    ),
+                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
+                ) {
+                    Text(
+                        text = buttonText,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(40.dp))
+            }
+
+            // Divine Timer HUD
+            DivineTimerHUD(
+                questionTimeSeconds = currentQuestionTime,
+                totalTimeSeconds = totalLevelTime,
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = 8.dp)
+            )
+        }
     }
 }
 

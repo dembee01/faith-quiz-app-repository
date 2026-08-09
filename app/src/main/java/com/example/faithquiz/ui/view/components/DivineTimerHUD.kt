@@ -3,6 +3,7 @@ package com.example.faithquiz.ui.view.components
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
@@ -17,15 +18,12 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.faithquiz.ui.theme.DeepRoyalPurple
-import com.example.faithquiz.ui.theme.EtherealGlass
-import com.example.faithquiz.ui.theme.GlowingGold
-import com.example.faithquiz.ui.theme.Typography
+import com.example.faithquiz.ui.theme.*
 import java.util.Locale
 
 /**
- * Divine Timer HUD - A floating glassmorphism timer overlay for the quiz screen.
- * Shows current question time (circular animated) and total level time.
+ * Divine Timer HUD - Floating Slate Indigo timer overlay for quiz screens.
+ * Displays current question time and total level time.
  */
 @Composable
 fun DivineTimerHUD(
@@ -33,29 +31,27 @@ fun DivineTimerHUD(
     totalTimeSeconds: Long,
     modifier: Modifier = Modifier
 ) {
-    // Pulse animation for the glow effect
     val infiniteTransition = rememberInfiniteTransition(label = "pulse")
-    
+
     val glowAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.3f,
-        targetValue = 0.7f,
+        initialValue = 0.2f,
+        targetValue = 0.6f,
         animationSpec = infiniteRepeatable(
-            animation = tween(1500, easing = LinearEasing),
+            animation = tween(1400, easing = LinearEasing),
             repeatMode = RepeatMode.Reverse
         ),
         label = "glowAlpha"
     )
-    
-    // Calculate progress (loops every 60 seconds for visual effect)
+
     val progress = (questionTimeSeconds % 60) / 60f
-    
-    // Glassmorphism Container
+
     Box(
         modifier = modifier
-            .padding(16.dp)
-            .clip(RoundedCornerShape(24.dp))
-            .background(EtherealGlass)
             .padding(12.dp)
+            .clip(RoundedCornerShape(24.dp))
+            .background(SlateSurface)
+            .border(1.dp, SlateCardBorder, RoundedCornerShape(24.dp))
+            .padding(horizontal = 16.dp, vertical = 10.dp)
             .wrapContentSize(),
         contentAlignment = Alignment.Center
     ) {
@@ -63,33 +59,29 @@ fun DivineTimerHUD(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Question Timer (Circular with Canvas)
             Box(
                 contentAlignment = Alignment.Center,
-                modifier = Modifier.size(60.dp)
+                modifier = Modifier.size(54.dp)
             ) {
                 Canvas(modifier = Modifier.fillMaxSize()) {
-                    val strokeWidth = 5.dp.toPx()
+                    val strokeWidth = 4.dp.toPx()
                     val radius = size.minDimension / 2 - strokeWidth / 2
-                    
-                    // Background track circle
+
                     drawCircle(
-                        color = DeepRoyalPurple.copy(alpha = 0.3f),
+                        color = SlateSurfaceVariant,
                         radius = radius,
                         style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
                     )
-                    
-                    // Glow effect (pulsating)
+
                     drawCircle(
-                        color = GlowingGold.copy(alpha = glowAlpha * 0.5f),
-                        radius = radius + 4f,
-                        style = Stroke(width = strokeWidth + 6f, cap = StrokeCap.Round)
+                        color = GoldAccent.copy(alpha = glowAlpha * 0.4f),
+                        radius = radius + 3f,
+                        style = Stroke(width = strokeWidth + 4f, cap = StrokeCap.Round)
                     )
-                    
-                    // Main progress arc
+
                     drawArc(
                         brush = Brush.sweepGradient(
-                            listOf(GlowingGold.copy(alpha = 0.5f), GlowingGold)
+                            listOf(GoldAccent.copy(alpha = 0.5f), GoldAccent)
                         ),
                         startAngle = -90f,
                         sweepAngle = 360 * progress,
@@ -100,27 +92,24 @@ fun DivineTimerHUD(
 
                 Text(
                     text = "${questionTimeSeconds}s",
-                    style = Typography.labelLarge.copy(
-                        fontWeight = FontWeight.Bold,
-                        color = GlowingGold
-                    )
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = GoldAccent
                 )
             }
 
-            // Total Time Display
             Column(horizontalAlignment = Alignment.Start) {
                 Text(
                     text = "TOTAL TIME",
-                    style = Typography.labelSmall.copy(color = Color.White.copy(alpha = 0.7f)),
-                    fontSize = 10.sp
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = SlateTextSecondary
                 )
                 Text(
                     text = formatTime(totalTimeSeconds),
-                    style = Typography.titleMedium.copy(
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    ),
-                    fontSize = 20.sp
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = SlateTextPrimary
                 )
             }
         }
@@ -132,3 +121,4 @@ private fun formatTime(seconds: Long): String {
     val secs = seconds % 60
     return String.format(Locale.getDefault(), "%02d:%02d", mins, secs)
 }
+

@@ -3,51 +3,36 @@ package com.example.faithquiz.ui.view.dailychallenge
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CalendarMonth
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.faithquiz.R
-import com.example.faithquiz.ui.theme.Dimensions
+import com.example.faithquiz.ui.theme.*
+import com.example.faithquiz.ui.view.components.DivineBackground
 import com.example.faithquiz.ui.viewmodel.DailyChallengeViewModel
 
 @Composable
@@ -57,29 +42,21 @@ fun DailyChallengeScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.secondary)
-                )
-            )
-    ) {
+    DivineBackground {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(Dimensions.screenPadding)
+                .padding(horizontal = 22.dp, vertical = 16.dp)
         ) {
             DailyChallengeHeader(onBack = navController::popBackStack)
-            Spacer(Modifier.height(Dimensions.spaceLarge))
+            Spacer(Modifier.height(20.dp))
 
             when {
                 state.isLoading -> Box(
                     modifier = Modifier.fillMaxWidth().padding(48.dp),
                     contentAlignment = Alignment.Center
-                ) { CircularProgressIndicator() }
+                ) { CircularProgressIndicator(color = GoldAccent) }
 
                 state.error != null -> StatusCard(
                     title = "Challenge unavailable",
@@ -104,36 +81,39 @@ fun DailyChallengeScreen(
                     val challenge = requireNotNull(state.dailyChallenge)
                     Card(
                         modifier = Modifier.fillMaxWidth().testTag("DailyChallengeQuestion"),
-                        shape = RoundedCornerShape(Dimensions.cornerRadiusLarge),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                        shape = RoundedCornerShape(24.dp),
+                        colors = CardDefaults.cardColors(containerColor = SlateSurface)
                     ) {
-                        Column(Modifier.padding(Dimensions.paddingLarge)) {
+                        Column(Modifier.padding(20.dp)) {
                             Text(
-                                text = challenge.date,
-                                style = MaterialTheme.typography.labelLarge,
-                                color = MaterialTheme.colorScheme.primary
+                                text = challenge.date.uppercase(),
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = GoldAccent,
+                                letterSpacing = 1.sp
                             )
-                            Spacer(Modifier.height(12.dp))
+                            Spacer(Modifier.height(10.dp))
                             Text(
                                 text = challenge.question.question,
-                                style = MaterialTheme.typography.headlineSmall,
-                                fontWeight = FontWeight.Bold
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = SlateTextPrimary
                             )
                             Spacer(Modifier.height(20.dp))
 
                             challenge.question.options.forEachIndexed { index, option ->
                                 val selected = state.selectedAnswer == index
                                 val correct = index == challenge.question.correctAnswer
-                                val feedbackColor = when {
-                                    state.showAnswerFeedback && correct -> MaterialTheme.colorScheme.tertiary
-                                    state.showAnswerFeedback && selected -> MaterialTheme.colorScheme.error
-                                    selected -> MaterialTheme.colorScheme.primary
-                                    else -> MaterialTheme.colorScheme.outlineVariant
+                                val (containerColor, contentColor, borderColor) = when {
+                                    state.showAnswerFeedback && correct -> Triple(CorrectAnswerGreen, Color.White, CorrectAnswerGreen)
+                                    state.showAnswerFeedback && selected && !correct -> Triple(WrongAnswerRed, Color.White, WrongAnswerRed)
+                                    selected -> Triple(SlateBackgroundTop, Color.White, GoldAccent)
+                                    else -> Triple(SlateCardLight, SlateButtonText, SlateCardBorder)
                                 }
                                 Surface(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(vertical = 5.dp)
+                                        .padding(vertical = 6.dp)
                                         .clickable(
                                             enabled = !state.showAnswerFeedback,
                                             role = Role.RadioButton
@@ -141,43 +121,84 @@ fun DailyChallengeScreen(
                                         .semantics {
                                             contentDescription = "Answer ${index + 1}: $option"
                                         },
-                                    shape = RoundedCornerShape(12.dp),
-                                    border = BorderStroke(2.dp, feedbackColor),
-                                    color = if (selected) {
-                                        feedbackColor.copy(alpha = 0.12f)
-                                    } else {
-                                        MaterialTheme.colorScheme.surface
-                                    }
+                                    shape = RoundedCornerShape(28.dp),
+                                    color = containerColor,
+                                    border = BorderStroke(1.5.dp, borderColor)
                                 ) {
-                                    Text(
-                                        text = option,
-                                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
-                                        style = MaterialTheme.typography.bodyLarge
-                                    )
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 20.dp, vertical = 14.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(32.dp)
+                                                .clip(CircleShape)
+                                                .background(
+                                                    if (selected || (state.showAnswerFeedback && (correct || selected)))
+                                                        Color.White.copy(alpha = 0.25f)
+                                                    else
+                                                        SlateBackgroundTop.copy(alpha = 0.12f)
+                                                ),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Text(
+                                                text = "${('A' + index)}",
+                                                fontSize = 14.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = contentColor
+                                            )
+                                        }
+                                        Spacer(Modifier.width(16.dp))
+                                        Text(
+                                            text = option,
+                                            fontSize = 16.sp,
+                                            fontWeight = FontWeight.Medium,
+                                            color = contentColor,
+                                            modifier = Modifier.weight(1f)
+                                        )
+                                    }
                                 }
                             }
 
                             if (state.showAnswerFeedback) {
                                 Spacer(Modifier.height(20.dp))
                                 Text(
-                                    text = if (state.isCorrectAnswer) "Correct — 2 points earned" else "Not quite",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    color = if (state.isCorrectAnswer) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.error,
+                                    text = if (state.isCorrectAnswer) "Correct — 2 points earned!" else "Not quite",
+                                    fontSize = 17.sp,
+                                    color = if (state.isCorrectAnswer) CorrectAnswerGreen else WrongAnswerRed,
                                     fontWeight = FontWeight.Bold
                                 )
                                 Spacer(Modifier.height(8.dp))
-                                Text(challenge.question.explanation)
+                                Text(
+                                    text = challenge.question.explanation,
+                                    fontSize = 14.sp,
+                                    color = SlateTextPrimary
+                                )
                                 Spacer(Modifier.height(8.dp))
                                 Text(
                                     text = "${challenge.question.verseReference} • ${challenge.question.translation}",
-                                    style = MaterialTheme.typography.labelLarge,
-                                    color = MaterialTheme.colorScheme.primary
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = SlateTextSecondary
                                 )
-                                Spacer(Modifier.height(20.dp))
+                                Spacer(Modifier.height(24.dp))
                                 Button(
                                     onClick = viewModel::completeDailyChallenge,
-                                    modifier = Modifier.fillMaxWidth().height(52.dp)
-                                ) { Text("Complete today's challenge") }
+                                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                                    shape = RoundedCornerShape(28.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = SlateCardLight,
+                                        contentColor = SlateButtonText
+                                    )
+                                ) {
+                                    Text(
+                                        text = "Complete Today's Challenge",
+                                        fontSize = 16.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
                             }
                         }
                     }
@@ -194,16 +215,17 @@ private fun DailyChallengeHeader(onBack: () -> Unit) {
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        IconButton(onClick = onBack, modifier = Modifier.size(48.dp)) {
-            Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back_description))
+        IconButton(onClick = onBack) {
+            Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back_description), tint = SlateTextPrimary)
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Default.CalendarMonth, contentDescription = null)
+            Icon(Icons.Default.CalendarMonth, contentDescription = null, tint = GoldAccent)
             Spacer(Modifier.width(8.dp))
             Text(
                 text = stringResource(R.string.daily_challenge),
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                color = SlateTextPrimary
             )
         }
         Spacer(Modifier.width(48.dp))
@@ -219,21 +241,27 @@ private fun StatusCard(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = SlateSurface)
     ) {
         Column(
             modifier = Modifier.padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(title, style = MaterialTheme.typography.titleLarge, textAlign = TextAlign.Center)
+            Text(title, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = SlateTextPrimary, textAlign = TextAlign.Center)
             Spacer(Modifier.height(8.dp))
-            Text(message, textAlign = TextAlign.Center)
+            Text(message, fontSize = 14.sp, color = SlateTextSecondary, textAlign = TextAlign.Center)
             if (actionLabel != null && onAction != null) {
                 Spacer(Modifier.height(20.dp))
-                Button(onClick = onAction, colors = ButtonDefaults.buttonColors()) {
-                    Text(actionLabel)
+                Button(
+                    onClick = onAction,
+                    shape = RoundedCornerShape(28.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = SlateCardLight, contentColor = SlateButtonText)
+                ) {
+                    Text(actionLabel, fontSize = 15.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }
     }
 }
+

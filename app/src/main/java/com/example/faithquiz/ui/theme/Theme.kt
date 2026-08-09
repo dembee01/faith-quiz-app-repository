@@ -20,68 +20,40 @@ import androidx.compose.ui.unit.Density
 import androidx.core.view.WindowCompat
 import com.example.faithquiz.data.store.ProgressDataStore
 
-private val DarkColorScheme = darkColorScheme(
-    primary = PrimaryDarkMode,
-    secondary = AccentDarkMode,
-    tertiary = PrimaryDarkModeLight,
-    background = BackgroundDark,
-    surface = SurfaceDark,
-    error = Error,
+private val SlateColorScheme = darkColorScheme(
+    primary = SlateBackgroundTop,
+    secondary = GoldAccent,
+    tertiary = PrimaryBlueAccent,
+    background = SlateBackgroundBottom,
+    surface = SlateSurface,
+    error = WrongAnswerRed,
     onPrimary = androidx.compose.ui.graphics.Color.White,
-    onSecondary = androidx.compose.ui.graphics.Color.Black,
+    onSecondary = SlateButtonText,
     onTertiary = androidx.compose.ui.graphics.Color.White,
-    onBackground = TextPrimaryDark,
-    onSurface = TextPrimaryDark,
+    onBackground = SlateTextPrimary,
+    onSurface = SlateTextPrimary,
     onError = androidx.compose.ui.graphics.Color.White,
-    surfaceVariant = CardBackgroundDark,
-    onSurfaceVariant = TextSecondaryDark
-)
-
-private val LightColorScheme = lightColorScheme(
-    primary = Primary,
-    secondary = Accent,
-    tertiary = PrimaryLight,
-    background = Background,
-    surface = Surface,
-    error = Error,
-    onPrimary = androidx.compose.ui.graphics.Color.White,
-    onSecondary = androidx.compose.ui.graphics.Color.White,
-    onTertiary = androidx.compose.ui.graphics.Color.White,
-    onBackground = TextPrimary,
-    onSurface = TextPrimary,
-    onError = androidx.compose.ui.graphics.Color.White
+    surfaceVariant = SlateSurfaceVariant,
+    onSurfaceVariant = SlateTextSecondary
 )
 
 @Composable
 fun FaithQuizTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val context = LocalContext.current
-    val storedMode by ProgressDataStore.observeThemeMode(context).collectAsState(initial = "light")
+    val storedMode by ProgressDataStore.observeThemeMode(context).collectAsState(initial = "dark")
     val textScale by ProgressDataStore.observeTextScale(context).collectAsState(initial = "normal")
-    val effectiveDark = when (storedMode) {
-        "dark" -> true
-        "light" -> false
-        else -> darkTheme
-    }
 
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val ctx = LocalContext.current
-            if (effectiveDark) dynamicDarkColorScheme(ctx) else dynamicLightColorScheme(ctx)
-        }
+    val colorScheme = SlateColorScheme
 
-        effectiveDark -> DarkColorScheme
-        else -> LightColorScheme
-    }
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as? Activity)?.window ?: return@SideEffect
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !effectiveDark
+            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = false
         }
     }
 

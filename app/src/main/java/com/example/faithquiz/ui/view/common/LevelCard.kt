@@ -18,7 +18,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.faithquiz.data.model.LevelProgress
+import com.example.faithquiz.ui.theme.*
 
 @Composable
 fun LevelCard(
@@ -32,25 +34,22 @@ fun LevelCard(
     val completionPercentage = if (progress.questionsAnswered > 0) {
         (progress.correctAnswers.toFloat() / progress.questionsAnswered.toFloat()) * 100
     } else 0f
-    
+
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .height(120.dp)
+            .height(116.dp)
             .clickable(enabled = isUnlocked) { onClick() },
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (isUnlocked) {
-                MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)
-            } else {
-                MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)
-            }
+            containerColor = if (isUnlocked) SlateCardLight else SlateSurfaceVariant
         ),
         border = if (isUnlocked) {
-            BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
+            BorderStroke(1.5.dp, GoldAccent.copy(alpha = 0.6f))
         } else {
-            BorderStroke(2.dp, Color.Gray)
-        }
+            BorderStroke(1.dp, SlateCardBorder)
+        },
+        elevation = CardDefaults.cardElevation(if (isUnlocked) 3.dp else 0.dp)
     ) {
         Box(
             modifier = Modifier.fillMaxSize(),
@@ -58,87 +57,74 @@ fun LevelCard(
         ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+                verticalArrangement = Arrangement.Center,
+                modifier = Modifier.padding(8.dp)
             ) {
                 if (isUnlocked) {
-                    // Level number
                     Text(
                         text = "Level $level",
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            fontWeight = FontWeight.Bold
-                        ),
-                        color = MaterialTheme.colorScheme.onSurface,
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = SlateButtonText,
                         textAlign = TextAlign.Center
                     )
-                    
-                    Spacer(modifier = Modifier.height(4.dp))
-                    
-                    // Progress indicator
+
+                    Spacer(modifier = Modifier.height(6.dp))
+
                     if (progress.questionsAnswered > 0) {
                         LinearProgressIndicator(
                             progress = { completionPercentage / 100f },
                             modifier = Modifier
-                                .width(40.dp)
-                                .height(4.dp),
-                            color = MaterialTheme.colorScheme.primary,
-                            trackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+                                .width(48.dp)
+                                .height(4.dp)
+                                .clip(CircleShape),
+                            color = GoldAccent,
+                            trackColor = SlateBackgroundTop.copy(alpha = 0.2f)
                         )
-                        
-                        Spacer(modifier = Modifier.height(2.dp))
-                        
+
+                        Spacer(modifier = Modifier.height(4.dp))
+
                         Text(
                             text = "${progress.correctAnswers}/${progress.questionsAnswered}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = SlateButtonText.copy(alpha = 0.7f)
                         )
                     }
-                    
-                    // Best score indicator
+
                     if (progress.bestScore > 0) {
                         Spacer(modifier = Modifier.height(2.dp))
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
                                 imageVector = Icons.Default.Star,
                                 contentDescription = "Best Score",
-                                tint = Color(0xFFFFD700),
-                                modifier = Modifier.size(12.dp)
+                                tint = GoldAccent,
+                                modifier = Modifier.size(13.dp)
                             )
-                            Spacer(modifier = Modifier.width(2.dp))
+                            Spacer(modifier = Modifier.width(3.dp))
                             Text(
                                 text = "${progress.bestScore}",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = SlateButtonText
                             )
                         }
                     }
                 } else {
-                    // Locked level
                     Icon(
                         imageVector = Icons.Default.Lock,
                         contentDescription = "Locked",
-                        tint = Color.Gray,
-                        modifier = Modifier.size(32.dp)
+                        tint = SlateTextMuted,
+                        modifier = Modifier.size(26.dp)
                     )
-                    
-                    Spacer(modifier = Modifier.height(4.dp))
-                    
+
+                    Spacer(modifier = Modifier.height(6.dp))
+
                     Text(
                         text = "Level $level",
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            fontWeight = FontWeight.Bold
-                        ),
-                        color = Color.Gray,
-                        textAlign = TextAlign.Center
-                    )
-                    
-                    Spacer(modifier = Modifier.height(2.dp))
-                    
-                    Text(
-                        text = "Complete previous level",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.Gray,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = SlateTextMuted,
                         textAlign = TextAlign.Center
                     )
                 }
@@ -146,3 +132,4 @@ fun LevelCard(
         }
     }
 }
+

@@ -7,6 +7,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -19,13 +20,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -37,7 +36,6 @@ import com.example.faithquiz.ui.navigation.Screen
 import com.example.faithquiz.ui.theme.*
 import com.example.faithquiz.ui.view.components.DivineBackground
 import com.example.faithquiz.util.AudioHelper
-
 import kotlinx.coroutines.delay
 
 @Composable
@@ -54,38 +52,37 @@ fun MainMenuScreen(
     val scrollState = rememberScrollState()
 
     DivineBackground {
-
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(Dimensions.screenPadding)
+                .padding(horizontal = 24.dp, vertical = 16.dp)
                 .verticalScroll(scrollState),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Top
         ) {
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
-            // Animated Divine Title
-            DivineAnimateTitle(reduceMotion = reduceMotion)
+            // Title & Subtitle Header
+            SlateHeaderTitle(reduceMotion = reduceMotion)
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
             // Stats Dashboard
-            DivineStatsDashboard(
+            SlateStatsDashboard(
                 highScore = highScore,
                 lastLevel = lastCompleted,
                 totalQuestions = totalAnswered,
                 streak = devotionStreak
             )
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(28.dp))
 
-            // Menu Items with Staggered Entry
+            // Menu Items List
             Column(
                 modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
-                DivineMenuCard(
+                SlateMenuCard(
                     title = "Daily Challenge",
                     subtitle = "One new question every day",
                     icon = Icons.Default.CalendarMonth,
@@ -96,7 +93,7 @@ fun MainMenuScreen(
                     navController.navigate(Screen.DailyChallenge.route)
                 }
 
-                DivineMenuCard(
+                SlateMenuCard(
                     title = "The Covenant Journey",
                     subtitle = "Your Biblical Adventure Map",
                     icon = Icons.Default.Map,
@@ -107,9 +104,9 @@ fun MainMenuScreen(
                     navController.navigate(Screen.Journey.route)
                 }
 
-                DivineMenuCard(
+                SlateMenuCard(
                     title = "Adaptive Levels",
-                    subtitle = "Classic Level Selection",
+                    subtitle = "30 Progressive Quiz Levels",
                     icon = Icons.AutoMirrored.Filled.List,
                     delayMs = 150,
                     reduceMotion = reduceMotion
@@ -118,11 +115,9 @@ fun MainMenuScreen(
                     navController.navigate(Screen.LevelSelect.route)
                 }
 
-
-
-                DivineMenuCard(
+                SlateMenuCard(
                     title = "Review Wisdom",
-                    subtitle = "Study Your Past Answers",
+                    subtitle = "Study Past & Missed Questions",
                     icon = Icons.Default.Bookmarks,
                     delayMs = 200,
                     reduceMotion = reduceMotion
@@ -131,139 +126,70 @@ fun MainMenuScreen(
                     navController.navigate(Screen.Review.route)
                 }
 
-
-                DivineMenuCard(
+                SlateMenuCard(
                     title = "Topic Scrolls",
-                    subtitle = "Specific Books & Themes",
+                    subtitle = "Specific Books & Bible Themes",
                     icon = Icons.Default.Category,
-                    delayMs = 300,
+                    delayMs = 250,
                     reduceMotion = reduceMotion
                 ) {
                     AudioHelper.playSelect()
                     navController.navigate(Screen.TopicPacks.route)
                 }
 
-
-                DivineMenuCard(
+                SlateMenuCard(
                     title = "Leaderboard",
-                    subtitle = "See Faithful Servants",
+                    subtitle = "See Top Scores & Achievements",
                     icon = Icons.Default.Leaderboard,
-                    delayMs = 400,
+                    delayMs = 300,
                     reduceMotion = reduceMotion
                 ) {
                     AudioHelper.playSelect()
                     navController.navigate(Screen.Leaderboard.route)
                 }
 
-
-                DivineMenuCard(
+                SlateMenuCard(
                     title = "Settings",
-                    subtitle = "Configure Your Experience",
+                    subtitle = "Sound, Theme & Accessibility",
                     icon = Icons.Default.Settings,
-                    delayMs = 500,
+                    delayMs = 350,
                     reduceMotion = reduceMotion
                 ) {
                     AudioHelper.playSelect()
                     navController.navigate(Screen.Settings.route)
                 }
-
             }
-            
-            Spacer(modifier = Modifier.height(32.dp))
+
+            Spacer(modifier = Modifier.height(36.dp))
         }
     }
 }
 
 @Composable
-fun DivineAnimateTitle(reduceMotion: Boolean = false) {
+fun SlateHeaderTitle(reduceMotion: Boolean = false) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        // "FAITH QUIZ"
-        TypewriterText(
-            baseText = "FAITH QUIZ",
-            style = MaterialTheme.typography.displayMedium.copy(
-                fontFamily = FontFamily.Serif,
-                fontWeight = FontWeight.Bold,
-                color = GlowingGold
-            ),
-            typingDelay = 150,
-            backspaceDelay = 100,
-            waitAfterType = 3000,
-            waitAfterBackspace = 1000,
-            reduceMotion = reduceMotion
-        )
-        
-        Spacer(modifier = Modifier.height(8.dp))
-        
-        // "Test Your Bible Knowledge"
-        TypewriterText(
-            baseText = "Test Your Bible Knowledge",
-            style = MaterialTheme.typography.titleMedium.copy(
-                fontFamily = FontFamily.Serif,
-                color = Color.White.copy(alpha = 0.8f)
-            ),
-            typingDelay = 50,
-            backspaceDelay = 30,
-            waitAfterType = 3000,
-            waitAfterBackspace = 1000,
-            reduceMotion = reduceMotion
-        )
-    }
-}
-
-@Composable
-fun TypewriterText(
-    baseText: String,
-    style: androidx.compose.ui.text.TextStyle,
-    modifier: Modifier = Modifier,
-    typingDelay: Long = 100,
-    backspaceDelay: Long = 50,
-    waitAfterType: Long = 2000,
-    waitAfterBackspace: Long = 500,
-    reduceMotion: Boolean = false
-) {
-    var displayedText by remember { mutableStateOf("") }
-
-    LaunchedEffect(baseText) {
-        if (reduceMotion) {
-            displayedText = baseText
-            return@LaunchedEffect
-        }
-        while (true) {
-            // Type in
-            for (i in 1..baseText.length) {
-                displayedText = baseText.substring(0, i)
-                delay(typingDelay)
-            }
-            delay(waitAfterType)
-
-            // Type out
-            for (i in baseText.length downTo 0) {
-                displayedText = baseText.substring(0, i)
-                delay(backspaceDelay)
-            }
-            delay(waitAfterBackspace)
-        }
-    }
-
-    Box(modifier = modifier, contentAlignment = Alignment.Center) {
-        // Invisible text to maintain layout size
         Text(
-            text = baseText,
-            style = style,
-            color = Color.Transparent,
+            text = stringResource(R.string.faith_quiz).uppercase(),
+            fontSize = 28.sp,
+            fontWeight = FontWeight.Bold,
+            color = SlateTextPrimary,
+            letterSpacing = 2.sp,
             textAlign = TextAlign.Center
         )
-        // Visible animated text
+
+        Spacer(modifier = Modifier.height(6.dp))
+
         Text(
-            text = displayedText,
-            style = style,
+            text = stringResource(R.string.test_your_bible_knowledge),
+            fontSize = 15.sp,
+            color = SlateTextSecondary,
             textAlign = TextAlign.Center
         )
     }
 }
 
 @Composable
-fun DivineStatsDashboard(
+fun SlateStatsDashboard(
     highScore: Int,
     lastLevel: Int,
     totalQuestions: Int,
@@ -272,28 +198,29 @@ fun DivineStatsDashboard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .border(1.dp, GlowingGold.copy(alpha = 0.3f), RoundedCornerShape(16.dp))
-            .shadow(12.dp, RoundedCornerShape(16.dp), ambientColor = GlowingGold, spotColor = GlowingGold),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = EtherealGlass
-        )
+            .border(1.dp, SlateCardBorder, RoundedCornerShape(20.dp))
+            .shadow(6.dp, RoundedCornerShape(20.dp), spotColor = Color.Black),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = SlateSurface)
     ) {
         Column(
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(18.dp)
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(Icons.Default.Star, contentDescription = null, tint = GlowingGold)
+                Icon(
+                    imageVector = Icons.Default.Star,
+                    contentDescription = null,
+                    tint = GoldAccent,
+                    modifier = Modifier.size(20.dp)
+                )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = "Your Progress",
-                    style = MaterialTheme.typography.titleLarge.copy(
-                        fontFamily = FontFamily.Serif,
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold
-                    )
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = SlateTextPrimary
                 )
             }
             Spacer(modifier = Modifier.height(16.dp))
@@ -301,43 +228,49 @@ fun DivineStatsDashboard(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                DivineStatItem(value = highScore.toString(), label = "High Score", icon = Icons.Default.EmojiEvents)
-                DivineStatItem(value = lastLevel.toString(), label = "Level", icon = Icons.Default.Flag)
-                DivineStatItem(value = totalQuestions.toString(), label = "Questions", icon = Icons.AutoMirrored.Filled.Help)
-                DivineStatItem(value = streak.toString(), label = "Streak", icon = Icons.Default.Whatshot)
+                SlateStatItem(value = highScore.toString(), label = "High Score", icon = Icons.Default.EmojiEvents)
+                SlateStatItem(value = lastLevel.toString(), label = "Level", icon = Icons.Default.Flag)
+                SlateStatItem(value = totalQuestions.toString(), label = "Questions", icon = Icons.AutoMirrored.Filled.Help)
+                SlateStatItem(value = streak.toString(), label = "Streak", icon = Icons.Default.Whatshot)
             }
         }
     }
 }
 
 @Composable
-fun DivineStatItem(value: String, label: String, icon: ImageVector) {
+fun SlateStatItem(value: String, label: String, icon: ImageVector) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = GlowingGold.copy(alpha = 0.8f),
-            modifier = Modifier.size(20.dp)
-        )
-        Spacer(modifier = Modifier.height(4.dp))
+        Box(
+            modifier = Modifier
+                .size(36.dp)
+                .clip(CircleShape)
+                .background(SlateSurfaceVariant),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = GoldAccent,
+                modifier = Modifier.size(18.dp)
+            )
+        }
+        Spacer(modifier = Modifier.height(6.dp))
         Text(
             text = value,
-            style = MaterialTheme.typography.titleMedium.copy(
-                fontWeight = FontWeight.Bold,
-                color = Color.White
-            )
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Bold,
+            color = SlateTextPrimary
         )
         Text(
             text = label,
-            style = MaterialTheme.typography.bodySmall.copy(
-                color = Color.White.copy(alpha = 0.6f)
-            )
+            fontSize = 11.sp,
+            color = SlateTextMuted
         )
     }
 }
 
 @Composable
-fun DivineMenuCard(
+fun SlateMenuCard(
     title: String,
     subtitle: String,
     icon: ImageVector,
@@ -354,70 +287,65 @@ fun DivineMenuCard(
     AnimatedVisibility(
         visible = isVisible,
         enter = if (reduceMotion) EnterTransition.None else {
-            slideInVertically(initialOffsetY = { 50 }, animationSpec = tween(500)) +
-                fadeIn(animationSpec = tween(500))
+            slideInVertically(initialOffsetY = { 40 }, animationSpec = tween(400)) +
+                fadeIn(animationSpec = tween(400))
         }
     ) {
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(80.dp)
-                .clickable(role = Role.Button, onClick = onClick)
-                .border(1.dp, GlowingGold.copy(alpha = 0.5f), RoundedCornerShape(12.dp)),
-            shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = EtherealGlass
-            ),
-            elevation = CardDefaults.cardElevation(0.dp)
+                .height(76.dp)
+                .clickable(role = Role.Button, onClick = onClick),
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = SlateCardLight),
+            elevation = CardDefaults.cardElevation(2.dp)
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 16.dp),
+                    .padding(horizontal = 18.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Box(
                     modifier = Modifier
-                        .size(48.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(GlowingGold.copy(alpha = 0.2f)),
+                        .size(44.dp)
+                        .clip(CircleShape)
+                        .background(SlateBackgroundTop.copy(alpha = 0.12f)),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = icon,
                         contentDescription = null,
-                        tint = GlowingGold,
-                        modifier = Modifier.size(28.dp)
+                        tint = SlateButtonText,
+                        modifier = Modifier.size(24.dp)
                     )
                 }
-                
+
                 Spacer(modifier = Modifier.width(16.dp))
-                
-                Column {
+
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = title,
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            fontFamily = FontFamily.Serif,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
-                        )
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = SlateButtonText
                     )
+                    Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = subtitle,
-                        style = MaterialTheme.typography.bodySmall.copy(
-                            color = Color.White.copy(alpha = 0.7f)
-                        )
+                        fontSize = 13.sp,
+                        color = SlateButtonText.copy(alpha = 0.7f)
                     )
                 }
-                
-                Spacer(modifier = Modifier.weight(1f))
-                
+
                 Icon(
                     imageVector = Icons.Default.ChevronRight,
                     contentDescription = null,
-                    tint = Color.White.copy(alpha = 0.5f)
+                    tint = SlateButtonText.copy(alpha = 0.5f),
+                    modifier = Modifier.size(20.dp)
                 )
             }
         }
     }
 }
+
