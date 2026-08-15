@@ -1,25 +1,55 @@
-# Android build outputs
+# Dart & Flutter
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
 /build/
 **/build/
 
-# IDE files
-.idea/
+# Android build outputs & Signing
 .gradle/
 local.properties
-
-# Keystore and signing
 keystore.properties
 **/*.jks
 **/*.keystore
 app/keystore.jks
 
-# Generated
+# iOS
+**/ios/.generated/
+**/ios/Flutter/App.framework
+**/ios/Flutter/Flutter.framework
+**/ios/Flutter/Flutter.podspec
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/app.flx
+**/ios/Flutter/app.zip
+**/ios/Flutter/flutter_assets/
+**/ios/ServiceDefinitions.json
+**/ios/Pods/
+**/ios/.symlinks/
+
+# Node & Cloud Functions
+functions/node_modules/
+functions/.runtimeconfig.json
+functions/.env*
+!functions/.env.example
+
+# IDE files
+.idea/
+*.iml
+.vscode/
+
+# Logs & Binaries
+*.log
+*_log.txt
 *.apk
 *.aab
 *.ap_*
+FaithQuiz-*.apk
 
-# Misc
-*.log
-captures/
+# OS files
+.DS_Store
+Thumbs.db
 
 

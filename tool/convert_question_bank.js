@@ -158,7 +158,7 @@ topicMarkers.forEach((marker, index) => {
 });
 const topicLines = [
   '// GENERATED FILE. Run `node tool/convert_question_bank.js` after editing TopicQuestionBank.kt.',
-  "import 'models.dart';", '', 'class TopicQuestionBank {',
+  "import 'models.dart';", "import 'topic_question_references.dart';", '', 'class TopicQuestionBank {',
   '  static const topics = <String>[',
   ...[...topics.keys()].map((topic) => `    ${JSON.stringify(topic)},`),
   '  ];', '', '  static const questions = <String, List<QuizQuestion>>{',
@@ -168,7 +168,7 @@ for (const [topic, questions] of topics) {
   for (const q of questions) topicLines.push(...renderQuestion(q).map((line) => `      ${line}`));
   topicLines.push('    ],');
 }
-topicLines.push('  };', '', '  static List<QuizQuestion> forTopic(String topic) =>', '      questions[topic] ?? const <QuizQuestion>[];', '', '  static String achievementTitle(String topic, int score) {',
+topicLines.push('  };', '', '  static List<QuizQuestion> forTopic(String topic) => withTopicQuestionReferences(topic, questions[topic] ?? const <QuizQuestion>[]);', '', '  static String achievementTitle(String topic, int score) {',
   '    final name = topic[0].toUpperCase() + topic.substring(1);',
   '    if (score == 50) return "Supreme $name Master";',
   '    if (score >= 45) return "$name Expert";',

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "349710501534",
+    "project_id": "faith-quiz-app-119653",
+    "storage_bucket": "faith-quiz-app-119653.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:349710501534:android:379f18ca529bb30ffb5d8f",
+        "android_client_info": {
+          "package_name": "com.example.faithquiz"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCbM2lUeJEUJzx2gR-pxIseuJUpbGai8Wo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

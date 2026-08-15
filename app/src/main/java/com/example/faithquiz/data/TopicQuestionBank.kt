@@ -158,7 +158,7 @@ object TopicQuestionBank {
             explanation = "Matthew was a tax collector before becoming a disciple of Jesus."
         ),
         QuizQuestion(
-            question = "What is the Great Commandment?",
+            question = "According to Jesus, what is the first and greatest commandment?",
             options = listOf("Love your neighbor as yourself", "Love God with all your heart, soul, and mind", "Keep the Sabbath holy", "Honor your father and mother"),
             correctAnswer = 1,
             explanation = "Jesus said the first and greatest commandment is to love God with all your heart, soul, and mind."
@@ -188,7 +188,7 @@ object TopicQuestionBank {
             explanation = "Immanuel means 'God with us' (Matthew 1:23)."
         ),
         QuizQuestion(
-            question = "Which Gospel is known as the 'Gospel of the Kingdom'?",
+            question = "Which Gospel especially emphasizes the kingdom of heaven?",
             options = listOf("Matthew", "Mark", "Luke", "John"),
             correctAnswer = 0,
             explanation = "Matthew's Gospel emphasizes the kingdom of heaven and Jesus as the Messiah."
@@ -206,7 +206,7 @@ object TopicQuestionBank {
             explanation = "John is traditionally identified as the 'beloved disciple' mentioned in his Gospel."
         ),
         QuizQuestion(
-            question = "Which miracle is recorded in all four Gospels?",
+            question = "Other than the resurrection, which miracle is recorded in all four Gospels?",
             options = listOf("Turning water into wine", "Walking on water", "Feeding the 5000", "Raising Lazarus"),
             correctAnswer = 2,
             explanation = "The Feeding of the 5000 is the only miracle recorded in all four Gospels."
@@ -242,7 +242,7 @@ object TopicQuestionBank {
             explanation = "Jesus made this declaration in John 14:6."
         ),
         QuizQuestion(
-            question = "Who was the official high priest during Jesus' trial?",
+            question = "Who was the serving high priest who led the council's case against Jesus?",
             options = listOf("Annas", "Caiaphas", "Pilate", "Herod"),
             correctAnswer = 1,
             explanation = "Caiaphas was the high priest who prophesied it was better for one man to die for the people."
@@ -254,7 +254,7 @@ object TopicQuestionBank {
             explanation = "Mary sat at Jesus' feet listening, while Martha was distracted by preparations (Luke 10)."
         ),
         QuizQuestion(
-            question = "Which Gospel highlights Jesus as the Suffering Servant?",
+            question = "Which Gospel especially presents Jesus as the servant who gives his life as a ransom?",
             options = listOf("Matthew", "Mark", "Luke", "John"),
             correctAnswer = 1,
             explanation = "Mark portrays Jesus as a servant who came to give His life as a ransom for many."
@@ -314,7 +314,7 @@ object TopicQuestionBank {
             explanation = "Jesus was baptized by John in the Jordan River."
         ),
         QuizQuestion(
-            question = "Which Gospel emphasizes Jesus' humanity?",
+            question = "Which Gospel especially highlights Jesus' compassion for outsiders and his human experience?",
             options = listOf("Matthew", "Mark", "Luke", "John"),
             correctAnswer = 2,
             explanation = "Luke emphasizes Jesus' compassion for the poor, outcasts, and His humanity."
@@ -326,13 +326,13 @@ object TopicQuestionBank {
             explanation = "They picked up twelve basketfuls of broken pieces that were left over."
         ),
         QuizQuestion(
-            question = "Who originally visited the baby Jesus in Matthew's Gospel?",
+            question = "According to Matthew's Gospel, who came to visit the child Jesus?",
             options = listOf("Shepherds", "Wise Men (Magi)", "Angels", "Simeon"),
             correctAnswer = 1,
             explanation = "Matthew records the visit of the Wise Men (Magi) from the east."
         ),
         QuizQuestion(
-            question = "What happens to the seed that falls on rocky ground?",
+            question = "In the Parable of the Sower, what happens to seed that falls on rocky ground?",
             options = listOf("It brings forth much fruit", "It gets choked by thorns", "It springs up quickly but withers", "Birds eat it"),
             correctAnswer = 2,
             explanation = "Since it has no root, it lasts only a short time and withers under the sun."
@@ -350,7 +350,7 @@ object TopicQuestionBank {
             explanation = "Joseph of Arimathea asked Pilate for Jesus' body and placed it in his own new tomb."
         ),
         QuizQuestion(
-            question = "Who witnessed the Transfiguration?",
+            question = "Which three disciples did Jesus take with him to witness the Transfiguration?",
             options = listOf("All 12 disciples", "Peter, James, and John", "Mary and Martha", "Moses and Elijah only"),
             correctAnswer = 1,
             explanation = "Jesus took Peter, James, and John up the mountain where He was transfigured."
@@ -421,7 +421,7 @@ object TopicQuestionBank {
             explanation = "Jonah was swallowed by a great fish after being thrown overboard on his way to Tarshish."
         ),
         QuizQuestion(
-            question = "Jeremiah corresponds to which tragic event in Jewish history?",
+            question = "During which major crisis in Judah's history did Jeremiah preach?",
             options = listOf("The Exodus from Egypt", "The destruction of Jerusalem and the Exile", "The building of the Second Temple", "The flood"),
             correctAnswer = 1,
             explanation = "Jeremiah prophesied during the final years of Judah and witnessed the destruction of Jerusalem and the beginning of the Exile."
@@ -433,7 +433,7 @@ object TopicQuestionBank {
             explanation = "God brought Ezekiel to a valley of dry bones and commanded him to prophesy to them, and they came to life."
         ),
         QuizQuestion(
-            question = "Daniel interpreted a dream of a great statue made of different metals. What did the statue represent?",
+            question = "In Daniel's interpretation of Nebuchadnezzar's dream, what did the statue made of different metals represent?",
             options = listOf("Four great kings", "Successive world empires", "The history of Israel", "Seven years of famine"),
             correctAnswer = 1,
             explanation = "The statue represented successive world empires: Babylon (Gold), Medo-Persia (Silver), Greece (Bronze), and Rome (Iron)."
@@ -445,10 +445,10 @@ object TopicQuestionBank {
             explanation = "Amos was a shepherd and dresser of sycamore figs from Tekoa before he was called to prophesy to Israel."
         ),
         QuizQuestion(
-            question = "How does Hosea 1:2 describe the woman Hosea was commanded to marry?",
-            options = listOf("A prophetess", "A queen", "A wife of whoredom", "A widow"),
+            question = "In Hosea 1:2, what kind of marriage was Hosea commanded to enter as a sign of Israel's unfaithfulness?",
+            options = listOf("A prophetess", "A queen", "A marriage to an unfaithful wife", "A widow"),
             correctAnswer = 2,
-            explanation = "Hosea 1:2 uses the phrase 'wife of whoredom'; the marriage illustrates Israel's unfaithfulness to God."
+            explanation = "Hosea 1:2 uses an older phrase for an unfaithful wife. The marriage was a living sign of Israel's unfaithfulness to God."
         ),
         QuizQuestion(
             question = "Which prophet predicted the outpouring of the Holy Spirit on 'all flesh'?",
@@ -541,7 +541,7 @@ object TopicQuestionBank {
             explanation = "God commanded Jeremiah not to marry or have children in that place because of the deadly diseases and sword coming upon them."
         ),
         QuizQuestion(
-            question = "What strange food did Ezekiel have to bake his bread with as a sign?",
+            question = "What fuel was Ezekiel initially told to use when baking bread as a sign to Israel?",
             options = listOf("Cow dung", "Human dung (initially)", "Rotten figs", "Locusts"),
             correctAnswer = 1,
             explanation = "God initially told Ezekiel to bake bread over human excrement, but allowed him to use cow dung after Ezekiel objected."
@@ -667,19 +667,19 @@ object TopicQuestionBank {
             explanation = "Habakkuk 2:4 - '...but the righteous person will live by his faithfulness.' Quoted by Paul in Romans."
         ),
         QuizQuestion(
-            question = "What sign did Isaiah give Hezekiah that his life would be extended?",
-            options = listOf("The sun moved backward", "Thunder in a clear sky", "A star fell", "Water turned to blood"),
+            question = "What sign did God give Hezekiah, through Isaiah, that his life would be extended?",
+            options = listOf("The shadow moved backward", "Thunder in a clear sky", "A star fell", "Water turned to blood"),
             correctAnswer = 0,
-            explanation = "The shadow on the stairway of Ahaz went back ten steps."
+            explanation = "The shadow on the stairway of Ahaz went back ten steps (2 Kings 20:8-11)."
         ),
         QuizQuestion(
-            question = "Which prophet had a contest with Hananiah over a wooden yoke?",
+            question = "Which prophet wore a wooden yoke that the false prophet Hananiah broke?",
             options = listOf("Jeremiah", "Ezekiel", "Daniel", "Isaiah"),
             correctAnswer = 0,
             explanation = "Jeremiah wore a yoke to symbolize submission to Babylon. Hananiah broke it, predicting false peace."
         ),
         QuizQuestion(
-            question = "Who was the 'Prophetess' who judged Israel under a palm tree?",
+            question = "Which prophetess also judged Israel under a palm tree?",
             options = listOf("Deborah", "Miriam", "Huldah", "Noadiah"),
             correctAnswer = 0,
             explanation = "Deborah was a prophetess and judge who held court under the Palm of Deborah."
@@ -713,7 +713,7 @@ object TopicQuestionBank {
             explanation = "The seed on rocky ground sprang up quickly but withered because it had no deep root."
         ),
         QuizQuestion(
-            question = "In the Parable of the Good Samaritan, who was the first person to pass by the injured man?",
+            question = "In the Parable of the Good Samaritan, who passed the injured man first without helping him?",
             options = listOf("A Levite", "A Priest", "A Roman Soldier", "An Innkeeper"),
             correctAnswer = 1,
             explanation = "A priest happened to be going down the same road, and when he saw the man, he passed by on the other side."
@@ -755,7 +755,7 @@ object TopicQuestionBank {
             explanation = "The shepherd leaves the ninety-nine in the open country to go after the lost sheep until he finds it."
         ),
         QuizQuestion(
-            question = "Who did the rich man see in Abraham's bosom specifically?",
+            question = "In Jesus' story of the rich man and Lazarus, who was beside Abraham when the rich man looked up?",
             options = listOf("Moses", "Elijah", "Lazarus", "David"),
             correctAnswer = 2,
             explanation = "In Hades, the rich man looked up and saw Abraham far away, with Lazarus by his side."
@@ -764,7 +764,7 @@ object TopicQuestionBank {
             question = "In the Parable of the Unforgiving Servant, how much did the first servant owe the king?",
             options = listOf("100 denarii", "10,000 talents", "50 shekels", "1,000 drachmas"),
             correctAnswer = 1,
-            explanation = "The first servant owed a massive debt of ten thousand talents, which meant millions of dollars in modern terms."
+            explanation = "The first servant owed ten thousand talents—an intentionally overwhelming debt in Jesus' story."
         ),
         QuizQuestion(
             question = "What item did the woman lose in the parable about rejoicing?",
@@ -815,7 +815,7 @@ object TopicQuestionBank {
             explanation = "A certain man was preparing a great banquet and invited many guests, but they all alike began to make excuses."
         ),
         QuizQuestion(
-            question = "What does the leaven represent in the Parable of the Leaven?",
+            question = "In Jesus' Parable of the Leaven, what does the leaven illustrate?",
             options = listOf("Sin spreading in the church", "The permeating growth of the Kingdom", "False teaching", "Hypocrisy"),
             correctAnswer = 1,
             explanation = "The leaven represents the Kingdom of Heaven, which, though small, permeates and transforms the whole world."
@@ -875,13 +875,13 @@ object TopicQuestionBank {
             explanation = "'Well done, my good servant!' his master replied. 'Because you have been trustworthy in a very small matter, take charge of ten cities.'"
         ),
         QuizQuestion(
-            question = "What is the main lesson of the Parable of the Growing Seed?",
-            options = listOf("Farming is hard work", "We must water the seed daily", "God brings the growth automatically", "We need better soil"),
+            question = "What does the Parable of the Growing Seed teach about the growth of God's kingdom?",
+            options = listOf("Farming is hard work", "We must water the seed daily", "God brings growth beyond the farmer's control", "We need better soil"),
             correctAnswer = 2,
             explanation = "The seed sprouts and grows, though he does not know how. All by itself the soil produces corn."
         ),
         QuizQuestion(
-            question = "In the Parable of the Unjust Steward, why was the steward commended?",
+            question = "Why did the master commend the dishonest manager in the Parable of the Unjust Steward?",
             options = listOf("For his honesty", "For his repentance", "For acting shrewdly", "For saving money"),
             correctAnswer = 2,
             explanation = "The master commended the dishonest manager because he had acted shrewdly in preparing for his future."
@@ -917,10 +917,10 @@ object TopicQuestionBank {
             explanation = "Suppose one of you wants to build a tower. Won't you first sit down and estimate the cost to see if you have enough money to complete it?"
         ),
         QuizQuestion(
-            question = "In the Parable of the Lost Coin, why did the woman light a lamp and sweep?",
-            options = listOf("It was dark", "She was cleaning anyway", "Because the coin was valuable to her", "Guests were coming"),
+            question = "In the Parable of the Lost Coin, why did the woman light a lamp and sweep the house?",
+            options = listOf("It was dark", "She was cleaning anyway", "To search carefully for the lost coin", "Guests were coming"),
             correctAnswer = 2,
-            explanation = "The diligent search illustrates God's diligent search for the lost sinner."
+            explanation = "She searched carefully until she found the lost coin; the story illustrates God's joy over a lost person who repents."
         ),
         QuizQuestion(
             question = "What represents the Word of God in the Parable of the Sower?",
@@ -929,7 +929,7 @@ object TopicQuestionBank {
             explanation = "The seed is the word of God (Luke 8:11)."
         ),
         QuizQuestion(
-            question = "In the Parable of the Sheep and Goats, what is the criteria for judgment?",
+            question = "In the Parable of the Sheep and Goats, what action does Jesus use to distinguish the two groups?",
             options = listOf("Correct theology", "Church attendance", "How one treated the least of these", "Tithing"),
             correctAnswer = 2,
             explanation = "Whatever you did for one of the least of these brothers and sisters of mine, you did for me."
@@ -959,7 +959,7 @@ object TopicQuestionBank {
             explanation = "But when you are invited, take the lowest place, so that when your host comes, he will say to you, 'Friend, move up to a better place.'"
         ),
         QuizQuestion(
-            question = "What is the lesson of the Parable of the Empty House?",
+            question = "What warning does Jesus give in his teaching about an unclean spirit returning to an empty house?",
             options = listOf("Keep your house clean", "Demons like empty places", "Reformation without habitation by God invites worse evil", "Ghosts are real"),
             correctAnswer = 2,
             explanation = "When an impure spirit comes out of a person... if it finds the house unoccupied, it takes seven other spirits more wicked than itself."
@@ -1001,7 +1001,7 @@ object TopicQuestionBank {
             explanation = "He went away sad, because he had great wealth and was unwilling to sell it to follow Jesus."
         ),
         QuizQuestion(
-            question = "In the Parable of the Physicians, who does Jesus say needs a doctor?",
+            question = "In Jesus' saying about a doctor, who does he say needs a doctor?",
             options = listOf("The healthy", "The sick", "Everyone", "No one"),
             correctAnswer = 1,
             explanation = "It is not the healthy who need a doctor, but the sick. I have not come to call the righteous, but sinners."

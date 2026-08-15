@@ -1,0 +1,88 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Progress is private to the anonymous or signed-in Firebase user. The
+    // client cannot write any future leaderboard or content collections.
+    match /users/{userId}/private/progress {
+      allow get: if request.auth != null && request.auth.uid == userId;
+      allow create, update: if request.auth != null
+        && request.auth.uid == userId
+        && request.resource.data.keys().hasOnly(['schemaVersion', 'updatedAt', 'payload'])
+        && request.resource.data.schemaVersion == 1
+        && request.resource.data.updatedAt is int
+        && request.resource.data.payload is map;
+      allow delete: if false;
+    }
+
+    // These are curated server-owned questions for global challenges. Clients
+    // can read them only after Firebase authentication and can never alter them.
+    match /content/{catalogue}/questions/{questionId} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+
+    // Correct answer indexes live in contentPrivate and are intentionally
+    // unreachable from app clients. Only the Admin SDK in callable Functions
+    // can read them to verify scores.
+    match /contentPrivate/{catalogue}/answers/{questionId} {
+      allow read, write: if false;
+    }
+
+    // Server-verified scores are readable to signed-in players, but never
+    // writable from a client. Callable Functions own all score updates.
+    match /leaderboards/{challengeId}/entries/{entryId} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+
+    // Groups and their challenges are created, joined, and graded exclusively
+    // through callable Functions. The private user index lets a member list
+    // only their own groups without exposing an address book of all players.
+    match /users/{userId}/groups/{groupId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if false;
+    }
+
+    match /groups/{groupId} {
+      allow read: if request.auth != null
+        && exists(/databases/$(database)/documents/groups/$(groupId)/members/$(request.auth.uid));
+      allow write: if false;
+    }
+
+    match /groups/{groupId}/members/{memberId} {
+      allow read: if request.auth != null
+        && exists(/databases/$(database)/documents/groups/$(groupId)/members/$(request.auth.uid));
+      allow write: if false;
+    }
+
+    match /groups/{groupId}/challenges/{challengeId} {
+      allow read: if request.auth != null
+        && exists(/databases/$(database)/documents/groups/$(groupId)/members/$(request.auth.uid));
+      allow write: if false;
+    }
+
+    match /groups/{groupId}/challenges/{challengeId}/entries/{entryId} {
+      allow read: if request.auth != null
+        && exists(/databases/$(database)/documents/groups/$(groupId)/members/$(request.auth.uid));
+      allow write: if false;
+    }
+
+    // The user grants or revokes reminders in the app. Tokens are private and
+    // may only be read or altered by their owner or by Admin SDK code.
+    match /users/{userId}/private/notifications {
+      allow get: if request.auth != null && request.auth.uid == userId;
+      allow create, update: if request.auth != null
+        && request.auth.uid == userId
+        && request.resource.data.keys().hasOnly(['remindersEnabled', 'fcmToken', 'platform', 'updatedAt'])
+        && request.resource.data.remindersEnabled is bool
+        && request.resource.data.platform is string;
+      allow delete: if false;
+    }
+
+    // A deliberate deny-by-default boundary for features added later.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
