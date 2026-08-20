@@ -1,10 +1,12 @@
-const { initializeApp } = require('firebase-admin/app');
+const { getApps, initializeApp } = require('firebase-admin/app');
 const { getFirestore, FieldValue } = require('firebase-admin/firestore');
 const { getMessaging } = require('firebase-admin/messaging');
 const { HttpsError, onCall } = require('firebase-functions/v2/https');
 const { onSchedule } = require('firebase-functions/v2/scheduler');
 
-initializeApp();
+if (getApps().length === 0) {
+  initializeApp();
+}
 const db = getFirestore();
 
 function requireUser(request) {
@@ -197,7 +199,7 @@ exports.submitGroupChallenge = onCall({ enforceAppCheck: true }, async (request)
 exports.sendDailyReminders = onSchedule({
   schedule: '0 18 * * *',
   timeZone: 'Africa/Accra',
-  region: 'africa-south1',
+  region: 'us-central1',
 }, async () => {
   const snapshot = await db.collectionGroup('notifications')
       .where('remindersEnabled', '==', true)

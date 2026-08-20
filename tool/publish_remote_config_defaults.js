@@ -35,7 +35,7 @@ async function main() {
   if (!current.ok) throw new Error(`Remote Config read failed (${current.status}): ${await current.text()}`);
   const template = await current.json();
   template.parameters ??= {};
-  template.parameters.cloud_challenges_enabled = { defaultValue: { value: 'false' } };
+  template.parameters.cloud_challenges_enabled = { defaultValue: { value: 'true' } };
   template.parameters.active_cloud_catalogue = { defaultValue: { value: 'faith-quiz-global-v1' } };
   const publish = await fetch(url, {
     method: 'PUT',
@@ -47,7 +47,7 @@ async function main() {
     body: JSON.stringify(template),
   });
   if (!publish.ok) throw new Error(`Remote Config publish failed (${publish.status}): ${await publish.text()}`);
-  console.log('Published Remote Config defaults: cloud_challenges_enabled=false, active_cloud_catalogue=faith-quiz-global-v1.');
+  console.log('Published Remote Config defaults: cloud_challenges_enabled=true, active_cloud_catalogue=faith-quiz-global-v1.');
 }
 
 main().catch((error) => {
