@@ -61,6 +61,15 @@ android {
 
     buildTypes {
         release {
+            // Strip unused Java/Kotlin code and Android resources from the
+            // distributable build. Flutter already tree-shakes Dart and icon
+            // assets in release mode; R8 completes the Android-side pass.
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
             if (hasReleaseSigning) {
                 signingConfig = signingConfigs.getByName("release")
             }
