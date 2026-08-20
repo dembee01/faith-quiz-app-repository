@@ -147,6 +147,9 @@ class CloudChallengeService implements CloudChallengeGateway {
   final FirebaseAuth _auth;
   final FirebaseFunctions _functions;
 
+  static CloudChallenge? _cachedTodayChallenge;
+  static int? _cachedTodayEpoch;
+
   Future<bool> get isAvailable async {
     if (!RemoteFeatureService.instance.cloudChallengesEnabled) return false;
     await _user();
@@ -159,6 +162,12 @@ class CloudChallengeService implements CloudChallengeGateway {
     final today =
         DateTime.now().toUtc().millisecondsSinceEpoch ~/
         Duration.millisecondsPerDay;
+
+    // Client-side cost optimization: reuse today's fetched challenge across screen transitions
+    if (_cachedTodayEpoch == today && _cachedTodayChallenge != null) {
+      return _cachedTodayChallenge;
+    }
+
     final catalogue = RemoteFeatureService.instance.activeCloudCatalogue;
     final snapshot = await _firestore
         .collection('content')
@@ -172,6 +181,8 @@ class CloudChallengeService implements CloudChallengeGateway {
     if (challenge.question.isEmpty || challenge.options.length != 4) {
       return null;
     }
+    _cachedTodayEpoch = today;
+    _cachedTodayChallenge = challenge;
     return challenge;
   }
 
@@ -206,7 +217,7 @@ class CloudChallengeService implements CloudChallengeGateway {
       .doc(challengeId)
       .collection('entries')
       .orderBy('score', descending: true)
-      .limit(100)
+      .limit(25)
       .snapshots()
       .map((snapshot) {
         final entries = snapshot.docs

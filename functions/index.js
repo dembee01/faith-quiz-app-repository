@@ -1,13 +1,50 @@
 const { getApps, initializeApp } = require('firebase-admin/app');
 const { getFirestore, FieldValue } = require('firebase-admin/firestore');
 const { getMessaging } = require('firebase-admin/messaging');
+const { setGlobalOptions } = require('firebase-functions/v2');
 const { HttpsError, onCall } = require('firebase-functions/v2/https');
 const { onSchedule } = require('firebase-functions/v2/scheduler');
+
+// Cost optimization: low memory tier, short timeout, high concurrency, strict instance ceiling
+setGlobalOptions({
+  region: 'us-central1',
+  memory: '256MiB',
+  timeoutSeconds: 15,
+  concurrency: 40,
+  maxInstances: 10,
+});
 
 if (getApps().length === 0) {
   initializeApp();
 }
 const db = getFirestore();
+
+// In-memory cache for daily question answers (5-minute TTL to reduce Firestore read costs)
+const answerCache = new Map();
+
+async function getCachedAnswer(catalogue, questionId) {
+  const key = `${catalogue}/${questionId}`;
+  const now = Date.now();
+  const hit = answerCache.get(key);
+  if (hit && now - hit.timestamp < 300000) {
+    return hit.data;
+  }
+  const publicQuestionRef = db.doc(`content/${catalogue}/questions/${questionId}`);
+  const privateAnswerRef = db.doc(`contentPrivate/${catalogue}/answers/${questionId}`);
+  const [question, privateAnswer] = await Promise.all([
+    publicQuestionRef.get(),
+    privateAnswerRef.get(),
+  ]);
+  if (!question.exists || !privateAnswer.exists || question.get('active') !== true) {
+    return null;
+  }
+  const data = {
+    correctAnswer: privateAnswer.get('correctAnswer'),
+    challengeId: question.get('challengeId') || questionId,
+  };
+  answerCache.set(key, { data, timestamp: now });
+  return data;
+}
 
 function requireUser(request) {
   if (!request.auth) throw new HttpsError('unauthenticated', 'Sign in is required.');
@@ -27,9 +64,8 @@ function leaderboardName(value) {
   return requireText(value || 'Faith learner', 'display name', 24);
 }
 
-// A client supplies only its selected answer. The correct answer is read from
-// the curated catalogue on the server, so a modified app cannot submit a
-// fabricated score directly to the leaderboard.
+// A client supplies only its selected answer. The correct answer is verified
+// server-side so modified apps cannot submit fabricated scores.
 exports.submitCloudChallenge = onCall({ enforceAppCheck: true }, async (request) => {
   const uid = requireUser(request);
   const catalogue = requireText(request.data.catalogue, 'catalogue');
@@ -42,17 +78,12 @@ exports.submitCloudChallenge = onCall({ enforceAppCheck: true }, async (request)
     throw new HttpsError('invalid-argument', 'Invalid answer submission.');
   }
 
-  const publicQuestionRef = db.doc(`content/${catalogue}/questions/${questionId}`);
-  const privateAnswerRef = db.doc(`contentPrivate/${catalogue}/answers/${questionId}`);
-  const [question, privateAnswer] = await Promise.all([
-    publicQuestionRef.get(),
-    privateAnswerRef.get(),
-  ]);
-  if (!question.exists || !privateAnswer.exists || question.get('active') !== true) {
+  const answerData = await getCachedAnswer(catalogue, questionId);
+  if (!answerData) {
     throw new HttpsError('not-found', 'Challenge is unavailable.');
   }
-  const correct = answerIndex === privateAnswer.get('correctAnswer');
-  const challengeId = question.get('challengeId') || questionId;
+  const correct = answerIndex === answerData.correctAnswer;
+  const challengeId = answerData.challengeId;
   const entryRef = db.doc(`leaderboards/${challengeId}/entries/${uid}`);
   await db.runTransaction(async (transaction) => {
     const previous = await transaction.get(entryRef);
