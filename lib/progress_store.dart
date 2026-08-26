@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -414,13 +415,22 @@ class ProgressStore extends ChangeNotifier {
   Future<void> _applyCloudPayload(Map<String, dynamic> value) async {
     int integer(String key, int fallback) =>
         (value[key] as num?)?.toInt() ?? fallback;
-    highestUnlocked = integer('highestUnlocked', highestUnlocked).clamp(1, 30);
-    totalAnswered = integer('totalAnswered', totalAnswered).clamp(0, 1 << 31);
-    highScore = integer('highScore', highScore).clamp(0, 1 << 31);
-    lastCompletedLevel = integer(
-      'lastCompletedLevel',
-      lastCompletedLevel,
+    // Restoring from the cloud may only advance progress. A stale backup must
+    // never lock levels the player has already unlocked on this device.
+    highestUnlocked = max(
+      highestUnlocked,
+      integer('highestUnlocked', highestUnlocked),
     ).clamp(1, 30);
+    totalAnswered = integer('totalAnswered', totalAnswered).clamp(0, 1 << 31);
+    highScore = max(highScore, integer('highScore', highScore)).clamp(
+      0,
+      1 << 31,
+    );
+    lastCompletedLevel = max(
+      lastCompletedLevel,
+      integer('lastCompletedLevel', lastCompletedLevel),
+    ).clamp(1, 30);
+    adaptiveLevel = integer('adaptiveLevel', adaptiveLevel).clamp(1, 30);
     totalAttempts = integer('totalAttempts', totalAttempts).clamp(0, 1 << 31);
     totalTimeSpentSeconds = integer(
       'totalTimeSpentSeconds',
@@ -432,7 +442,6 @@ class ProgressStore extends ChangeNotifier {
       'lastDailyChallengeDay',
       lastDailyChallengeDay,
     );
-    adaptiveLevel = integer('adaptiveLevel', adaptiveLevel).clamp(1, 30);
     perfectAchievement =
         value['perfectAchievement'] as bool? ?? perfectAchievement;
     streakAchievement =
@@ -461,6 +470,12 @@ class ProgressStore extends ChangeNotifier {
     _cloudUpdatedAt = DateTime.now().millisecondsSinceEpoch;
     await _persist();
   }
+
+  /// Test seam mirroring [_applyCloudPayload] so regression tests can feed a
+  /// stale backup payload without touching Firebase.
+  @visibleForTesting
+  Future<void> applyCloudPayloadForTest(Map<String, dynamic> value) =>
+      _applyCloudPayload(value);
 
   Future<void> _syncCloud() async {
     if (!cloudBackupEnabled || _applyingCloudState) return;

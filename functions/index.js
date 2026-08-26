@@ -51,6 +51,14 @@ function requireUser(request) {
   return request.auth.uid;
 }
 
+// App Check enforcement stays off because Faith Quiz is distributed as a
+// sideloaded APK: Play Integrity attestation cannot pass outside Google Play,
+// so enforced checks would reject every real player. Score integrity does not
+// depend on it — correct answers never reach the client, grading happens here,
+// and each account may submit once per challenge. Revisit enforcement only if
+// the app is ever published on Google Play.
+const callableOptions = { enforceAppCheck: false };
+
 function requireText(value, name, maxLength = 80) {
   if (typeof value !== 'string' || !value.trim() || value.length > maxLength) {
     throw new HttpsError('invalid-argument', `Invalid ${name}.`);
@@ -66,7 +74,7 @@ function leaderboardName(value) {
 
 // A client supplies only its selected answer. The correct answer is verified
 // server-side so modified apps cannot submit fabricated scores.
-exports.submitCloudChallenge = onCall({ enforceAppCheck: true }, async (request) => {
+exports.submitCloudChallenge = onCall(callableOptions, async (request) => {
   const uid = requireUser(request);
   const catalogue = requireText(request.data.catalogue, 'catalogue');
   const questionId = requireText(request.data.questionId, 'question ID');
@@ -105,7 +113,7 @@ exports.submitCloudChallenge = onCall({ enforceAppCheck: true }, async (request)
   return { correct, challengeId };
 });
 
-exports.createGroup = onCall({ enforceAppCheck: true }, async (request) => {
+exports.createGroup = onCall(callableOptions, async (request) => {
   const uid = requireUser(request);
   const name = requireText(request.data.name, 'group name', 40);
   const group = db.collection('groups').doc();
@@ -122,7 +130,7 @@ exports.createGroup = onCall({ enforceAppCheck: true }, async (request) => {
   return { groupId: group.id };
 });
 
-exports.joinGroup = onCall({ enforceAppCheck: true }, async (request) => {
+exports.joinGroup = onCall(callableOptions, async (request) => {
   const uid = requireUser(request);
   const groupId = requireText(request.data.groupId, 'group ID');
   const group = db.doc(`groups/${groupId}`);
@@ -143,7 +151,7 @@ exports.joinGroup = onCall({ enforceAppCheck: true }, async (request) => {
 // Group hosts select from the same curated public catalogue. Members can
 // view the question, but only a callable function can read the hidden answer
 // key and write a verified group score.
-exports.createGroupChallenge = onCall({ enforceAppCheck: true }, async (request) => {
+exports.createGroupChallenge = onCall(callableOptions, async (request) => {
   const uid = requireUser(request);
   const groupId = requireText(request.data.groupId, 'group ID');
   const catalogue = requireText(request.data.catalogue, 'catalogue');
@@ -179,7 +187,7 @@ exports.createGroupChallenge = onCall({ enforceAppCheck: true }, async (request)
   return { challengeId: challenge.id };
 });
 
-exports.submitGroupChallenge = onCall({ enforceAppCheck: true }, async (request) => {
+exports.submitGroupChallenge = onCall(callableOptions, async (request) => {
   const uid = requireUser(request);
   const groupId = requireText(request.data.groupId, 'group ID');
   const challengeId = requireText(request.data.challengeId, 'challenge ID');

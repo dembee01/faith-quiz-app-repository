@@ -1,3 +1,5 @@
+import 'package:cloud_functions/cloud_functions.dart'
+    show FirebaseFunctionsException;
 import 'package:faithquiz/app.dart';
 import 'package:faithquiz/cloud_challenge_service.dart';
 import 'package:faithquiz/models.dart';
@@ -45,7 +47,7 @@ void main() {
 
       expect(find.text('Daily Challenge'), findsOneWidget);
       expect(find.text('The Covenant Journey'), findsOneWidget);
-      expect(find.text('Adaptive Levels'), findsOneWidget);
+      expect(find.text('Adaptive Levels'), findsNothing);
     },
   );
 
@@ -206,6 +208,34 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  test('cloud submit failures map to actionable messages', () {
+    expect(
+      cloudSubmitErrorMessage(FirebaseFunctionsException(
+        code: 'already-exists',
+        message: 'submitted',
+      )),
+      'You already locked in this answer.',
+    );
+    expect(
+      cloudSubmitErrorMessage(FirebaseFunctionsException(
+        code: 'not-found',
+        message: 'gone',
+      )),
+      'This challenge is no longer available.',
+    );
+    expect(
+      cloudSubmitErrorMessage(FirebaseFunctionsException(
+        code: 'unavailable',
+        message: 'offline',
+      )),
+      contains('unreachable'),
+    );
+    expect(
+      cloudSubmitErrorMessage(Exception('socket')),
+      contains('not verified'),
+    );
+  });
 
   test('every topic quiz question includes a Scripture location', () {
     for (final topic in const ['gospels', 'prophets', 'parables']) {

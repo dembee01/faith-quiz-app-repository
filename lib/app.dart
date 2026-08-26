@@ -3,6 +3,7 @@ import 'dart:math';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:cloud_functions/cloud_functions.dart' show FirebaseFunctionsException;
 
 import 'answer_feedback.dart';
 import 'cloud_challenge_service.dart';
@@ -28,6 +29,26 @@ const _wrong = Color(0xFFEF4444);
 
 bool _isTopicMode(String mode) =>
     const {'gospels', 'prophets', 'parables'}.contains(mode);
+
+/// Turns a failed server verification into a message a player can act on.
+String cloudSubmitErrorMessage(Object error) {
+  if (error is FirebaseFunctionsException) {
+    switch (error.code) {
+      case 'already-exists':
+        return 'You already locked in this answer.';
+      case 'not-found':
+        return 'This challenge is no longer available.';
+      case 'unauthenticated':
+      case 'permission-denied':
+        return 'The quiz server could not verify your sign-in. Try again shortly.';
+      case 'unavailable':
+      case 'deadline-exceeded':
+      case 'cancelled':
+        return 'The quiz server is unreachable right now. Check your connection and try again.';
+    }
+  }
+  return 'Your answer was not verified, so no score was recorded. Please try again.';
+}
 
 String _formatTime(int seconds) {
   final safe = seconds.clamp(0, 86400);
@@ -323,12 +344,6 @@ class MainMenuScreen extends StatelessWidget {
               subtitle: 'Your Biblical Adventure Map',
               icon: Icons.map_outlined,
               onTap: () => _open(context, JourneyScreen(store: store)),
-            ),
-            SlateMenuCard(
-              title: 'Adaptive Levels',
-              subtitle: '30 Progressive Quiz Levels',
-              icon: Icons.format_list_bulleted,
-              onTap: () => _open(context, LevelsScreen(store: store)),
             ),
             SlateMenuCard(
               title: 'Review Wisdom',
@@ -631,74 +646,6 @@ class SlatePageHeader extends StatelessWidget {
   );
 }
 
-class LevelsScreen extends StatelessWidget {
-  const LevelsScreen({super.key, required this.store});
-  final ProgressStore store;
-
-  @override
-  Widget build(BuildContext context) => Scaffold(
-    body: DivineBackground(
-      reduceMotion: store.reduceMotion,
-      child: SafeArea(
-        child: Column(
-          children: [
-            const SizedBox(height: 16),
-            const SlatePageHeader(title: 'CHOOSE LEVEL'),
-            const SizedBox(height: 24),
-            Expanded(
-              child: GridView.builder(
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 28),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3,
-                  crossAxisSpacing: 14,
-                  mainAxisSpacing: 14,
-                  childAspectRatio: 1,
-                ),
-                itemCount: 30,
-                itemBuilder: (context, index) {
-                  final level = index + 1;
-                  final unlocked = level <= store.highestUnlocked;
-                  return Material(
-                    color: unlocked ? _slateCardLight : _slateSurfaceVariant,
-                    borderRadius: BorderRadius.circular(20),
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(20),
-                      onTap: unlocked
-                          ? () => Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) =>
-                                    QuizScreen(store: store, level: level),
-                              ),
-                            )
-                          : null,
-                      child: Center(
-                        child: unlocked
-                            ? Text(
-                                '$level',
-                                style: const TextStyle(
-                                  color: _slateButtonText,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 24,
-                                ),
-                              )
-                            : const Icon(
-                                Icons.lock,
-                                color: _slateTextMuted,
-                                size: 26,
-                              ),
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
-    ),
-  );
-}
-
 class JourneyScreen extends StatelessWidget {
   const JourneyScreen({super.key, required this.store});
   final ProgressStore store;
@@ -991,6 +938,7 @@ class _CloudChallengeScreenState extends State<CloudChallengeScreen> {
   bool _submitting = false;
   bool _feedback = false;
   bool _wasCorrect = false;
+  bool _alreadySubmitted = false;
   String? _challengeId;
 
   @override
@@ -1041,6 +989,20 @@ class _CloudChallengeScreenState extends State<CloudChallengeScreen> {
       unawaited(
         result.correct ? AnswerFeedback.correct() : AnswerFeedback.incorrect(),
       );
+    } on FirebaseFunctionsException catch (error) {
+      if (!mounted) return;
+      if (error.code == 'already-exists') {
+        // This device already locked in today's answer; reveal the leaderboard
+        // instead of an error loop.
+        setState(() {
+          _wasCorrect = false;
+          _challengeId = challenge.challengeId;
+          _feedback = true;
+          _alreadySubmitted = true;
+        });
+      } else {
+        setState(() => _error = cloudSubmitErrorMessage(error));
+      }
     } catch (_) {
       if (mounted) {
         setState(() {
@@ -1165,7 +1127,11 @@ class _CloudChallengeScreenState extends State<CloudChallengeScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                _wasCorrect ? 'VERIFIED CORRECT' : 'ANSWER RECORDED',
+                _alreadySubmitted
+                    ? 'ALREADY RECORDED TODAY'
+                    : _wasCorrect
+                    ? 'VERIFIED CORRECT'
+                    : 'ANSWER RECORDED',
                 style: TextStyle(
                   color: _wasCorrect ? _correct : _gold,
                   fontWeight: FontWeight.bold,
@@ -3216,6 +3182,18 @@ class _GroupQuestionScreenState extends State<GroupQuestionScreen> {
       unawaited(
         result.correct ? AnswerFeedback.correct() : AnswerFeedback.incorrect(),
       );
+    } on FirebaseFunctionsException catch (error) {
+      if (!mounted) return;
+      if (error.code == 'already-exists') {
+        setState(() {
+          _submitted = true;
+          _wasCorrect = false;
+        });
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(cloudSubmitErrorMessage(error))),
+        );
+      }
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

@@ -151,6 +151,9 @@ class CloudChallengeService implements CloudChallengeGateway {
   static int? _cachedTodayEpoch;
 
   Future<bool> get isAvailable async {
+    // A launch-time offline period must not disable online play for the whole
+    // session; re-check the remote gate before concluding it is off.
+    await RemoteFeatureService.instance.refreshIfDisabled();
     if (!RemoteFeatureService.instance.cloudChallengesEnabled) return false;
     await _user();
     return true;
