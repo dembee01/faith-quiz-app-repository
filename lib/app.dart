@@ -992,6 +992,7 @@ class _CloudChallengeScreenState extends State<CloudChallengeScreen> {
   bool _wasCorrect = false;
   bool _alreadySubmitted = false;
   String? _challengeId;
+  int? _serverCorrectAnswer;
   int _currentIndex = 0;
   int _questionNumber = 1;
   int _sessionScore = 0;
@@ -1034,6 +1035,7 @@ class _CloudChallengeScreenState extends State<CloudChallengeScreen> {
       _feedback = false;
       _wasCorrect = false;
       _alreadySubmitted = false;
+      _serverCorrectAnswer = null;
       _questionSeconds = 0;
     });
     try {
@@ -1072,6 +1074,7 @@ class _CloudChallengeScreenState extends State<CloudChallengeScreen> {
         _wasCorrect = result.correct;
         _challengeId = result.challengeId;
         _alreadySubmitted = result.alreadySubmitted;
+        _serverCorrectAnswer = result.correctAnswer;
         _feedback = true;
         if (result.correct) {
           _sessionScore++;
@@ -1087,12 +1090,10 @@ class _CloudChallengeScreenState extends State<CloudChallengeScreen> {
       _stopTimer();
       if (!mounted) return;
       if (error.code == 'already-exists') {
-        // Evaluate semantic match against question explanation rather than forcing false
-        final matchesExplanation = challenge.explanation
-            .toLowerCase()
-            .contains(challenge.options[_selected].toLowerCase());
+        final correctIdx = _resolvedCorrectAnswerIndex(challenge);
+        final matches = correctIdx != null && correctIdx == _selected;
         setState(() {
-          _wasCorrect = matchesExplanation;
+          _wasCorrect = matches;
           _challengeId = challenge.challengeId;
           _feedback = true;
           _alreadySubmitted = true;
@@ -1118,6 +1119,26 @@ class _CloudChallengeScreenState extends State<CloudChallengeScreen> {
       _questionNumber++;
     });
     unawaited(_load(index: _currentIndex + 1));
+  }
+
+  int? _resolvedCorrectAnswerIndex(CloudChallenge challenge) {
+    if (_wasCorrect && _selected >= 0 && _selected < challenge.options.length) {
+      return _selected;
+    }
+    if (_serverCorrectAnswer != null &&
+        _serverCorrectAnswer! >= 0 &&
+        _serverCorrectAnswer! < challenge.options.length) {
+      return _serverCorrectAnswer;
+    }
+    final ref = challenge.scriptureReference.trim().toLowerCase();
+    for (var i = 0; i < challenge.options.length; i++) {
+      final opt = challenge.options[i].trim().toLowerCase();
+      if (ref.startsWith(opt) ||
+          RegExp(r'\b' + RegExp.escape(opt) + r'\b').hasMatch(ref)) {
+        return i;
+      }
+    }
+    return null;
   }
 
   @override
@@ -1193,137 +1214,130 @@ class _CloudChallengeScreenState extends State<CloudChallengeScreen> {
   Widget _challengeBody(
     BuildContext context,
     CloudChallenge challenge,
-  ) => Column(
-    crossAxisAlignment: CrossAxisAlignment.stretch,
-    children: [
-      Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            decoration: BoxDecoration(
-              color: _slateSurface,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.white.withValues(alpha: .12)),
+  ) {
+    final correctIndex = _resolvedCorrectAnswerIndex(challenge);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          runSpacing: 8,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: _slateSurface,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.white.withValues(alpha: .12)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.quiz_outlined, size: 16, color: _gold),
+                  const SizedBox(width: 6),
+                  Text(
+                    'QUESTION $_questionNumber',
+                    style: const TextStyle(
+                      color: _gold,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                ],
+              ),
             ),
-            child: Row(
+            Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.quiz_outlined, size: 16, color: _gold),
-                const SizedBox(width: 6),
-                Text(
-                  'QUESTION $_questionNumber',
-                  style: const TextStyle(
-                    color: _gold,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
-                    letterSpacing: 1,
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: _slateSurface,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.white.withValues(alpha: .12)),
+                  ),
+                  child: Text(
+                    'SCORE: $_sessionScore${_sessionStreak > 1 ? '  🔥 $_sessionStreak' : ''}',
+                    style: const TextStyle(
+                      color: _slateTextPrimary,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                      letterSpacing: .8,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 4),
+                IconButton(
+                  tooltip: 'Leaderboard',
+                  icon: const Icon(Icons.leaderboard_outlined, color: _gold, size: 22),
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => LeaderboardScreen(
+                        store: widget.store,
+                        challengeId: _challengeId,
+                      ),
+                    ),
                   ),
                 ),
               ],
             ),
+          ],
+        ),
+        const SizedBox(height: 14),
+        Center(
+          child: DivineTimerHud(
+            questionSeconds: _questionSeconds,
+            totalSeconds: _totalSeconds,
           ),
-          Row(
-            mainAxisSize: MainAxisSize.min,
+        ),
+        const SizedBox(height: 16),
+        SlateCard(
+          child: Column(
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                decoration: BoxDecoration(
-                  color: _slateSurface,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.white.withValues(alpha: .12)),
-                ),
-                child: Text(
-                  'SCORE: $_sessionScore${_sessionStreak > 1 ? '  🔥 $_sessionStreak' : ''}',
-                  style: const TextStyle(
-                    color: _slateTextPrimary,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
-                    letterSpacing: .8,
-                  ),
+              Text(
+                challenge.testament.toUpperCase(),
+                style: const TextStyle(
+                  color: _gold,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.2,
+                  fontSize: 12,
                 ),
               ),
-              const SizedBox(width: 8),
-              IconButton(
-                tooltip: 'Leaderboard',
-                icon: const Icon(Icons.leaderboard_outlined, color: _gold, size: 22),
-                onPressed: () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => LeaderboardScreen(
-                      store: widget.store,
-                      challengeId: _challengeId,
-                    ),
-                  ),
+              const SizedBox(height: 8),
+              Text(
+                _categorySubtitle(challenge),
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: _slateTextSecondary),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                challenge.question,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  height: 1.25,
                 ),
               ),
             ],
           ),
-        ],
-      ),
-      const SizedBox(height: 14),
-      Center(
-        child: DivineTimerHud(
-          questionSeconds: _questionSeconds,
-          totalSeconds: _totalSeconds,
         ),
-      ),
-      const SizedBox(height: 16),
-      SlateCard(
-        child: Column(
-          children: [
-            Text(
-              challenge.testament.toUpperCase(),
-              style: const TextStyle(
-                color: _gold,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1.2,
-                fontSize: 12,
-              ),
+        const SizedBox(height: 18),
+        for (var index = 0; index < challenge.options.length; index++)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: SlateAnswerTile(
+              letter: String.fromCharCode(65 + index),
+              text: challenge.options[index],
+              selected: _selected == index,
+              correct: _feedback && (correctIndex == index),
+              feedback: _feedback,
+              onTap: () {
+                if (!_feedback && !_submitting) setState(() => _selected = index);
+              },
             ),
-            const SizedBox(height: 8),
-            Text(
-              _categorySubtitle(challenge),
-              textAlign: TextAlign.center,
-              style: const TextStyle(color: _slateTextSecondary),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              challenge.question,
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-                height: 1.25,
-              ),
-            ),
-          ],
-        ),
-      ),
-      const SizedBox(height: 18),
-      for (var index = 0; index < challenge.options.length; index++)
-        Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: SlateAnswerTile(
-            letter: String.fromCharCode(65 + index),
-            text: challenge.options[index],
-            selected: _selected == index,
-            // When feedback is visible, highlight user's choice accurately and highlight correct answer
-            correct: _feedback &&
-                ((_selected == index && _wasCorrect) ||
-                    (!_wasCorrect &&
-                        challenge.explanation
-                            .toLowerCase()
-                            .contains(challenge.options[index].toLowerCase()))),
-            feedback: _feedback &&
-                (_selected == index ||
-                    (!_wasCorrect &&
-                        challenge.explanation
-                            .toLowerCase()
-                            .contains(challenge.options[index].toLowerCase()))),
-            onTap: () {
-              if (!_feedback && !_submitting) setState(() => _selected = index);
-            },
           ),
-        ),
       if (_feedback) ...[
         const SizedBox(height: 6),
         SlateCard(
@@ -1408,8 +1422,9 @@ class _CloudChallengeScreenState extends State<CloudChallengeScreen> {
           onPressed: _selected >= 0 && !_submitting ? _submit : null,
         ),
       ],
-    ],
-  );
+      ],
+    );
+  }
 }
 
 class _CloudMessageCard extends StatelessWidget {

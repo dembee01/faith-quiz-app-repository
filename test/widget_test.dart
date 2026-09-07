@@ -15,12 +15,14 @@ class _FakeCloudGateway implements CloudChallengeGateway {
     required this.correct,
     this.nextQuestion,
     this.alreadySubmitted = false,
+    this.serverCorrectAnswer,
   });
 
   final CloudChallenge question;
   final CloudChallenge? nextQuestion;
   final bool correct;
   final bool alreadySubmitted;
+  final int? serverCorrectAnswer;
   int? submittedAnswer;
   int _callCount = 0;
 
@@ -48,6 +50,7 @@ class _FakeCloudGateway implements CloudChallengeGateway {
       score: 15,
       totalAnswered: 5,
       level: 2,
+      correctAnswer: serverCorrectAnswer,
     );
   }
 }
@@ -632,6 +635,91 @@ void main() {
       expect(find.text('INCORRECT'), findsNothing);
       expect(find.text('ANSWER RECORDED (PREVIOUSLY ATTEMPTED)'), findsNothing);
       expect(find.text('NEXT QUESTION'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'online challenge marks wrong chosen answer red and true answer green without duplicate green highlights',
+    (tester) async {
+      const question = CloudChallenge(
+        id: 'nt-mark-1-4',
+        challengeId: 'prophets-v1-nt-mark-1-4',
+        question:
+            'Which New Testament book records this prophetic witness or prophecy passage?\n\n“John did baptize in the wilderness, and preach the baptism of repentance for the remission of sins.”',
+        options: ['Luke', 'John', 'Matthew', 'Mark'],
+        explanation:
+            'This passage is from Mark 1:4. It belongs to the New Testament witness of John the Baptist.',
+        scriptureReference: 'Mark 1:4',
+        testament: 'New Testament',
+        propheticFocus: 'John the Baptist',
+      );
+
+      final gateway = _FakeCloudGateway(
+        question,
+        correct: false,
+        serverCorrectAnswer: 3, // Mark is index 3
+      );
+
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: CloudChallengeScreen(
+            store: ProgressStore(),
+            service: gateway,
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      // User chooses option B ("John", index 1) which is WRONG
+      expect(find.text('John'), findsOneWidget);
+      await tester.tap(find.text('John'));
+      await tester.pump();
+
+      // Submit the answer
+      expect(find.text('LOCK IN ANSWER'), findsOneWidget);
+      await tester.tap(find.text('LOCK IN ANSWER'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+
+      // Result banner should show INCORRECT
+      expect(find.text('INCORRECT'), findsOneWidget);
+      expect(find.text('VERIFIED CORRECT'), findsNothing);
+
+      // Verify SlateAnswerTile widgets
+      final tiles = tester.widgetList<SlateAnswerTile>(find.byType(SlateAnswerTile)).toList();
+      expect(tiles.length, 4);
+
+      // Tile 0: Luke (index 0) - not selected, not correct
+      expect(tiles[0].text, 'Luke');
+      expect(tiles[0].selected, isFalse);
+      expect(tiles[0].correct, isFalse);
+      expect(tiles[0].feedback, isTrue);
+
+      // Tile 1: John (index 1) - USER'S WRONG CHOICE! Must be selected=true, correct=false!
+      expect(tiles[1].text, 'John');
+      expect(tiles[1].selected, isTrue);
+      expect(tiles[1].correct, isFalse, reason: 'Wrong answer must NOT be marked correct!');
+      expect(tiles[1].feedback, isTrue);
+
+      // Tile 2: Matthew (index 2) - not selected, not correct
+      expect(tiles[2].text, 'Matthew');
+      expect(tiles[2].selected, isFalse);
+      expect(tiles[2].correct, isFalse);
+      expect(tiles[2].feedback, isTrue);
+
+      // Tile 3: Mark (index 3) - TRUE ANSWER! Must be correct=true, selected=false!
+      expect(tiles[3].text, 'Mark');
+      expect(tiles[3].selected, isFalse);
+      expect(tiles[3].correct, isTrue, reason: 'Correct answer must be marked correct!');
+      expect(tiles[3].feedback, isTrue);
     },
   );
 

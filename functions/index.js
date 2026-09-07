@@ -242,6 +242,7 @@ exports.submitCloudChallenge = onCall(callableOptions, async (request) => {
     score: updatedStats.score,
     totalAnswered: updatedStats.totalAnswered,
     level: updatedStats.level,
+    correctAnswer: answerData.correctAnswer,
   };
 });
 

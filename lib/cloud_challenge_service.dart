@@ -53,6 +53,7 @@ class CloudSubmission {
     this.score = 0,
     this.totalAnswered = 0,
     this.level = 1,
+    this.correctAnswer,
   });
   final bool correct;
   final String challengeId;
@@ -60,6 +61,7 @@ class CloudSubmission {
   final int score;
   final int totalAnswered;
   final int level;
+  final int? correctAnswer;
 }
 
 abstract interface class CloudChallengeGateway {
@@ -429,6 +431,7 @@ class CloudChallengeService
       score: (data['score'] as num?)?.toInt() ?? 0,
       totalAnswered: (data['totalAnswered'] as num?)?.toInt() ?? 0,
       level: (data['level'] as num?)?.toInt() ?? 1,
+      correctAnswer: (data['correctAnswer'] as num?)?.toInt(),
     );
   }
 
