@@ -19,30 +19,25 @@ if (getApps().length === 0) {
 }
 const db = getFirestore();
 
-// In-memory cache for daily question answers (5-minute TTL to reduce Firestore read costs)
+// In-memory cache for question answers across container lifespan
 const answerCache = new Map();
 
 async function getCachedAnswer(catalogue, questionId) {
   const key = `${catalogue}/${questionId}`;
-  const now = Date.now();
   const hit = answerCache.get(key);
-  if (hit && now - hit.timestamp < 300000) {
-    return hit.data;
+  if (hit) {
+    return hit;
   }
-  const publicQuestionRef = db.doc(`content/${catalogue}/questions/${questionId}`);
   const privateAnswerRef = db.doc(`contentPrivate/${catalogue}/answers/${questionId}`);
-  const [question, privateAnswer] = await Promise.all([
-    publicQuestionRef.get(),
-    privateAnswerRef.get(),
-  ]);
-  if (!question.exists || !privateAnswer.exists || question.get('active') !== true) {
+  const privateAnswer = await privateAnswerRef.get();
+  if (!privateAnswer.exists) {
     return null;
   }
   const data = {
     correctAnswer: privateAnswer.get('correctAnswer'),
-    challengeId: question.get('challengeId') || questionId,
+    challengeId: privateAnswer.get('challengeId') || questionId,
   };
-  answerCache.set(key, { data, timestamp: now });
+  answerCache.set(key, data);
   return data;
 }
 
@@ -154,13 +149,11 @@ exports.joinGroup = onCall(callableOptions, async (request) => {
 exports.createGroupChallenge = onCall(callableOptions, async (request) => {
   const uid = requireUser(request);
   const groupId = requireText(request.data.groupId, 'group ID');
-  const catalogue = requireText(request.data.catalogue, 'catalogue');
-  const questionId = requireText(request.data.questionId, 'question ID');
+  const catalogue = requireText(request.data.catalogue || 'faith-quiz-global-v1', 'catalogue');
   const group = db.doc(`groups/${groupId}`);
   const membership = db.doc(`groups/${groupId}/members/${uid}`);
-  const question = db.doc(`content/${catalogue}/questions/${questionId}`);
-  const [groupSnapshot, membershipSnapshot, questionSnapshot] = await Promise.all([
-    group.get(), membership.get(), question.get(),
+  const [groupSnapshot, membershipSnapshot] = await Promise.all([
+    group.get(), membership.get(),
   ]);
   if (!groupSnapshot.exists || !membershipSnapshot.exists) {
     throw new HttpsError('permission-denied', 'Join the group before creating a challenge.');
@@ -168,36 +161,103 @@ exports.createGroupChallenge = onCall(callableOptions, async (request) => {
   if (membershipSnapshot.get('role') !== 'owner') {
     throw new HttpsError('permission-denied', 'Only the group owner can create a challenge.');
   }
-  if (!questionSnapshot.exists || questionSnapshot.get('active') !== true) {
-    throw new HttpsError('not-found', 'Challenge is unavailable.');
+
+  const requestedCount = Number(request.data.questionCount);
+  const questionCount = Number.isInteger(requestedCount)
+    ? Math.min(30, Math.max(5, requestedCount))
+    : 10;
+  const seed = Number.isInteger(request.data.seed)
+    ? Math.abs(request.data.seed) % 500
+    : Math.floor(Math.random() * 500);
+
+  // If a single specific questionId was passed (legacy single-question mode)
+  if (request.data.questionId && typeof request.data.questionId === 'string' && !request.data.questionCount) {
+    const questionSnapshot = await db.doc(`content/${catalogue}/questions/${request.data.questionId}`).get();
+    if (!questionSnapshot.exists || questionSnapshot.get('active') !== true) {
+      throw new HttpsError('not-found', 'Challenge is unavailable.');
+    }
+    const challenge = group.collection('challenges').doc();
+    await challenge.set({
+      catalogue,
+      questionId: request.data.questionId,
+      sourceChallengeId: questionSnapshot.get('challengeId') || request.data.questionId,
+      question: questionSnapshot.get('question'),
+      options: questionSnapshot.get('options'),
+      explanation: questionSnapshot.get('explanation'),
+      scriptureReference: questionSnapshot.get('scriptureReference'),
+      createdBy: uid,
+      active: true,
+      createdAt: FieldValue.serverTimestamp(),
+    });
+    return { challengeId: challenge.id };
   }
+
+  // Multi-question rotated cloud challenge: select questionCount distinct indices
+  // using coprime stride 263 to interleave Old Testament and New Testament questions.
+  const targetIndices = [];
+  for (let i = 0; i < questionCount; i++) {
+    targetIndices.push((seed + i * 263) % 500);
+  }
+
+  // Firestore allows `in` queries with up to 30 elements in a single read query
+  const querySnapshot = await db
+    .collection(`content/${catalogue}/questions`)
+    .where('dailyIndex', 'in', targetIndices)
+    .get();
+
+  if (querySnapshot.empty) {
+    throw new HttpsError('not-found', 'No questions available in the cloud catalogue.');
+  }
+
+  const docMap = new Map();
+  querySnapshot.docs.forEach((doc) => {
+    const dailyIndex = doc.get('dailyIndex');
+    if (dailyIndex !== undefined) {
+      docMap.set(dailyIndex, doc);
+    }
+  });
+
+  const selectedQuestions = [];
+  for (const idx of targetIndices) {
+    const doc = docMap.get(idx);
+    if (doc) {
+      selectedQuestions.push({
+        id: doc.id,
+        question: doc.get('question') || '',
+        options: doc.get('options') || [],
+        scriptureReference: doc.get('scriptureReference') || '',
+        testament: doc.get('testament') || '',
+        propheticFocus: doc.get('propheticFocus') || '',
+      });
+    }
+  }
+
+  const title = typeof request.data.title === 'string' && request.data.title.trim().length > 0
+    ? request.data.title.trim()
+    : `Bible Challenge (${selectedQuestions.length} Questions)`;
+
   const challenge = group.collection('challenges').doc();
   await challenge.set({
     catalogue,
-    questionId,
-    sourceChallengeId: questionSnapshot.get('challengeId') || questionId,
-    question: questionSnapshot.get('question'),
-    options: questionSnapshot.get('options'),
-    explanation: questionSnapshot.get('explanation'),
-    scriptureReference: questionSnapshot.get('scriptureReference'),
+    title,
+    questionCount: selectedQuestions.length,
+    questions: selectedQuestions,
+    questionIds: selectedQuestions.map((q) => q.id),
+    seed,
     createdBy: uid,
     active: true,
     createdAt: FieldValue.serverTimestamp(),
   });
-  return { challengeId: challenge.id };
+  return { challengeId: challenge.id, questionCount: selectedQuestions.length };
 });
 
 exports.submitGroupChallenge = onCall(callableOptions, async (request) => {
   const uid = requireUser(request);
   const groupId = requireText(request.data.groupId, 'group ID');
   const challengeId = requireText(request.data.challengeId, 'challenge ID');
-  const answerIndex = request.data.answerIndex;
-  const elapsedSeconds = request.data.elapsedSeconds;
+  const elapsedSeconds = Number(request.data.elapsedSeconds) || 0;
   const displayName = leaderboardName(request.data.displayName);
-  if (!Number.isInteger(answerIndex) || answerIndex < 0 || answerIndex > 3 ||
-      !Number.isInteger(elapsedSeconds) || elapsedSeconds < 0 || elapsedSeconds > 600) {
-    throw new HttpsError('invalid-argument', 'Invalid answer submission.');
-  }
+
   const membership = db.doc(`groups/${groupId}/members/${uid}`);
   const challenge = db.doc(`groups/${groupId}/challenges/${challengeId}`);
   const [membershipSnapshot, challengeSnapshot] = await Promise.all([
@@ -206,7 +266,83 @@ exports.submitGroupChallenge = onCall(callableOptions, async (request) => {
   if (!membershipSnapshot.exists || !challengeSnapshot.exists || challengeSnapshot.get('active') !== true) {
     throw new HttpsError('not-found', 'Group challenge is unavailable.');
   }
-  const catalogue = challengeSnapshot.get('catalogue');
+
+  const catalogue = challengeSnapshot.get('catalogue') || 'faith-quiz-global-v1';
+
+  // Check if this is a multi-question quiz challenge
+  if (Array.isArray(request.data.answers)) {
+    const answers = request.data.answers;
+    const questions = challengeSnapshot.get('questions') || [];
+    const questionIds = challengeSnapshot.get('questionIds') || questions.map((q) => q.id);
+
+    // Fetch all answers in a single batch read from contentPrivate
+    const answerRefs = questionIds.map((qId) =>
+      db.doc(`contentPrivate/${catalogue}/answers/${qId}`),
+    );
+    const answerSnapshots = await db.getAll(...answerRefs);
+    const answerMap = new Map();
+    answerSnapshots.forEach((doc) => {
+      if (doc.exists) answerMap.set(doc.id, doc.data());
+    });
+
+    let score = 0;
+    const breakdown = [];
+    for (let i = 0; i < questions.length; i++) {
+      const q = questions[i];
+      const answerData = answerMap.get(q.id);
+      const correctAnswer = answerData ? answerData.correctAnswer : 0;
+      const explanation = answerData ? (answerData.explanation || '') : '';
+      const userAnswer = Number.isInteger(answers[i]) ? answers[i] : -1;
+      const isCorrect = userAnswer === correctAnswer;
+      if (isCorrect) score++;
+      breakdown.push({
+        questionId: q.id,
+        question: q.question || '',
+        options: q.options || [],
+        userAnswer,
+        correctAnswer,
+        correct: isCorrect,
+        explanation,
+        scriptureReference: q.scriptureReference || '',
+      });
+    }
+
+    const entry = challenge.collection('entries').doc(uid);
+    await db.runTransaction(async (transaction) => {
+      const previous = await transaction.get(entry);
+      if (previous.exists) {
+        throw new HttpsError(
+          'already-exists',
+          'Each verified group challenge may be submitted only once.',
+        );
+      }
+      transaction.set(entry, {
+        displayName,
+        score,
+        total: questions.length,
+        correct: score === questions.length,
+        elapsedSeconds: Math.min(3600, Math.max(0, elapsedSeconds)),
+        verified: true,
+        updatedAt: FieldValue.serverTimestamp(),
+      }, { merge: true });
+    });
+
+    return {
+      score,
+      total: questions.length,
+      elapsedSeconds,
+      breakdown,
+      challengeId,
+      correct: score > 0,
+    };
+  }
+
+  // Single-question legacy challenge
+  const answerIndex = request.data.answerIndex;
+  if (!Number.isInteger(answerIndex) || answerIndex < 0 || answerIndex > 3 ||
+      !Number.isInteger(elapsedSeconds) || elapsedSeconds < 0 || elapsedSeconds > 600) {
+    throw new HttpsError('invalid-argument', 'Invalid answer submission.');
+  }
   const questionId = challengeSnapshot.get('questionId');
   const answer = await db.doc(`contentPrivate/${catalogue}/answers/${questionId}`).get();
   if (!answer.exists) throw new HttpsError('not-found', 'Challenge answer is unavailable.');
@@ -223,13 +359,14 @@ exports.submitGroupChallenge = onCall(callableOptions, async (request) => {
     transaction.set(entry, {
       displayName,
       score: correct ? 1 : 0,
+      total: 1,
       correct,
       elapsedSeconds,
       verified: true,
       updatedAt: FieldValue.serverTimestamp(),
     }, { merge: true });
   });
-  return { correct, challengeId };
+  return { correct, score: correct ? 1 : 0, total: 1, challengeId };
 });
 
 // Requires the Blaze plan when deployed because Cloud Scheduler invokes it.

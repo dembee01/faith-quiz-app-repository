@@ -49,7 +49,10 @@ functions/.env*
 FaithQuiz-*.apk
 
 # OS files
+# OS files
 .DS_Store
 Thumbs.db
+.kilo/
+*.bak
 
 

@@ -9,14 +9,13 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const { execSync } = require('child_process');
 
 const projectId = 'faith-quiz-app-119653';
 const cataloguePath = path.resolve(__dirname, '..', 'data', 'cloud_prophets_witnesses_v1.json');
 
 function firebaseToolsApi() {
-  const globalRoot = process.env.APPDATA
-    ? path.join(process.env.APPDATA, 'npm', 'node_modules')
-    : path.join(os.homedir(), '.npm-global', 'lib', 'node_modules');
+  const globalRoot = execSync('npm root -g', { encoding: 'utf8' }).trim();
   try {
     return require(path.join(globalRoot, 'firebase-tools', 'lib', 'apiv2'));
   } catch (_) {

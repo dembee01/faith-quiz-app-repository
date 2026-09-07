@@ -6,13 +6,14 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const { execSync } = require('child_process');
 
 const projectId = 'faith-quiz-app-119653';
 
 function firebaseToolsApi() {
-  const globalRoot = process.env.APPDATA
-    ? path.join(process.env.APPDATA, 'npm', 'node_modules')
-    : path.join(os.homedir(), '.npm-global', 'lib', 'node_modules');
+  // Firebase CLI may be installed by the system Node distribution (for
+  // example C:\\nodejs\\node_modules on Windows), not under APPDATA.
+  const globalRoot = execSync('npm root -g', { encoding: 'utf8' }).trim();
   return require(path.join(globalRoot, 'firebase-tools', 'lib', 'apiv2'));
 }
 
@@ -47,7 +48,15 @@ async function main() {
     body: JSON.stringify(template),
   });
   if (!publish.ok) throw new Error(`Remote Config publish failed (${publish.status}): ${await publish.text()}`);
+  const verification = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  if (!verification.ok) throw new Error(`Remote Config verification failed (${verification.status}): ${await verification.text()}`);
+  const verified = await verification.json();
+  if (verified.parameters?.cloud_challenges_enabled?.defaultValue?.value !== 'true' ||
+      verified.parameters?.active_cloud_catalogue?.defaultValue?.value !== 'faith-quiz-global-v1') {
+    throw new Error('Remote Config verification failed: expected cloud challenges to be enabled for faith-quiz-global-v1.');
+  }
   console.log('Published Remote Config defaults: cloud_challenges_enabled=true, active_cloud_catalogue=faith-quiz-global-v1.');
+  console.log(`Remote Config verification confirmed version ${verified.version?.versionNumber ?? 'unknown'}.`);
 }
 
 main().catch((error) => {

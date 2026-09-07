@@ -81,16 +81,17 @@ class FaithQuizApp extends StatelessWidget {
   );
 
   @override
-  Widget build(BuildContext context) => ListenableBuilder(
-    listenable: store,
-    builder: (context, _) => MaterialApp(
-      title: 'Faith Quiz',
-      debugShowCheckedModeBanner: false,
-      theme: _theme(),
-      darkTheme: _theme(),
-      themeMode: ThemeMode.dark,
-      builder: (context, child) {
-        final media = MediaQuery.of(context);
+  Widget build(BuildContext context) => MaterialApp(
+    title: 'Faith Quiz',
+    debugShowCheckedModeBanner: false,
+    theme: _theme(),
+    darkTheme: _theme(),
+    themeMode: ThemeMode.dark,
+    builder: (context, child) => ListenableBuilder(
+      listenable: store,
+      builder: (context, _) {
+        final media = MediaQuery.maybeOf(context) ??
+            MediaQueryData.fromView(View.of(context));
         return MediaQuery(
           data: media.copyWith(
             textScaler: TextScaler.linear(store.textScale == 'large' ? 1.2 : 1),
@@ -98,8 +99,8 @@ class FaithQuizApp extends StatelessWidget {
           child: child ?? const SizedBox.shrink(),
         );
       },
-      home: SplashScreen(store: store),
     ),
+    home: SplashScreen(store: store),
   );
 }
 
@@ -301,81 +302,84 @@ class MainMenuScreen extends StatelessWidget {
       Navigator.of(context).push(MaterialPageRoute(builder: (_) => screen));
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-    body: DivineBackground(
-      reduceMotion: store.reduceMotion,
-      child: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(24, 38, 24, 36),
-          children: [
-            Text(
-              'FAITH QUIZ',
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.w900,
-                letterSpacing: 2,
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: store,
+    builder: (context, _) => Scaffold(
+      body: DivineBackground(
+        reduceMotion: store.reduceMotion,
+        child: SafeArea(
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(24, 38, 24, 36),
+            children: [
+              Text(
+                'FAITH QUIZ',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 2,
+                ),
               ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              'Test your Bible knowledge',
-              textAlign: TextAlign.center,
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(color: _slateTextSecondary),
-            ),
-            const SizedBox(height: 24),
-            SlateProgressDashboard(store: store),
-            const SizedBox(height: 28),
-            SlateMenuCard(
-              title: 'Daily Challenge',
-              subtitle: 'One new question every day',
-              icon: Icons.calendar_month,
-              onTap: () => _open(context, DailyChallengeScreen(store: store)),
-            ),
-            SlateMenuCard(
-              title: 'Cloud Challenge',
-              subtitle: 'Verified global prophet questions',
-              icon: Icons.public_outlined,
-              onTap: () => _open(context, CloudChallengeScreen(store: store)),
-            ),
-            SlateMenuCard(
-              title: 'The Covenant Journey',
-              subtitle: 'Your Biblical Adventure Map',
-              icon: Icons.map_outlined,
-              onTap: () => _open(context, JourneyScreen(store: store)),
-            ),
-            SlateMenuCard(
-              title: 'Review Wisdom',
-              subtitle: 'Study Past & Missed Questions',
-              icon: Icons.bookmarks_outlined,
-              onTap: () => _open(context, ReviewScreen(store: store)),
-            ),
-            SlateMenuCard(
-              title: 'Topic Scrolls',
-              subtitle: 'Specific Books & Bible Themes',
-              icon: Icons.category_outlined,
-              onTap: () => _open(context, TopicPacksScreen(store: store)),
-            ),
-            SlateMenuCard(
-              title: 'Leaderboard',
-              subtitle: 'See Top Scores & Achievements',
-              icon: Icons.leaderboard_outlined,
-              onTap: () => _open(context, LeaderboardScreen(store: store)),
-            ),
-            SlateMenuCard(
-              title: 'Group Challenges',
-              subtitle: 'Create or join a private faith group',
-              icon: Icons.groups_outlined,
-              onTap: () => _open(context, GroupsScreen(store: store)),
-            ),
-            SlateMenuCard(
-              title: 'Settings',
-              subtitle: 'Theme & Accessibility',
-              icon: Icons.settings_outlined,
-              onTap: () => _open(context, SettingsScreen(store: store)),
-            ),
-          ],
+              const SizedBox(height: 6),
+              Text(
+                'Test your Bible knowledge',
+                textAlign: TextAlign.center,
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(color: _slateTextSecondary),
+              ),
+              const SizedBox(height: 24),
+              SlateProgressDashboard(store: store),
+              const SizedBox(height: 28),
+              SlateMenuCard(
+                title: 'Daily Challenge',
+                subtitle: 'One new question every day',
+                icon: Icons.calendar_month,
+                onTap: () => _open(context, DailyChallengeScreen(store: store)),
+              ),
+              SlateMenuCard(
+                title: 'Cloud Challenge',
+                subtitle: 'Verified global prophet questions',
+                icon: Icons.public_outlined,
+                onTap: () => _open(context, CloudChallengeScreen(store: store)),
+              ),
+              SlateMenuCard(
+                title: 'The Covenant Journey',
+                subtitle: 'Your Biblical Adventure Map',
+                icon: Icons.map_outlined,
+                onTap: () => _open(context, JourneyScreen(store: store)),
+              ),
+              SlateMenuCard(
+                title: 'Review Wisdom',
+                subtitle: 'Study Past & Missed Questions',
+                icon: Icons.bookmarks_outlined,
+                onTap: () => _open(context, ReviewScreen(store: store)),
+              ),
+              SlateMenuCard(
+                title: 'Topic Scrolls',
+                subtitle: 'Specific Books & Bible Themes',
+                icon: Icons.category_outlined,
+                onTap: () => _open(context, TopicPacksScreen(store: store)),
+              ),
+              SlateMenuCard(
+                title: 'Leaderboard',
+                subtitle: 'See Top Scores & Achievements',
+                icon: Icons.leaderboard_outlined,
+                onTap: () => _open(context, LeaderboardScreen(store: store)),
+              ),
+              SlateMenuCard(
+                title: 'Group Challenges',
+                subtitle: 'Create or join a private faith group',
+                icon: Icons.groups_outlined,
+                onTap: () => _open(context, GroupsScreen(store: store)),
+              ),
+              SlateMenuCard(
+                title: 'Settings',
+                subtitle: 'Theme & Accessibility',
+                icon: Icons.settings_outlined,
+                onTap: () => _open(context, SettingsScreen(store: store)),
+              ),
+            ],
+          ),
         ),
       ),
     ),
@@ -588,19 +592,30 @@ class SlatePillButton extends StatelessWidget {
     required this.onPressed,
     this.inverse = true,
     this.icon,
+    this.loading = false,
   });
   final String label;
   final VoidCallback? onPressed;
   final bool inverse;
   final IconData? icon;
+  final bool loading;
 
   @override
   Widget build(BuildContext context) => SizedBox(
     height: 56,
     width: double.infinity,
     child: FilledButton.icon(
-      onPressed: onPressed,
-      icon: icon == null ? const SizedBox.shrink() : Icon(icon),
+      onPressed: loading ? null : onPressed,
+      icon: loading
+          ? SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(
+                strokeWidth: 2.2,
+                color: inverse ? _slateButtonText : _gold,
+              ),
+            )
+          : (icon == null ? const SizedBox.shrink() : Icon(icon)),
       label: Text(
         label,
         style: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: .2),
@@ -651,50 +666,53 @@ class JourneyScreen extends StatelessWidget {
   final ProgressStore store;
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-    body: DivineBackground(
-      reduceMotion: store.reduceMotion,
-      child: SafeArea(
-        child: Column(
-          children: [
-            const SizedBox(height: 8),
-            const SlatePageHeader(title: 'THE COVENANT JOURNEY'),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 6, 16, 12),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(20),
-                child: Image.asset(
-                  'assets/images/journey_map_header.jpg',
-                  height: 130,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: store,
+    builder: (context, _) => Scaffold(
+      body: DivineBackground(
+        reduceMotion: store.reduceMotion,
+        child: SafeArea(
+          child: Column(
+            children: [
+              const SizedBox(height: 8),
+              const SlatePageHeader(title: 'THE COVENANT JOURNEY'),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 6, 16, 12),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: Image.asset(
+                    'assets/images/journey_map_header.jpg',
+                    height: 130,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                  ),
                 ),
               ),
-            ),
-            Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.only(bottom: 32),
-                itemCount: journeyNodes.length,
-                itemBuilder: (context, index) {
-                  final node = journeyNodes[index];
-                  return JourneyNodeTile(
-                    node: node,
-                    highestUnlocked: store.highestUnlocked,
-                    reduceMotion: store.reduceMotion,
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => QuizScreen(
-                          store: store,
-                          level: node.level,
-                          mode: 'journey',
+              Expanded(
+                child: ListView.builder(
+                  padding: const EdgeInsets.only(bottom: 32),
+                  itemCount: journeyNodes.length,
+                  itemBuilder: (context, index) {
+                    final node = journeyNodes[index];
+                    return JourneyNodeTile(
+                      node: node,
+                      highestUnlocked: store.highestUnlocked,
+                      reduceMotion: store.reduceMotion,
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => QuizScreen(
+                            store: store,
+                            level: node.level,
+                            mode: 'journey',
+                          ),
                         ),
                       ),
-                    ),
-                  );
-                },
+                    );
+                  },
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     ),
@@ -931,6 +949,9 @@ class CloudChallengeScreen extends StatefulWidget {
 class _CloudChallengeScreenState extends State<CloudChallengeScreen> {
   late final CloudChallengeGateway _service;
   final Stopwatch _stopwatch = Stopwatch();
+  Timer? _timer;
+  int _questionSeconds = 0;
+  int _totalSeconds = 0;
   CloudChallenge? _challenge;
   String? _error;
   int _selected = -1;
@@ -940,26 +961,59 @@ class _CloudChallengeScreenState extends State<CloudChallengeScreen> {
   bool _wasCorrect = false;
   bool _alreadySubmitted = false;
   String? _challengeId;
+  int _currentIndex = 0;
+  int _questionNumber = 1;
+  int _sessionScore = 0;
+  int _sessionStreak = 0;
 
   @override
   void initState() {
     super.initState();
     _service = widget.service ?? CloudChallengeService();
+    if (_service is CloudChallengeService) {
+      unawaited(_service.warmUp());
+    }
     unawaited(_load());
   }
 
-  Future<void> _load() async {
+  void _startTimer() {
+    _timer?.cancel();
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      setState(() {
+        _questionSeconds++;
+        _totalSeconds++;
+      });
+    });
+  }
+
+  void _stopTimer() {
+    _timer?.cancel();
+    _timer = null;
+    _stopwatch.stop();
+  }
+
+  Future<void> _load({int? index}) async {
+    _stopTimer();
     setState(() {
       _loading = true;
       _error = null;
       _challenge = null;
+      _selected = -1;
+      _feedback = false;
+      _wasCorrect = false;
+      _alreadySubmitted = false;
+      _questionSeconds = 0;
     });
     try {
-      _challenge = await _service.loadToday();
+      final targetIndex = index ?? 0;
+      _currentIndex = targetIndex;
+      _challenge = await _service.loadQuestion(index: targetIndex);
       if (_challenge != null) {
         _stopwatch
           ..reset()
           ..start();
+        _startTimer();
       }
     } catch (_) {
       _error =
@@ -973,27 +1027,35 @@ class _CloudChallengeScreenState extends State<CloudChallengeScreen> {
     if (challenge == null || _selected < 0 || _submitting || _feedback) return;
     setState(() => _submitting = true);
     try {
+      final elapsed =
+          _questionSeconds > 0 ? _questionSeconds : _stopwatch.elapsed.inSeconds;
       final result = await _service.submit(
         challenge: challenge,
         answerIndex: _selected,
-        elapsedSeconds: _stopwatch.elapsed.inSeconds,
+        elapsedSeconds: elapsed,
         displayName: widget.store.leaderboardName,
       );
-      _stopwatch.stop();
+      _stopTimer();
       if (!mounted) return;
       setState(() {
         _wasCorrect = result.correct;
         _challengeId = result.challengeId;
         _feedback = true;
+        if (result.correct) {
+          _sessionScore++;
+          _sessionStreak++;
+        } else {
+          _sessionStreak = 0;
+        }
       });
       unawaited(
         result.correct ? AnswerFeedback.correct() : AnswerFeedback.incorrect(),
       );
     } on FirebaseFunctionsException catch (error) {
+      _stopTimer();
       if (!mounted) return;
       if (error.code == 'already-exists') {
-        // This device already locked in today's answer; reveal the leaderboard
-        // instead of an error loop.
+        // This challenge answer was already recorded today; display result and allow continuing
         setState(() {
           _wasCorrect = false;
           _challengeId = challenge.challengeId;
@@ -1004,6 +1066,7 @@ class _CloudChallengeScreenState extends State<CloudChallengeScreen> {
         setState(() => _error = cloudSubmitErrorMessage(error));
       }
     } catch (_) {
+      _stopTimer();
       if (mounted) {
         setState(() {
           _error =
@@ -1015,9 +1078,16 @@ class _CloudChallengeScreenState extends State<CloudChallengeScreen> {
     }
   }
 
+  void _nextQuestion() {
+    setState(() {
+      _questionNumber++;
+    });
+    unawaited(_load(index: _currentIndex + 1));
+  }
+
   @override
   void dispose() {
-    _stopwatch.stop();
+    _stopTimer();
     super.dispose();
   }
 
@@ -1048,7 +1118,7 @@ class _CloudChallengeScreenState extends State<CloudChallengeScreen> {
                 title: 'Unable to verify online',
                 message: _error!,
                 actionLabel: 'TRY AGAIN',
-                onPressed: _load,
+                onPressed: () => _load(index: _currentIndex),
               )
             else if (_challenge == null)
               _CloudMessageCard(
@@ -1067,12 +1137,102 @@ class _CloudChallengeScreenState extends State<CloudChallengeScreen> {
     ),
   );
 
+  String _categorySubtitle(CloudChallenge challenge) {
+    final isOldTestament = challenge.testament.toLowerCase().contains('old');
+    // Never spoil the answer if propheticFocus matches one of the multiple choice options!
+    final focusLeaksOption = challenge.options.any(
+      (option) =>
+          option.trim().toLowerCase() ==
+          challenge.propheticFocus.trim().toLowerCase(),
+    );
+    if (focusLeaksOption) {
+      return isOldTestament
+          ? 'Prophetic Scripture & Books'
+          : 'Prophetic Witness';
+    }
+    return challenge.propheticFocus.isNotEmpty
+        ? challenge.propheticFocus
+        : (isOldTestament ? 'Prophetic Scripture' : 'Prophetic Witness');
+  }
+
   Widget _challengeBody(
     BuildContext context,
     CloudChallenge challenge,
   ) => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
+      Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            decoration: BoxDecoration(
+              color: _slateSurface,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.white.withValues(alpha: .12)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.quiz_outlined, size: 16, color: _gold),
+                const SizedBox(width: 6),
+                Text(
+                  'QUESTION $_questionNumber',
+                  style: const TextStyle(
+                    color: _gold,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                    letterSpacing: 1,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                decoration: BoxDecoration(
+                  color: _slateSurface,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.white.withValues(alpha: .12)),
+                ),
+                child: Text(
+                  'SCORE: $_sessionScore${_sessionStreak > 1 ? '  🔥 $_sessionStreak' : ''}',
+                  style: const TextStyle(
+                    color: _slateTextPrimary,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                    letterSpacing: .8,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              IconButton(
+                tooltip: 'Leaderboard',
+                icon: const Icon(Icons.leaderboard_outlined, color: _gold, size: 22),
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => LeaderboardScreen(
+                      store: widget.store,
+                      challengeId: _challengeId,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+      const SizedBox(height: 14),
+      Center(
+        child: DivineTimerHud(
+          questionSeconds: _questionSeconds,
+          totalSeconds: _totalSeconds,
+        ),
+      ),
+      const SizedBox(height: 16),
       SlateCard(
         child: Column(
           children: [
@@ -1087,7 +1247,7 @@ class _CloudChallengeScreenState extends State<CloudChallengeScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              challenge.propheticFocus,
+              _categorySubtitle(challenge),
               textAlign: TextAlign.center,
               style: const TextStyle(color: _slateTextSecondary),
             ),
@@ -1149,31 +1309,59 @@ class _CloudChallengeScreenState extends State<CloudChallengeScreen> {
                   fontSize: 12,
                 ),
               ),
+              if (challenge.propheticFocus.isNotEmpty &&
+                  challenge.propheticFocus.trim().toLowerCase() !=
+                      challenge.testament.trim().toLowerCase()) ...[
+                const SizedBox(height: 6),
+                Text(
+                  'FOCUS: ${challenge.propheticFocus}',
+                  style: const TextStyle(
+                    color: _gold,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
             ],
           ),
         ),
       ],
       const SizedBox(height: 14),
-      SlatePillButton(
-        label: _feedback
-            ? 'VIEW LEADERBOARD'
-            : _submitting
-            ? 'VERIFYING…'
-            : 'LOCK IN ANSWER',
-        inverse: _feedback,
-        onPressed: _feedback
-            ? () => Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => LeaderboardScreen(
-                    store: widget.store,
-                    challengeId: _challengeId,
-                  ),
+      if (_feedback) ...[
+        SlatePillButton(
+          label: 'NEXT QUESTION',
+          icon: Icons.arrow_forward,
+          onPressed: _nextQuestion,
+        ),
+        const SizedBox(height: 8),
+        Center(
+          child: TextButton.icon(
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => LeaderboardScreen(
+                  store: widget.store,
+                  challengeId: _challengeId,
                 ),
-              )
-            : _selected >= 0 && !_submitting
-            ? _submit
-            : null,
-      ),
+              ),
+            ),
+            icon: const Icon(
+              Icons.leaderboard_outlined,
+              size: 16,
+              color: _slateTextSecondary,
+            ),
+            label: const Text(
+              'View today\'s leaderboard',
+              style: TextStyle(color: _slateTextSecondary, fontSize: 13),
+            ),
+          ),
+        ),
+      ] else ...[
+        SlatePillButton(
+          label: _submitting ? 'VERIFYING ANSWER…' : 'LOCK IN ANSWER',
+          loading: _submitting,
+          onPressed: _selected >= 0 && !_submitting ? _submit : null,
+        ),
+      ],
     ],
   );
 }
@@ -2617,101 +2805,104 @@ class ReviewScreen extends StatelessWidget {
   final ProgressStore store;
 
   @override
-  Widget build(BuildContext context) {
-    final dueLevel = store.dueReviewKeys
-        .map(ProgressStore.reviewLevelFromKey)
-        .whereType<int>()
-        .firstOrNull;
-    return Scaffold(
-      body: DivineBackground(
-        reduceMotion: store.reduceMotion,
-        child: SafeArea(
-          child: Column(
-            children: [
-              const SizedBox(height: 8),
-              const SlatePageHeader(title: 'WISDOM REVIEW'),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(34, 6, 22, 16),
-                child: Text(
-                  'Reflect on your journey and strengthen your Bible knowledge.',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.copyWith(color: _slateTextSecondary),
-                ),
-              ),
-              if (store.dueReviewCount > 0)
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: store,
+    builder: (context, _) {
+      final dueLevel = store.dueReviewKeys
+          .map(ProgressStore.reviewLevelFromKey)
+          .whereType<int>()
+          .firstOrNull;
+      return Scaffold(
+        body: DivineBackground(
+          reduceMotion: store.reduceMotion,
+          child: SafeArea(
+            child: Column(
+              children: [
+                const SizedBox(height: 8),
+                const SlatePageHeader(title: 'WISDOM REVIEW'),
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(22, 0, 22, 16),
-                  child: SlateCard(
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                '${store.dueReviewCount} ${store.dueReviewCount == 1 ? 'item' : 'items'} due for review',
-                                style: const TextStyle(
-                                  color: _gold,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
+                  padding: const EdgeInsets.fromLTRB(34, 6, 22, 16),
+                  child: Text(
+                    'Reflect on your journey and strengthen your Bible knowledge.',
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodyMedium?.copyWith(color: _slateTextSecondary),
+                  ),
+                ),
+                if (store.dueReviewCount > 0)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(22, 0, 22, 16),
+                    child: SlateCard(
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'DUE QUESTIONS',
+                                  style: TextStyle(
+                                    color: _gold,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(height: 2),
-                              const Text(
-                                'Spaced repetition reinforces past answers.',
-                                style: TextStyle(
-                                  color: _slateTextSecondary,
-                                  fontSize: 12,
+                                const SizedBox(height: 4),
+                                Text(
+                                  '${store.dueReviewCount} questions need review today',
+                                  style: const TextStyle(fontWeight: FontWeight.bold),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                        ),
-                        SizedBox(
-                          width: 100,
-                          child: SlatePillButton(
-                            label: 'PRACTICE',
-                            onPressed: () => Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => QuizScreen(
-                                  store: store,
-                                  level: dueLevel == null || dueLevel == 0
-                                      ? 1
-                                      : dueLevel,
-                                  mode: 'practice',
+                          SizedBox(
+                            width: 100,
+                            child: SlatePillButton(
+                              label: 'PRACTICE',
+                              onPressed: () => Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => QuizScreen(
+                                    store: store,
+                                    level: dueLevel ?? 1,
+                                    mode: 'review',
+                                  ),
                                 ),
                               ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
+                const Padding(
+                  padding: EdgeInsets.fromLTRB(24, 0, 24, 8),
+                  child: SlateSectionHeader('MISTAKE NOTEBOOK'),
                 ),
-              Expanded(
-                child: store.detailedMistakes.isEmpty
-                    ? const Center(
-                        child: Text(
-                          'No reviews yet. Keep playing to learn!',
-                          style: TextStyle(color: _slateTextMuted),
+                Expanded(
+                  child: store.detailedMistakes.isEmpty
+                      ? const Center(
+                          child: Text(
+                            'No recorded mistakes. Take a quiz to begin studying here.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: _slateTextMuted),
+                          ),
+                        )
+                      : ListView.separated(
+                          padding: const EdgeInsets.fromLTRB(22, 0, 22, 32),
+                          itemCount: store.detailedMistakes.length,
+                          separatorBuilder: (_, _) => const SizedBox(height: 14),
+                          itemBuilder: (context, index) => SlateReviewCard(
+                            entry: store.detailedMistakes[index],
+                          ),
                         ),
-                      )
-                    : ListView.separated(
-                        padding: const EdgeInsets.fromLTRB(22, 0, 22, 32),
-                        itemCount: store.detailedMistakes.length,
-                        separatorBuilder: (_, _) => const SizedBox(height: 14),
-                        itemBuilder: (context, index) => SlateReviewCard(
-                          entry: store.detailedMistakes[index],
-                        ),
-                      ),
-              ),
-            ],
+                ),
+              ],
+            ),
           ),
         ),
-      ),
-    );
-  }
+      );
+    },
+  );
 }
 
 class SlateReviewCard extends StatelessWidget {
@@ -2824,21 +3015,25 @@ class _ReviewAnswerBox extends StatelessWidget {
 }
 
 class GroupsScreen extends StatefulWidget {
-  const GroupsScreen({super.key, required this.store});
+  const GroupsScreen({super.key, required this.store, this.service});
   final ProgressStore store;
+  final CloudGroupGateway? service;
 
   @override
   State<GroupsScreen> createState() => _GroupsScreenState();
 }
 
 class _GroupsScreenState extends State<GroupsScreen> {
-  final CloudChallengeService _service = CloudChallengeService();
+  late final CloudGroupGateway _service;
   late Future<bool> _available;
+  late final Stream<List<QuizGroup>> _groupsStream;
 
   @override
   void initState() {
     super.initState();
+    _service = widget.service ?? CloudChallengeService();
     _available = _service.isAvailable;
+    _groupsStream = _service.myGroups();
   }
 
   Future<void> _showNameDialog({required bool join}) async {
@@ -2886,9 +3081,115 @@ class _GroupsScreenState extends State<GroupsScreen> {
     }
   }
 
-  void _notice(String message) => ScaffoldMessenger.of(
-    context,
-  ).showSnackBar(SnackBar(content: Text(message)));
+  void _notice(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  }
+
+  Future<void> _signInWithGoogle() async {
+    try {
+      final user = await _service.signInWithGoogle();
+      if (user != null && mounted) {
+        setState(() {});
+        _notice('Signed in as ${user.displayName ?? user.email ?? 'learner'}');
+      }
+    } catch (_) {
+      if (mounted) _notice('Google Sign-in was cancelled or unavailable.');
+    }
+  }
+
+  Future<void> _signOut() async {
+    await _service.signOut();
+    if (mounted) {
+      setState(() {});
+      _notice('Signed out');
+    }
+  }
+
+  Widget _accountBar() {
+    final user = _service.currentUser;
+    final isGoogleUser = user != null && !user.isAnonymous;
+    if (isGoogleUser) {
+      return Container(
+        margin: const EdgeInsets.only(bottom: 14),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: _slateSurface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.white.withValues(alpha: .12)),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.account_circle, color: _gold, size: 22),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                user.displayName ?? user.email ?? 'Google Account',
+                style: const TextStyle(
+                  color: _slateTextPrimary,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            TextButton(
+              onPressed: _signOut,
+              style: TextButton.styleFrom(
+                visualDensity: VisualDensity.compact,
+                padding: EdgeInsets.zero,
+              ),
+              child: const Text('Sign out', style: TextStyle(color: _slateTextSecondary, fontSize: 11)),
+            ),
+          ],
+        ),
+      );
+    }
+    return Container(
+      margin: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      decoration: BoxDecoration(
+        color: _slateSurface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withValues(alpha: .12)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.account_circle_outlined, color: _gold, size: 22),
+          const SizedBox(width: 10),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Google Account',
+                  style: TextStyle(
+                    color: _slateTextPrimary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text(
+                  'Sign in to host & sync group quizzes',
+                  style: TextStyle(color: _slateTextSecondary, fontSize: 10),
+                ),
+              ],
+            ),
+          ),
+          FilledButton.tonal(
+            onPressed: _signInWithGoogle,
+            style: FilledButton.styleFrom(
+              visualDensity: VisualDensity.compact,
+              backgroundColor: _slateSurfaceVariant,
+            ),
+            child: const Text('SIGN IN', style: TextStyle(color: _gold, fontSize: 11, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) => Scaffold(
@@ -2930,7 +3231,8 @@ class _GroupsScreenState extends State<GroupsScreen> {
                     textAlign: TextAlign.center,
                     style: TextStyle(color: _slateTextSecondary),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 14),
+                  _accountBar(),
                   Row(
                     children: [
                       Expanded(
@@ -2952,7 +3254,7 @@ class _GroupsScreenState extends State<GroupsScreen> {
                   const SizedBox(height: 16),
                   Expanded(
                     child: StreamBuilder<List<QuizGroup>>(
-                      stream: _service.myGroups(),
+                      stream: _groupsStream,
                       builder: (context, snapshot) {
                         if (snapshot.hasError) {
                           return const Center(
@@ -2990,6 +3292,7 @@ class _GroupsScreenState extends State<GroupsScreen> {
                                   builder: (_) => GroupDetailScreen(
                                     store: widget.store,
                                     group: group,
+                                    service: _service,
                                   ),
                                 ),
                               ),
@@ -3014,36 +3317,49 @@ class GroupDetailScreen extends StatefulWidget {
     super.key,
     required this.store,
     required this.group,
+    this.service,
   });
   final ProgressStore store;
   final QuizGroup group;
+  final CloudGroupGateway? service;
 
   @override
   State<GroupDetailScreen> createState() => _GroupDetailScreenState();
 }
 
 class _GroupDetailScreenState extends State<GroupDetailScreen> {
-  final CloudChallengeService _service = CloudChallengeService();
+  late final CloudGroupGateway _service;
+  late final Stream<List<GroupChallenge>> _challengesStream;
   bool _publishing = false;
 
-  Future<void> _publishToday() async {
+  @override
+  void initState() {
+    super.initState();
+    _service = widget.service ?? CloudChallengeService();
+    _challengesStream = _service.groupChallenges(widget.group.id);
+  }
+
+  Future<void> _createQuiz(int count) async {
     if (_publishing) return;
     setState(() => _publishing = true);
     try {
-      final challenge = await _service.loadToday();
-      if (challenge == null) throw StateError('No live cloud question');
-      final id = await _service.createGroupChallenge(
+      final id = await _service.createGroupQuiz(
         groupId: widget.group.id,
-        challenge: challenge,
+        questionCount: count,
+        title: '${widget.group.name} Challenge ($count Qs)',
       );
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Group challenge published: $id')),
+        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+          SnackBar(
+            content: Text(
+              'Group challenge with $count questions published: $id',
+            ),
+          ),
         );
       }
     } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
           const SnackBar(
             content: Text('The group challenge could not be published.'),
           ),
@@ -3052,6 +3368,68 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
     } finally {
       if (mounted) setState(() => _publishing = false);
     }
+  }
+
+  void _showCreateQuizDialog() {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: _slateSurface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text(
+                'NEW GROUP CHALLENGE',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: _gold,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.2,
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Choose question count. Questions rotate and alternate Old and New Testaments.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: _slateTextSecondary, fontSize: 13),
+              ),
+              const SizedBox(height: 20),
+              for (final count in const [10, 20, 30]) ...[
+                OutlinedButton(
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    side: const BorderSide(color: _gold, width: 1.2),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  onPressed: () {
+                    Navigator.of(sheetContext).pop();
+                    _createQuiz(count);
+                  },
+                  child: Text(
+                    '$count QUESTIONS ${count == 10 ? '• QUICK' : count == 20 ? '• STANDARD' : '• DEEP STUDY (MAX)'}',
+                    style: const TextStyle(
+                      color: _slateTextPrimary,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -3077,15 +3455,16 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
                 const SizedBox(height: 16),
                 SlatePillButton(
                   label: _publishing
-                      ? 'PUBLISHING…'
-                      : 'PUBLISH TODAY\'S CLOUD QUESTION',
-                  onPressed: _publishing ? null : _publishToday,
+                      ? 'PUBLISHING QUESTION…'
+                      : 'CREATE GROUP QUIZ (10 - 30 Qs)',
+                  loading: _publishing,
+                  onPressed: _publishing ? null : _showCreateQuizDialog,
                 ),
               ],
               const SizedBox(height: 18),
               Expanded(
                 child: StreamBuilder<List<GroupChallenge>>(
-                  stream: _service.groupChallenges(widget.group.id),
+                  stream: _challengesStream,
                   builder: (context, snapshot) {
                     if (snapshot.hasError) {
                       return const Center(
@@ -3112,9 +3491,15 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
                       separatorBuilder: (_, _) => const SizedBox(height: 10),
                       itemBuilder: (context, index) {
                         final challenge = challenges[index];
+                        final count = challenge.questionCount;
+                        final countLabel =
+                            count > 1 ? '$count Questions' : '1 Question';
                         return SlateSettingCard(
-                          title: 'Verified group challenge',
-                          subtitle: challenge.scriptureReference,
+                          title: challenge.title.isNotEmpty
+                              ? challenge.title
+                              : 'Verified group challenge',
+                          subtitle:
+                              '$countLabel • Timed session • Deferred results',
                           icon: Icons.quiz_outlined,
                           onTap: () => Navigator.of(context).push(
                             MaterialPageRoute(
@@ -3122,6 +3507,7 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
                                 store: widget.store,
                                 groupId: widget.group.id,
                                 challenge: challenge,
+                                service: _service,
                               ),
                             ),
                           ),
@@ -3145,58 +3531,106 @@ class GroupQuestionScreen extends StatefulWidget {
     required this.store,
     required this.groupId,
     required this.challenge,
+    this.service,
   });
   final ProgressStore store;
   final String groupId;
   final GroupChallenge challenge;
+  final CloudGroupGateway? service;
 
   @override
   State<GroupQuestionScreen> createState() => _GroupQuestionScreenState();
 }
 
 class _GroupQuestionScreenState extends State<GroupQuestionScreen> {
-  final CloudChallengeService _service = CloudChallengeService();
-  final Stopwatch _stopwatch = Stopwatch()..start();
-  int _selected = -1;
+  late final CloudGroupGateway _service;
+  late final List<GroupChallengeItem> _questions;
+  late final List<int> _answers;
+  int _currentIndex = 0;
+  Timer? _timer;
+  int _questionSeconds = 0;
+  int _totalSeconds = 0;
   bool _submitting = false;
-  bool _submitted = false;
-  bool _wasCorrect = false;
+  GroupQuizResult? _result;
 
-  Future<void> _submit() async {
-    if (_selected < 0 || _submitting || _submitted) return;
+  @override
+  void initState() {
+    super.initState();
+    _service = widget.service ?? CloudChallengeService();
+    _questions = widget.challenge.items.isNotEmpty
+        ? widget.challenge.items
+        : [
+            GroupChallengeItem(
+              id: widget.challenge.id,
+              question: widget.challenge.question,
+              options: widget.challenge.options,
+              scriptureReference: widget.challenge.scriptureReference,
+              testament: '',
+              propheticFocus: '',
+            ),
+          ];
+    _answers = List.filled(_questions.length, -1);
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted && _result == null) {
+        setState(() {
+          _questionSeconds++;
+          _totalSeconds++;
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  String _formatTime(int seconds) {
+    final m = seconds ~/ 60;
+    final s = seconds % 60;
+    return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+  }
+
+  Future<void> _submitAll() async {
+    if (_submitting || _result != null) return;
     setState(() => _submitting = true);
+    _timer?.cancel();
     try {
-      final result = await _service.submitGroupChallenge(
+      final res = await _service.submitGroupQuiz(
         groupId: widget.groupId,
-        challenge: widget.challenge,
-        answerIndex: _selected,
-        elapsedSeconds: _stopwatch.elapsed.inSeconds,
+        challengeId: widget.challenge.id,
+        answers: _answers,
+        elapsedSeconds: _totalSeconds,
         displayName: widget.store.leaderboardName,
       );
-      _stopwatch.stop();
       if (!mounted) return;
       setState(() {
-        _submitted = true;
-        _wasCorrect = result.correct;
+        _result = res;
       });
       unawaited(
-        result.correct ? AnswerFeedback.correct() : AnswerFeedback.incorrect(),
+        res.score >= (res.total / 2).ceil()
+            ? AnswerFeedback.correct()
+            : AnswerFeedback.incorrect(),
       );
     } on FirebaseFunctionsException catch (error) {
       if (!mounted) return;
       if (error.code == 'already-exists') {
-        setState(() {
-          _submitted = true;
-          _wasCorrect = false;
-        });
+        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Each verified group challenge may be submitted only once.',
+            ),
+          ),
+        );
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
+        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
           SnackBar(content: Text(cloudSubmitErrorMessage(error))),
         );
       }
     } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
           const SnackBar(
             content: Text(
               'Your group score was not verified. Please try again.',
@@ -3209,10 +3643,416 @@ class _GroupQuestionScreenState extends State<GroupQuestionScreen> {
     }
   }
 
-  @override
-  void dispose() {
-    _stopwatch.stop();
-    super.dispose();
+  Widget _buildQuizView() {
+    final currentQ = _questions[_currentIndex];
+    final hasAnswered = _answers[_currentIndex] >= 0;
+    final isLast = _currentIndex == _questions.length - 1;
+    final answeredCount = _answers.where((a) => a >= 0).length;
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(22, 16, 22, 40),
+      children: [
+        const SlatePageHeader(title: 'GROUP CHALLENGE'),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          decoration: BoxDecoration(
+            color: _slateSurface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.white.withValues(alpha: .12)),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.timer_outlined, color: _gold, size: 18),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Q: ${_formatTime(_questionSeconds)} • Total: ${_formatTime(_totalSeconds)}',
+                    style: const TextStyle(
+                      color: _slateTextPrimary,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: _gold.withValues(alpha: .15),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  'QUESTION ${_currentIndex + 1} OF ${_questions.length}',
+                  style: const TextStyle(
+                    color: _gold,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 10),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: LinearProgressIndicator(
+            value: (_currentIndex + 1) / _questions.length,
+            backgroundColor: Colors.white.withValues(alpha: .08),
+            valueColor: const AlwaysStoppedAnimation<Color>(_gold),
+            minHeight: 5,
+          ),
+        ),
+        const SizedBox(height: 18),
+        SlateCard(
+          child: Text(
+            currentQ.question,
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.bold,
+              height: 1.25,
+            ),
+          ),
+        ),
+        const SizedBox(height: 18),
+        for (var i = 0; i < currentQ.options.length; i++)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: SlateAnswerTile(
+              letter: String.fromCharCode(65 + i),
+              text: currentQ.options[i],
+              selected: _answers[_currentIndex] == i,
+              correct: false,
+              feedback: false,
+              onTap: () {
+                if (!_submitting) {
+                  setState(() {
+                    _answers[_currentIndex] = i;
+                  });
+                }
+              },
+            ),
+          ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            if (_currentIndex > 0) ...[
+              Expanded(
+                child: SlatePillButton(
+                  label: 'PREVIOUS',
+                  inverse: true,
+                  onPressed: () {
+                    setState(() {
+                      _currentIndex--;
+                      _questionSeconds = 0;
+                    });
+                  },
+                ),
+              ),
+              const SizedBox(width: 12),
+            ],
+            if (!isLast)
+              Expanded(
+                child: SlatePillButton(
+                  label: 'NEXT QUESTION',
+                  onPressed: hasAnswered
+                      ? () {
+                          setState(() {
+                            _currentIndex++;
+                            _questionSeconds = 0;
+                          });
+                        }
+                      : null,
+                ),
+              )
+            else
+              Expanded(
+                child: SlatePillButton(
+                  label: _submitting
+                      ? 'SUBMITTING…'
+                      : 'SUBMIT GROUP QUIZ ($answeredCount/${_questions.length})',
+                  loading: _submitting,
+                  onPressed: answeredCount == _questions.length && !_submitting
+                      ? _submitAll
+                      : null,
+                ),
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildResultsView() {
+    final res = _result!;
+    final pct = ((res.score / res.total) * 100).round();
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(22, 16, 22, 40),
+      children: [
+        const SlatePageHeader(title: 'CHALLENGE RESULTS'),
+        const SizedBox(height: 16),
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: _slateSurface,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: _gold.withValues(alpha: .5), width: 1.5),
+          ),
+          child: Column(
+            children: [
+              const Icon(Icons.stars, color: _gold, size: 48),
+              const SizedBox(height: 8),
+              Text(
+                '${res.score} / ${res.total} CORRECT',
+                style: const TextStyle(
+                  color: _gold,
+                  fontSize: 26,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.1,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '$pct% Score • Total Time: ${_formatTime(res.elapsedSeconds)}',
+                style: const TextStyle(
+                  color: _slateTextSecondary,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 24),
+        const SlateSectionHeader('GROUP LEADERBOARD'),
+        const SizedBox(height: 10),
+        StreamBuilder<List<LeaderboardEntry>>(
+          stream: _service.groupLeaderboard(
+            widget.groupId,
+            widget.challenge.id,
+          ),
+          builder: (context, snapshot) {
+            if (snapshot.hasError) {
+              return const Center(child: Text('Leaderboard unavailable.'));
+            }
+            if (!snapshot.hasData) {
+              return const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(16),
+                  child: CircularProgressIndicator(color: _gold),
+                ),
+              );
+            }
+            final entries = snapshot.data!;
+            if (entries.isEmpty) {
+              return const Text(
+                'No scores submitted yet. Your score has been recorded!',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: _slateTextSecondary),
+              );
+            }
+            return ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: entries.length,
+              separatorBuilder: (_, _) => const SizedBox(height: 8),
+              itemBuilder: (context, index) {
+                final entry = entries[index];
+                final isTop3 = index < 3;
+                return Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 10,
+                  ),
+                  decoration: BoxDecoration(
+                    color: _slateSurface,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isTop3
+                          ? _gold.withValues(alpha: .4)
+                          : Colors.white.withValues(alpha: .08),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Text(
+                        '#${index + 1}',
+                        style: TextStyle(
+                          color: isTop3 ? _gold : _slateTextSecondary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          entry.displayName,
+                          style: const TextStyle(
+                            color: _slateTextPrimary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      Text(
+                        '${entry.score} pts • ${_formatTime(entry.elapsedSeconds)}',
+                        style: const TextStyle(
+                          color: _slateTextSecondary,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            );
+          },
+        ),
+        const SizedBox(height: 28),
+        SlateSectionHeader(
+          'QUESTION REVIEW (${_questions.length} QUESTIONS)',
+        ),
+        const SizedBox(height: 12),
+        for (var i = 0; i < _questions.length; i++) ...[
+          _buildQuestionReviewCard(i, res),
+          const SizedBox(height: 14),
+        ],
+        const SizedBox(height: 16),
+        SlatePillButton(
+          label: 'BACK TO GROUP',
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildQuestionReviewCard(int index, GroupQuizResult res) {
+    final q = _questions[index];
+    QuestionReview? review;
+    if (index < res.breakdown.length) {
+      review = res.breakdown[index];
+    }
+    final isCorrect = review?.correct ?? false;
+    final userAns = review != null ? review.userAnswer : _answers[index];
+    final correctAns = review?.correctAnswer ?? 0;
+    final explanation = review != null && review.explanation.isNotEmpty
+        ? review.explanation
+        : (index == 0 ? widget.challenge.explanation : '');
+    final scripture = review != null && review.scriptureReference.isNotEmpty
+        ? review.scriptureReference
+        : q.scriptureReference;
+
+    final userAnsText = (userAns >= 0 && userAns < q.options.length)
+        ? q.options[userAns]
+        : 'No answer';
+    final correctAnsText = (correctAns >= 0 && correctAns < q.options.length)
+        ? q.options[correctAns]
+        : '';
+
+    return SlateCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 2,
+                ),
+                decoration: BoxDecoration(
+                  color: (isCorrect ? _correct : _wrong).withValues(alpha: .2),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color:
+                        (isCorrect ? _correct : _wrong).withValues(alpha: .5),
+                  ),
+                ),
+                child: Text(
+                  isCorrect ? 'CORRECT' : 'INCORRECT',
+                  style: TextStyle(
+                    color: isCorrect ? _correct : _wrong,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              const Spacer(),
+              Text(
+                'QUESTION ${index + 1}',
+                style: const TextStyle(
+                  color: _slateTextMuted,
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            q.question,
+            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _ReviewAnswerBox(
+                  label: 'YOUR ANSWER',
+                  text: userAnsText,
+                  color: isCorrect ? _correct : _wrong,
+                ),
+              ),
+              if (!isCorrect && correctAnsText.isNotEmpty) ...[
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _ReviewAnswerBox(
+                    label: 'CORRECT ANSWER',
+                    text: correctAnsText,
+                    color: _correct,
+                  ),
+                ),
+              ],
+            ],
+          ),
+          if (explanation.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.info_outline, size: 15, color: _gold),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    explanation,
+                    style: const TextStyle(
+                      color: _slateTextSecondary,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+          if (scripture.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Text(
+              'SCRIPTURE: $scripture',
+              style: const TextStyle(
+                color: _gold,
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
   }
 
   @override
@@ -3220,84 +4060,7 @@ class _GroupQuestionScreenState extends State<GroupQuestionScreen> {
     body: DivineBackground(
       reduceMotion: widget.store.reduceMotion,
       child: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(22, 16, 22, 40),
-          children: [
-            const SlatePageHeader(title: 'GROUP CHALLENGE'),
-            const SizedBox(height: 20),
-            SlateCard(
-              child: Text(
-                widget.challenge.question,
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  height: 1.25,
-                ),
-              ),
-            ),
-            const SizedBox(height: 18),
-            for (
-              var index = 0;
-              index < widget.challenge.options.length;
-              index++
-            )
-              Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: SlateAnswerTile(
-                  letter: String.fromCharCode(65 + index),
-                  text: widget.challenge.options[index],
-                  selected: _selected == index,
-                  correct: _submitted && _selected == index && _wasCorrect,
-                  feedback: _submitted && _selected == index,
-                  onTap: () {
-                    if (!_submitted && !_submitting) {
-                      setState(() => _selected = index);
-                    }
-                  },
-                ),
-              ),
-            if (_submitted)
-              SlateCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _wasCorrect ? 'VERIFIED CORRECT' : 'ANSWER RECORDED',
-                      style: TextStyle(
-                        color: _wasCorrect ? _correct : _gold,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(widget.challenge.explanation),
-                    const SizedBox(height: 8),
-                    Text(
-                      'SCRIPTURE: ${widget.challenge.scriptureReference}',
-                      style: const TextStyle(
-                        color: _slateTextSecondary,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            const SizedBox(height: 16),
-            SlatePillButton(
-              label: _submitted
-                  ? 'BACK TO GROUP'
-                  : _submitting
-                  ? 'VERIFYING…'
-                  : 'LOCK IN ANSWER',
-              inverse: _submitted,
-              onPressed: _submitted
-                  ? () => Navigator.of(context).pop()
-                  : _selected >= 0 && !_submitting
-                  ? _submit
-                  : null,
-            ),
-          ],
-        ),
+        child: _result != null ? _buildResultsView() : _buildQuizView(),
       ),
     ),
   );
@@ -3528,151 +4291,129 @@ class SettingsScreen extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-    body: DivineBackground(
-      reduceMotion: store.reduceMotion,
-      child: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(22, 16, 22, 40),
-          children: [
-            const SlatePageHeader(title: 'SETTINGS'),
-            const SizedBox(height: 24),
-            const SlateSectionHeader('APPEARANCE'),
-            const SlateSettingCard(
-              title: 'Theme',
-              subtitle: 'Slate Indigo Dark — the Faith Quiz visual style',
-              icon: Icons.dark_mode,
-            ),
-            const SizedBox(height: 20),
-            const SlateSectionHeader('ACCESSIBILITY'),
-            SlateSettingCard(
-              title: 'Text size',
-              subtitle: store.textScale == 'large' ? 'Large' : 'Standard',
-              icon: Icons.text_fields,
-              onTap: () => _choose(context, 'Select Text Size', [
-                _Choice(
-                  'Standard',
-                  'normal',
-                  store.textScale == 'normal',
-                  () => store.setTextScale('normal'),
-                ),
-                _Choice(
-                  'Large',
-                  'large',
-                  store.textScale == 'large',
-                  () => store.setTextScale('large'),
-                ),
-              ]),
-            ),
-            SlateSwitchSettingCard(
-              title: 'Reduce motion',
-              subtitle:
-                  'Stops moving background particles and quiz-result animations',
-              icon: Icons.motion_photos_off,
-              value: store.reduceMotion,
-              onChanged: store.setReduceMotion,
-            ),
-            const SizedBox(height: 20),
-            const SlateSectionHeader('DATA & STORAGE'),
-            SlateSwitchSettingCard(
-              title: 'Secure cloud backup',
-              subtitle: store.cloudSyncStatus,
-              icon: Icons.cloud_sync_outlined,
-              value: store.cloudBackupEnabled,
-              onChanged: (enabled) async {
-                if (enabled) {
-                  await store.enableCloudBackup();
-                } else {
-                  await store.disableCloudBackup();
-                }
-              },
-            ),
-            const SizedBox(height: 20),
-            const SlateSectionHeader('ONLINE PLAY'),
-            SlateSettingCard(
-              title: 'Leaderboard name',
-              subtitle: store.leaderboardName,
-              icon: Icons.badge_outlined,
-              onTap: () => _editLeaderboardName(context),
-            ),
-            SlateSwitchSettingCard(
-              title: 'Daily reminder',
-              subtitle: store.reminderStatus,
-              icon: Icons.notifications_outlined,
-              value: store.remindersEnabled,
-              onChanged: store.setRemindersEnabled,
-            ),
-            const SizedBox(height: 12),
-            SlateSettingCard(
-              title: 'Reset Progress',
-              subtitle: 'Clear all stats and achievements',
-              icon: Icons.delete_forever,
-              iconColor: _wrong,
-              onTap: () async {
-                final confirmed = await showDialog<bool>(
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: store,
+    builder: (context, _) => Scaffold(
+      body: DivineBackground(
+        reduceMotion: store.reduceMotion,
+        child: SafeArea(
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(22, 16, 22, 40),
+            children: [
+              const SlatePageHeader(title: 'SETTINGS'),
+              const SizedBox(height: 24),
+              const SlateSectionHeader('APPEARANCE'),
+              const SlateSettingCard(
+                title: 'Theme',
+                subtitle: 'Slate Indigo Dark — the Faith Quiz visual style',
+                icon: Icons.palette_outlined,
+              ),
+              SlateSettingCard(
+                title: 'Text Size',
+                subtitle: store.textScale == 'large' ? 'Large text' : 'Normal',
+                icon: Icons.format_size,
+                onTap: () => _choose(context, 'Text Size', [
+                  _Choice('Normal', 'normal', store.textScale == 'normal', () => store.setTextScale('normal')),
+                  _Choice('Large text', 'large', store.textScale == 'large', () => store.setTextScale('large')),
+                ]),
+              ),
+              SlateSwitchSettingCard(
+                title: 'Reduced Motion',
+                subtitle: 'Minimise background and transition animations',
+                icon: Icons.motion_photos_off_outlined,
+                value: store.reduceMotion,
+                onChanged: (value) => store.setReduceMotion(value),
+              ),
+              const SizedBox(height: 20),
+              const SlateSectionHeader('STUDY & PROGRESS'),
+              SlateSettingCard(
+                title: 'Cloud Backup',
+                subtitle: store.cloudSyncStatus,
+                icon: Icons.cloud_sync_outlined,
+                onTap: () => store.cloudBackupEnabled
+                    ? store.disableCloudBackup()
+                    : store.enableCloudBackup(),
+              ),
+              SlateSettingCard(
+                title: 'Leaderboard Name',
+                subtitle: store.leaderboardName,
+                icon: Icons.badge_outlined,
+                onTap: () => _editLeaderboardName(context),
+              ),
+              SlateSwitchSettingCard(
+                title: 'Daily Reminders',
+                subtitle: store.reminderStatus,
+                icon: Icons.alarm_outlined,
+                value: store.remindersEnabled,
+                onChanged: (value) => store.setRemindersEnabled(value),
+              ),
+              const SizedBox(height: 20),
+              const SlateSectionHeader('DATA'),
+              SlateSettingCard(
+                title: 'Reset Progress',
+                subtitle: 'Clear unlocks, scores, streaks, and saved sessions',
+                icon: Icons.delete_outline,
+                onTap: () async {
+                  final confirmed = await showDialog<bool>(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      backgroundColor: _slateSurface,
+                      title: const Text('Reset All Progress?'),
+                      content: const Text(
+                        'This deletes unlocked levels, high scores, streaks, saved sessions, and mistake logs on this device.',
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, false),
+                          child: const Text('CANCEL'),
+                        ),
+                        FilledButton(
+                          onPressed: () => Navigator.pop(context, true),
+                          style: FilledButton.styleFrom(backgroundColor: _wrong),
+                          child: const Text('RESET'),
+                        ),
+                      ],
+                    ),
+                  );
+                  if (confirmed == true) {
+                    await store.reset();
+                    if (context.mounted) {
+                      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Progress, scores, streaks, and saved sessions were reset.',
+                          ),
+                        ),
+                      );
+                    }
+                  }
+                },
+              ),
+              const SizedBox(height: 20),
+              const SlateSectionHeader('ABOUT'),
+              SlateSettingCard(
+                title: 'Version',
+                subtitle: 'Faith Quiz 1.0.0 (Build 1)',
+                icon: Icons.info_outline,
+                onTap: () => showDialog<void>(
                   context: context,
                   builder: (context) => AlertDialog(
                     backgroundColor: _slateSurface,
-                    title: const Text('Reset Progress?'),
+                    title: const Text('About Faith Quiz'),
                     content: const Text(
-                      'Are you sure you want to reset all your progress? This action cannot be undone.',
+                      'Faith Quiz is designed to help you master biblical knowledge through engaging quizzes and challenges.\n\nCreated with faith and code.',
                     ),
                     actions: [
                       TextButton(
-                        onPressed: () => Navigator.pop(context, false),
-                        child: const Text('CANCEL'),
-                      ),
-                      FilledButton(
-                        onPressed: () => Navigator.pop(context, true),
-                        style: FilledButton.styleFrom(backgroundColor: _wrong),
-                        child: const Text('RESET'),
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('CLOSE'),
                       ),
                     ],
                   ),
-                );
-                if (confirmed == true) {
-                  await store.reset();
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                          'Progress, scores, streaks, and saved sessions were reset.',
-                        ),
-                      ),
-                    );
-                  }
-                }
-              },
-            ),
-            const SlateSettingCard(
-              title: 'Crash reporting',
-              subtitle: 'Not enabled — this app does not send crash data',
-              icon: Icons.privacy_tip_outlined,
-            ),
-            const SizedBox(height: 20),
-            const SlateSectionHeader('ABOUT'),
-            SlateSettingCard(
-              title: 'About Faith Quiz',
-              subtitle: 'Version 1.0.0',
-              icon: Icons.info,
-              onTap: () => showDialog<void>(
-                context: context,
-                builder: (context) => AlertDialog(
-                  backgroundColor: _slateSurface,
-                  title: const Text('About Faith Quiz'),
-                  content: const Text(
-                    'Faith Quiz is designed to help you master biblical knowledge through engaging quizzes and challenges.\n\nCreated with faith and code.',
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('CLOSE'),
-                    ),
-                  ],
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     ),
