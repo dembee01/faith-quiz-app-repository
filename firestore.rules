@@ -68,6 +68,13 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    match /groups/{groupId}/challenges/{challengeId}/fellowshipAnswers/{answerId} {
+      allow read: if request.auth != null
+        && resource.data.uid == request.auth.uid
+        && exists(/databases/$(database)/documents/groups/$(groupId)/members/$(request.auth.uid));
+      allow write: if false;
+    }
+
     // The user grants or revokes reminders in the app. Tokens are private and
     // may only be read or altered by their owner or by Admin SDK code.
     match /users/{userId}/private/notifications {

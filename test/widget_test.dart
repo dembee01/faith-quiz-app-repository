@@ -60,11 +60,18 @@ class _FakeGroupGateway implements CloudGroupGateway {
     this.groups = const [],
     this.challenges = const [],
     this.leaderboardEntries = const [],
+    this.groupLeaderboardEntries = const [],
   });
 
   final List<QuizGroup> groups;
   final List<GroupChallenge> challenges;
   final List<LeaderboardEntry> leaderboardEntries;
+  final List<LeaderboardEntry> groupLeaderboardEntries;
+  bool startChallengeCalled = false;
+  bool submitFellowshipAnswerCalled = false;
+  bool revealFellowshipAnswerCalled = false;
+  bool advanceFellowshipQuestionCalled = false;
+  int? lastAnsweredOption;
 
   @override
   Future<bool> get isAvailable async => true;
@@ -84,6 +91,20 @@ class _FakeGroupGateway implements CloudGroupGateway {
   @override
   Stream<List<GroupChallenge>> groupChallenges(String groupId) =>
       Stream.value(challenges);
+
+  @override
+  Stream<QuizGroup> streamGroup(String groupId) {
+    final match = groups.where((g) => g.id == groupId);
+    if (match.isNotEmpty) return Stream.value(match.first);
+    return const Stream.empty();
+  }
+
+  @override
+  Stream<GroupChallenge> streamChallenge(String groupId, String challengeId) {
+    final match = challenges.where((c) => c.id == challengeId);
+    if (match.isNotEmpty) return Stream.value(match.first);
+    return const Stream.empty();
+  }
 
   @override
   Future<CloudChallenge?> loadToday() async => null;
@@ -109,7 +130,46 @@ class _FakeGroupGateway implements CloudGroupGateway {
     required String groupId,
     required int questionCount,
     String? title,
+    String mode = 'competitive',
   }) async => 'quiz-mock-123';
+
+  @override
+  Future<void> startGroupChallenge({
+    required String groupId,
+    required String challengeId,
+  }) async {
+    startChallengeCalled = true;
+  }
+
+  @override
+  Future<void> submitFellowshipAnswer({
+    required String groupId,
+    required String challengeId,
+    required int questionIndex,
+    required String questionId,
+    required int selectedOptionIndex,
+    required int responseLatencyMs,
+    String? username,
+  }) async {
+    submitFellowshipAnswerCalled = true;
+    lastAnsweredOption = selectedOptionIndex;
+  }
+
+  @override
+  Future<void> revealFellowshipAnswer({
+    required String groupId,
+    required String challengeId,
+  }) async {
+    revealFellowshipAnswerCalled = true;
+  }
+
+  @override
+  Future<void> advanceFellowshipQuestion({
+    required String groupId,
+    required String challengeId,
+  }) async {
+    advanceFellowshipQuestionCalled = true;
+  }
 
   @override
   Future<CloudSubmission> submitGroupChallenge({
@@ -151,7 +211,11 @@ class _FakeGroupGateway implements CloudGroupGateway {
   Stream<List<LeaderboardEntry>> groupLeaderboard(
     String groupId,
     String challengeId,
-  ) => Stream.value(const []);
+  ) => Stream.value(
+    groupLeaderboardEntries.isNotEmpty
+        ? groupLeaderboardEntries
+        : const [],
+  );
 
   @override
   Stream<List<LeaderboardEntry>> globalLeaderboard() =>
@@ -801,6 +865,349 @@ void main() {
 
       expect(find.text('BibleScholar'), findsOneWidget);
       expect(find.text('280 pts'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'GroupLobbyScreen displays host controls and starts challenge on tap',
+    (tester) async {
+      final store = ProgressStore();
+      const group = QuizGroup(
+        id: 'grp-lobby-1',
+        name: 'Grace Fellowship',
+        role: 'owner',
+        joinCode: '112233',
+      );
+      const challenge = GroupChallenge(
+        id: 'ch-lobby-1',
+        title: 'Grace Fellowship Competitive',
+        mode: 'competitive',
+        status: 'lobby',
+        questionCount: 10,
+        question: 'Who built the ark?',
+        options: ['Noah', 'Moses', 'Abraham', 'David'],
+        explanation: 'Noah built the ark by faith.',
+        scriptureReference: 'Genesis 6:14',
+      );
+      final service = _FakeGroupGateway(
+        groups: [group],
+        challenges: [challenge],
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: GroupLobbyScreen(
+            store: store,
+            groupId: group.id,
+            challenge: challenge,
+            group: group,
+            service: service,
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('CHALLENGE LOBBY'), findsOneWidget);
+      expect(find.text('GRACE FELLOWSHIP'), findsOneWidget);
+      expect(find.text('112233'), findsOneWidget);
+      expect(find.text('COMPETITIVE MODE'), findsOneWidget);
+      expect(find.text('START CHALLENGE'), findsOneWidget);
+
+      await tester.tap(find.text('START CHALLENGE'));
+      await tester.pump();
+
+      expect(service.startChallengeCalled, isTrue);
+    },
+  );
+
+  testWidgets(
+    'GroupLobbyScreen displays waiting state for non-host member without start button',
+    (tester) async {
+      final store = ProgressStore();
+      const group = QuizGroup(
+        id: 'grp-lobby-2',
+        name: 'Grace Fellowship',
+        role: 'member',
+        joinCode: '112233',
+      );
+      const challenge = GroupChallenge(
+        id: 'ch-lobby-2',
+        title: 'Grace Fellowship Fellowship',
+        mode: 'fellowship',
+        status: 'lobby',
+        questionCount: 20,
+        question: 'Who was swallowed by a great fish?',
+        options: ['Jonah', 'Peter', 'Paul', 'John'],
+        explanation: 'Jonah was swallowed by a great fish.',
+        scriptureReference: 'Jonah 1:17',
+        ownerId: 'host-uid-999',
+      );
+      final service = _FakeGroupGateway(
+        groups: [group],
+        challenges: [challenge],
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: GroupLobbyScreen(
+            store: store,
+            groupId: group.id,
+            challenge: challenge,
+            group: group,
+            service: service,
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('CHALLENGE LOBBY'), findsOneWidget);
+      expect(find.text('FELLOWSHIP / HOST-LED MODE'), findsOneWidget);
+      expect(find.text('Waiting for host to start…'), findsOneWidget);
+      expect(find.text('START FELLOWSHIP'), findsNothing);
+      expect(find.text('START CHALLENGE'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'FellowshipQuestionScreen plays active question without spoilers, locks answer on tap, and allows host reveal and advance',
+    (tester) async {
+      final store = ProgressStore();
+      const items = [
+        GroupChallengeItem(
+          id: 'fq1',
+          question: 'In the beginning God created the heavens and the earth.',
+          options: ['Genesis', 'Exodus', 'Leviticus', 'Numbers'],
+          scriptureReference: 'Genesis 1:1',
+          testament: 'Old Testament',
+          propheticFocus: 'Creation',
+        ),
+        GroupChallengeItem(
+          id: 'fq2',
+          question: 'The Lord is my shepherd; I shall not want.',
+          options: ['Psalm 23', 'Psalm 91', 'Proverbs 3', 'Isaiah 40'],
+          scriptureReference: 'Psalm 23:1',
+          testament: 'Old Testament',
+          propheticFocus: 'Trust',
+        ),
+      ];
+      final challengeOpen = GroupChallenge(
+        id: 'ch-fellowship-1',
+        title: 'Fellowship Bible Study',
+        mode: 'fellowship',
+        status: 'question_open',
+        currentQuestionIndex: 0,
+        questionCount: 2,
+        question: items[0].question,
+        options: items[0].options,
+        explanation: '',
+        scriptureReference: items[0].scriptureReference,
+        items: items,
+        ownerId: 'host-uid-1',
+      );
+
+      final service = _FakeGroupGateway(
+        challenges: [challengeOpen],
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: FellowshipQuestionScreen(
+            store: store,
+            groupId: 'grp-f1',
+            challenge: challengeOpen,
+            service: service,
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('FELLOWSHIP STUDY'), findsOneWidget);
+      expect(find.text('QUESTION 1 OF 2'), findsOneWidget);
+      expect(find.text('In the beginning God created the heavens and the earth.'), findsOneWidget);
+
+      final answerTiles = tester.widgetList<SlateAnswerTile>(find.byType(SlateAnswerTile)).toList();
+      expect(answerTiles.length, 4);
+      for (final tile in answerTiles) {
+        expect(tile.feedback, isFalse);
+        expect(tile.correct, isFalse);
+      }
+
+      await tester.tap(find.text('Genesis'));
+      await tester.pump();
+
+      expect(service.submitFellowshipAnswerCalled, isTrue);
+      expect(service.lastAnsweredOption, 0);
+
+      final updatedTiles = tester.widgetList<SlateAnswerTile>(find.byType(SlateAnswerTile)).toList();
+      expect(updatedTiles[0].selected, isTrue);
+      expect(updatedTiles[0].feedback, isFalse);
+    },
+  );
+
+  testWidgets(
+    'FellowshipQuestionScreen reveals answer with Scripture and explanation, then advances question',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(800, 1200));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      final store = ProgressStore();
+      const items = [
+        GroupChallengeItem(
+          id: 'fq1',
+          question: 'In the beginning God created the heavens and the earth.',
+          options: ['Genesis', 'Exodus', 'Leviticus', 'Numbers'],
+          scriptureReference: 'Genesis 1:1',
+          testament: 'Old Testament',
+          propheticFocus: 'Creation',
+        ),
+      ];
+      final challengeRevealed = GroupChallenge(
+        id: 'ch-fellowship-2',
+        title: 'Fellowship Bible Study',
+        mode: 'fellowship',
+        status: 'question_revealed',
+        currentQuestionIndex: 0,
+        questionCount: 1,
+        question: items[0].question,
+        options: items[0].options,
+        explanation: 'Genesis 1:1 describes the creation of everything.',
+        scriptureReference: 'Genesis 1:1',
+        items: items,
+        revealedAnswer: 0,
+        revealedExplanation: 'Genesis 1:1 describes the creation of everything.',
+        revealedScriptureReference: 'Genesis 1:1',
+        ownerId: 'host-uid-1',
+      );
+
+      final service = _FakeGroupGateway(
+        challenges: [challengeRevealed],
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: FellowshipQuestionScreen(
+            store: store,
+            groupId: 'grp-f2',
+            challenge: challengeRevealed,
+            service: service,
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final tiles = tester.widgetList<SlateAnswerTile>(find.byType(SlateAnswerTile)).toList();
+      expect(tiles[0].feedback, isTrue);
+      expect(tiles[0].correct, isTrue);
+
+      expect(find.text('Genesis 1:1'), findsWidgets);
+      expect(find.text('Genesis 1:1 describes the creation of everything.'), findsOneWidget);
+      expect(find.text('Host discussing Scripture. Ready for next!'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'FellowshipQuestionScreen displays final results with leaderboard and highlights YOU',
+    (tester) async {
+      final store = ProgressStore();
+      const challengeCompleted = GroupChallenge(
+        id: 'ch-fellowship-done',
+        title: 'Fellowship Bible Study',
+        mode: 'fellowship',
+        status: 'completed',
+        questionCount: 1,
+        question: 'Done',
+        options: ['A', 'B', 'C', 'D'],
+        explanation: '',
+        scriptureReference: '',
+      );
+
+      final entries = [
+        const LeaderboardEntry(
+          id: 'user-1',
+          displayName: 'Faith learner',
+          score: 10,
+          elapsedSeconds: 25,
+        ),
+        const LeaderboardEntry(
+          id: 'user-2',
+          displayName: 'Paul',
+          score: 8,
+          elapsedSeconds: 15,
+        ),
+      ];
+
+      final service = _FakeGroupGateway(
+        challenges: [challengeCompleted],
+        groupLeaderboardEntries: entries,
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: FellowshipQuestionScreen(
+            store: store,
+            groupId: 'grp-f-done',
+            challenge: challengeCompleted,
+            service: service,
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('FELLOWSHIP RESULTS'), findsOneWidget);
+      expect(find.text('STUDY COMPLETED'), findsOneWidget);
+      expect(find.text('FELLOWSHIP LEADERBOARD'), findsOneWidget);
+      expect(find.text('Faith learner'), findsOneWidget);
+      expect(find.text('10 pts • 00:25'), findsOneWidget);
+      expect(find.text('YOU'), findsOneWidget);
+      expect(find.text('Paul'), findsOneWidget);
+      expect(find.text('8 pts • 00:15'), findsOneWidget);
+      expect(find.text('BACK TO GROUP'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'GroupDetailScreen modal allows choosing Competitive Mode or Fellowship Mode with 10/20/30 counts',
+    (tester) async {
+      final store = ProgressStore();
+      const group = QuizGroup(
+        id: 'grp-modal-1',
+        name: 'Prayer Group',
+        role: 'owner',
+        joinCode: '998877',
+      );
+      final service = _FakeGroupGateway(groups: [group]);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: GroupDetailScreen(store: store, group: group, service: service),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('CREATE GROUP QUIZ (10 - 30 Qs)'), findsOneWidget);
+      await tester.tap(find.text('CREATE GROUP QUIZ (10 - 30 Qs)'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.text('NEW GROUP CHALLENGE'), findsOneWidget);
+      expect(find.text('SELECT CHALLENGE MODE'), findsOneWidget);
+      expect(find.text('COMPETITIVE'), findsOneWidget);
+      expect(find.text('FELLOWSHIP'), findsOneWidget);
+      expect(find.text('10 QUESTIONS'), findsOneWidget);
+      expect(find.text('20 QUESTIONS'), findsOneWidget);
+      expect(find.text('30 QUESTIONS'), findsOneWidget);
+      expect(find.text('CREATE CHALLENGE'), findsOneWidget);
+
+      await tester.tap(find.text('FELLOWSHIP'));
+      await tester.pump();
+
+      await tester.tap(find.text('20 QUESTIONS'));
+      await tester.pump();
+
+      await tester.tap(find.text('CREATE CHALLENGE'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
     },
   );
 }

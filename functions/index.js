@@ -260,50 +260,75 @@ exports.createGroup = onCall(callableOptions, async (request) => {
   const expiresAt = minutes > 0 ? new Date(now + minutes * 60 * 1000) : null;
   const expiresAtTimestamp = expiresAt ? Timestamp.fromDate(expiresAt) : null;
 
-  // Generate unique 6-digit join code
-  let joinCode = generateJoinCode();
-  for (let attempt = 0; attempt < 5; attempt++) {
-    const existing = await db.collection('joinCodes').doc(joinCode).get();
-    if (!existing.exists) break;
-    const exp = existing.get('expiresAt');
-    if (exp && exp.toDate() < new Date()) break;
-    joinCode = generateJoinCode();
-  }
-
   const group = db.collection('groups').doc();
   const createdAt = FieldValue.serverTimestamp();
+  let allocatedJoinCode = null;
 
-  await db.runTransaction(async (transaction) => {
-    transaction.set(group, {
-      name,
-      ownerUid: uid,
-      createdAt,
-      joinCode,
-      expiresAt: expiresAtTimestamp,
-      durationMinutes: minutes,
-    });
-    transaction.set(db.collection('joinCodes').doc(joinCode), {
-      groupId: group.id,
-      name,
-      ownerUid: uid,
-      createdAt,
-      expiresAt: expiresAtTimestamp,
-      durationMinutes: minutes,
-    });
-    transaction.set(group.collection('members').doc(uid), { role: 'owner', joinedAt: createdAt });
-    transaction.set(db.doc(`users/${uid}/groups/${group.id}`), {
-      name,
-      role: 'owner',
-      joinedAt: createdAt,
-      joinCode,
-      expiresAt: expiresAtTimestamp,
-      durationMinutes: minutes,
-    });
-  });
+  // Concurrency-safe atomic reservation: test and set inside transaction
+  for (let attempt = 0; attempt < 10; attempt++) {
+    const candidateCode = generateJoinCode();
+    const joinCodeRef = db.collection('joinCodes').doc(candidateCode);
+
+    try {
+      await db.runTransaction(async (transaction) => {
+        const joinCodeDoc = await transaction.get(joinCodeRef);
+        if (joinCodeDoc.exists) {
+          const exp = joinCodeDoc.get('expiresAt');
+          // If code is still active, collision occurred -> throw to retry with fresh code
+          if (!exp || exp.toDate() >= new Date()) {
+            throw new Error('JOIN_CODE_COLLISION');
+          }
+        }
+
+        // Reservation succeeded atomically within transaction
+        transaction.set(group, {
+          name,
+          ownerUid: uid,
+          createdAt,
+          joinCode: candidateCode,
+          expiresAt: expiresAtTimestamp,
+          durationMinutes: minutes,
+        });
+        transaction.set(joinCodeRef, {
+          groupId: group.id,
+          name,
+          ownerUid: uid,
+          createdAt,
+          expiresAt: expiresAtTimestamp,
+          durationMinutes: minutes,
+        });
+        transaction.set(group.collection('members').doc(uid), {
+          role: 'owner',
+          joinedAt: createdAt,
+          displayName: 'Host',
+        });
+        transaction.set(db.doc(`users/${uid}/groups/${group.id}`), {
+          name,
+          role: 'owner',
+          joinedAt: createdAt,
+          joinCode: candidateCode,
+          expiresAt: expiresAtTimestamp,
+          durationMinutes: minutes,
+        });
+      });
+
+      allocatedJoinCode = candidateCode;
+      break;
+    } catch (err) {
+      if (err.message === 'JOIN_CODE_COLLISION') {
+        continue;
+      }
+      throw err;
+    }
+  }
+
+  if (!allocatedJoinCode) {
+    throw new HttpsError('resource-exhausted', 'Could not generate a unique join code. Please try again.');
+  }
 
   return {
     groupId: group.id,
-    joinCode,
+    joinCode: allocatedJoinCode,
     expiresAt: expiresAt ? expiresAt.toISOString() : null,
     durationMinutes: minutes,
   };
@@ -333,6 +358,12 @@ exports.joinGroup = onCall(callableOptions, async (request) => {
   let groupExpiresAt = null;
   let groupDurationMinutes = null;
 
+  // Read user profile to get claimed username or displayName
+  const userSnap = await db.doc(`users/${uid}`).get();
+  const memberDisplayName = userSnap.exists
+    ? (userSnap.get('username') || userSnap.get('displayName') || 'Member')
+    : 'Member';
+
   await db.runTransaction(async (transaction) => {
     const snapshot = await transaction.get(group);
     if (!snapshot.exists) throw new HttpsError('not-found', 'Group not found. Please verify the code.');
@@ -348,7 +379,11 @@ exports.joinGroup = onCall(callableOptions, async (request) => {
     groupDurationMinutes = snapshot.get('durationMinutes') || null;
 
     const joinedAt = FieldValue.serverTimestamp();
-    transaction.set(group.collection('members').doc(uid), { role: 'member', joinedAt }, { merge: true });
+    transaction.set(group.collection('members').doc(uid), {
+      role: 'member',
+      joinedAt,
+      displayName: memberDisplayName,
+    }, { merge: true });
     transaction.set(db.doc(`users/${uid}/groups/${targetGroupId}`), {
       name: groupName,
       role: 'member',
@@ -426,35 +461,18 @@ exports.createGroupChallenge = onCall(callableOptions, async (request) => {
     throw new HttpsError('failed-precondition', 'This group session has expired. Please extend the session to create a new challenge.');
   }
 
-  const requestedCount = Number(request.data.questionCount);
-  const questionCount = Number.isInteger(requestedCount)
-    ? Math.min(30, Math.max(5, requestedCount))
-    : 10;
-  const seed = Number.isInteger(request.data.seed)
-    ? Math.abs(request.data.seed) % 500
-    : Math.floor(Math.random() * 500);
+  // Enforce mode: 'competitive' or 'fellowship'
+  const mode = request.data.mode === 'fellowship' ? 'fellowship' : 'competitive';
 
-  // If a single specific questionId was passed (legacy single-question mode)
-  if (request.data.questionId && typeof request.data.questionId === 'string' && !request.data.questionCount) {
-    const questionSnapshot = await db.doc(`content/${catalogue}/questions/${request.data.questionId}`).get();
-    if (!questionSnapshot.exists || questionSnapshot.get('active') !== true) {
-      throw new HttpsError('not-found', 'Challenge is unavailable.');
-    }
-    const challenge = group.collection('challenges').doc();
-    await challenge.set({
-      catalogue,
-      questionId: request.data.questionId,
-      sourceChallengeId: questionSnapshot.get('challengeId') || request.data.questionId,
-      question: questionSnapshot.get('question'),
-      options: questionSnapshot.get('options'),
-      explanation: questionSnapshot.get('explanation'),
-      scriptureReference: questionSnapshot.get('scriptureReference'),
-      createdBy: uid,
-      active: true,
-      createdAt: FieldValue.serverTimestamp(),
-    });
-    return { challengeId: challenge.id };
+  // Strict Question Count Validation: MUST be exactly 10, 20, or 30
+  const requestedCount = Number(request.data.questionCount);
+  if (![10, 20, 30].includes(requestedCount)) {
+    throw new HttpsError('invalid-argument', 'Question count must be exactly 10, 20, or 30.');
   }
+  const questionCount = requestedCount;
+
+  // Server-controlled randomized seed (client seed disallowed to prevent manipulation)
+  const seed = Math.floor(Math.random() * 500);
 
   // Multi-question rotated cloud challenge: select questionCount distinct indices
   // using coprime stride 263 to interleave Old Testament and New Testament questions.
@@ -496,30 +514,305 @@ exports.createGroupChallenge = onCall(callableOptions, async (request) => {
     }
   }
 
+  const defaultTitle = mode === 'fellowship'
+    ? `Bible Fellowship (${selectedQuestions.length} Questions)`
+    : `Bible Challenge (${selectedQuestions.length} Questions)`;
   const title = typeof request.data.title === 'string' && request.data.title.trim().length > 0
     ? request.data.title.trim()
-    : `Bible Challenge (${selectedQuestions.length} Questions)`;
+    : defaultTitle;
 
   const challenge = group.collection('challenges').doc();
   await challenge.set({
     catalogue,
     title,
+    mode,
+    status: 'lobby',
     questionCount: selectedQuestions.length,
     questions: selectedQuestions,
     questionIds: selectedQuestions.map((q) => q.id),
     seed,
     createdBy: uid,
     active: true,
+    currentQuestionIndex: 0,
+    answeredUids: [],
     createdAt: FieldValue.serverTimestamp(),
   });
-  return { challengeId: challenge.id, questionCount: selectedQuestions.length };
+
+  return {
+    challengeId: challenge.id,
+    questionCount: selectedQuestions.length,
+    mode,
+    status: 'lobby',
+  };
+});
+
+exports.startGroupChallenge = onCall(callableOptions, async (request) => {
+  const uid = requireUser(request);
+  const groupId = requireText(request.data.groupId, 'group ID');
+  const challengeId = requireText(request.data.challengeId, 'challenge ID');
+
+  const group = db.doc(`groups/${groupId}`);
+  const membership = db.doc(`groups/${groupId}/members/${uid}`);
+  const challenge = db.doc(`groups/${groupId}/challenges/${challengeId}`);
+
+  const [groupSnap, memberSnap, challengeSnap] = await Promise.all([
+    group.get(), membership.get(), challenge.get(),
+  ]);
+
+  if (!groupSnap.exists || !memberSnap.exists || !challengeSnap.exists) {
+    throw new HttpsError('not-found', 'Challenge or group not found.');
+  }
+  if (memberSnap.get('role') !== 'owner') {
+    throw new HttpsError('permission-denied', 'Only the group owner can start the challenge.');
+  }
+
+  const currentStatus = challengeSnap.get('status') || (challengeSnap.get('active') ? 'active' : 'lobby');
+  if (currentStatus !== 'lobby') {
+    return { status: currentStatus, challengeId };
+  }
+
+  const mode = challengeSnap.get('mode') || 'competitive';
+  const now = FieldValue.serverTimestamp();
+  const updates = {
+    startedAt: now,
+  };
+
+  if (mode === 'fellowship') {
+    updates.status = 'question_open';
+    updates.currentQuestionIndex = 0;
+    updates.currentQuestionOpenedAt = now;
+    updates.answeredUids = [];
+  } else {
+    updates.status = 'active';
+  }
+
+  await challenge.update(updates);
+  return { status: updates.status, challengeId };
+});
+
+exports.submitFellowshipAnswer = onCall(callableOptions, async (request) => {
+  const uid = requireUser(request);
+  const groupId = requireText(request.data.groupId, 'group ID');
+  const challengeId = requireText(request.data.challengeId, 'challenge ID');
+  const questionIndex = Number(request.data.questionIndex);
+  const answerIndex = Number(
+    request.data.answerIndex !== undefined
+      ? request.data.answerIndex
+      : request.data.selectedOptionIndex
+  );
+
+  if (!Number.isInteger(questionIndex) || questionIndex < 0 ||
+      !Number.isInteger(answerIndex) || answerIndex < 0 || answerIndex > 3) {
+    throw new HttpsError('invalid-argument', 'Invalid answer parameter.');
+  }
+
+  const membership = await db.doc(`groups/${groupId}/members/${uid}`).get();
+  if (!membership.exists) {
+    throw new HttpsError('permission-denied', 'Only group members can submit answers.');
+  }
+
+  const challengeRef = db.doc(`groups/${groupId}/challenges/${challengeId}`);
+  const challengeSnap = await challengeRef.get();
+  if (!challengeSnap.exists) {
+    throw new HttpsError('not-found', 'Challenge not found.');
+  }
+
+  if (challengeSnap.get('status') !== 'question_open') {
+    throw new HttpsError('failed-precondition', 'Question is not currently open for answers.');
+  }
+
+  const currentQIndex = challengeSnap.get('currentQuestionIndex') || 0;
+  if (questionIndex !== currentQIndex) {
+    throw new HttpsError('failed-precondition', 'Can only answer the active question.');
+  }
+
+  const answerRef = challengeRef.collection('fellowshipAnswers').doc(`${questionIndex}_${uid}`);
+  const openedAt = challengeSnap.get('currentQuestionOpenedAt');
+  const responseTimeSeconds = openedAt && openedAt.toDate
+    ? Math.max(0, Math.floor((Date.now() - openedAt.toDate().getTime()) / 1000))
+    : 0;
+
+  const batch = db.batch();
+  batch.set(answerRef, {
+    uid,
+    questionIndex,
+    answerIndex,
+    answeredAt: FieldValue.serverTimestamp(),
+    responseTimeSeconds,
+  }, { merge: true });
+
+  batch.update(challengeRef, {
+    answeredUids: FieldValue.arrayUnion(uid),
+  });
+
+  await batch.commit();
+  return { success: true, questionIndex, answerIndex };
+});
+
+exports.revealFellowshipAnswer = onCall(callableOptions, async (request) => {
+  const uid = requireUser(request);
+  const groupId = requireText(request.data.groupId, 'group ID');
+  const challengeId = requireText(request.data.challengeId, 'challenge ID');
+
+  const membership = await db.doc(`groups/${groupId}/members/${uid}`).get();
+  if (!membership.exists || membership.get('role') !== 'owner') {
+    throw new HttpsError('permission-denied', 'Only the group owner can reveal answers.');
+  }
+
+  const challengeRef = db.doc(`groups/${groupId}/challenges/${challengeId}`);
+  const challengeSnap = await challengeRef.get();
+  if (!challengeSnap.exists) {
+    throw new HttpsError('not-found', 'Challenge not found.');
+  }
+
+  if (challengeSnap.get('status') !== 'question_open') {
+    throw new HttpsError('failed-precondition', 'Question must be open before revealing.');
+  }
+
+  const catalogue = challengeSnap.get('catalogue') || 'faith-quiz-global-v1';
+  const currentQIndex = challengeSnap.get('currentQuestionIndex') || 0;
+  const questions = challengeSnap.get('questions') || [];
+  if (currentQIndex >= questions.length) {
+    throw new HttpsError('out-of-range', 'Invalid question index.');
+  }
+
+  const q = questions[currentQIndex];
+  const privateAnswer = await db.doc(`contentPrivate/${catalogue}/answers/${q.id}`).get();
+  const correctAnswer = privateAnswer.exists ? privateAnswer.get('correctAnswer') : 0;
+  const explanation = privateAnswer.exists ? (privateAnswer.get('explanation') || '') : '';
+  const scriptureReference = q.scriptureReference || '';
+
+  await challengeRef.update({
+    status: 'question_revealed',
+    revealedAnswer: correctAnswer,
+    revealedExplanation: explanation,
+    revealedScriptureReference: scriptureReference,
+    revealedAt: FieldValue.serverTimestamp(),
+  });
+
+  return {
+    status: 'question_revealed',
+    currentQuestionIndex: currentQIndex,
+    revealedAnswer: correctAnswer,
+    revealedExplanation: explanation,
+    revealedScriptureReference: scriptureReference,
+  };
+});
+
+exports.advanceFellowshipQuestion = onCall(callableOptions, async (request) => {
+  const uid = requireUser(request);
+  const groupId = requireText(request.data.groupId, 'group ID');
+  const challengeId = requireText(request.data.challengeId, 'challenge ID');
+
+  const membership = await db.doc(`groups/${groupId}/members/${uid}`).get();
+  if (!membership.exists || membership.get('role') !== 'owner') {
+    throw new HttpsError('permission-denied', 'Only the group owner can advance questions.');
+  }
+
+  const challengeRef = db.doc(`groups/${groupId}/challenges/${challengeId}`);
+  const challengeSnap = await challengeRef.get();
+  if (!challengeSnap.exists) {
+    throw new HttpsError('not-found', 'Challenge not found.');
+  }
+
+  if (challengeSnap.get('status') !== 'question_revealed') {
+    throw new HttpsError('failed-precondition', 'Answer must be revealed before advancing.');
+  }
+
+  const currentQIndex = challengeSnap.get('currentQuestionIndex') || 0;
+  const questions = challengeSnap.get('questions') || [];
+  const nextIndex = currentQIndex + 1;
+
+  if (nextIndex < questions.length) {
+    // Advance to next question
+    await challengeRef.update({
+      status: 'question_open',
+      currentQuestionIndex: nextIndex,
+      currentQuestionOpenedAt: FieldValue.serverTimestamp(),
+      revealedAnswer: FieldValue.delete(),
+      revealedExplanation: FieldValue.delete(),
+      revealedScriptureReference: FieldValue.delete(),
+      answeredUids: [],
+    });
+    return {
+      status: 'question_open',
+      currentQuestionIndex: nextIndex,
+    };
+  }
+
+  // All questions finished! Complete fellowship and grade all members!
+  const catalogue = challengeSnap.get('catalogue') || 'faith-quiz-global-v1';
+  const questionIds = challengeSnap.get('questionIds') || questions.map((q) => q.id);
+
+  // Fetch all answer docs from contentPrivate in batch
+  const answerRefs = questionIds.map((qId) => db.doc(`contentPrivate/${catalogue}/answers/${qId}`));
+  const answerSnaps = await db.getAll(...answerRefs);
+  const correctMap = new Map();
+  answerSnaps.forEach((doc) => {
+    if (doc.exists) correctMap.set(doc.id, doc.get('correctAnswer'));
+  });
+
+  // Fetch all fellowshipAnswers
+  const allAnswersSnap = await challengeRef.collection('fellowshipAnswers').get();
+  const userAnswers = new Map(); // uid -> Map(qIndex -> { answerIndex, responseTime })
+  allAnswersSnap.docs.forEach((d) => {
+    const data = d.data();
+    if (!userAnswers.has(data.uid)) userAnswers.set(data.uid, new Map());
+    userAnswers.get(data.uid).set(data.questionIndex, {
+      answerIndex: data.answerIndex,
+      responseTime: data.responseTimeSeconds || 0,
+    });
+  });
+
+  // Fetch members to get displayNames
+  const membersSnap = await db.collection(`groups/${groupId}/members`).get();
+  const nameMap = new Map();
+  membersSnap.docs.forEach((d) => {
+    nameMap.set(d.id, d.get('displayName') || 'Faith learner');
+  });
+
+  const batch = db.batch();
+  for (const [memberUid, answersMap] of userAnswers.entries()) {
+    let score = 0;
+    let totalResponseTime = 0;
+    for (let i = 0; i < questions.length; i++) {
+      const q = questions[i];
+      const correctAns = correctMap.get(q.id);
+      const userAns = answersMap.get(i);
+      if (userAns && userAns.answerIndex === correctAns) {
+        score++;
+      }
+      if (userAns) {
+        totalResponseTime += userAns.responseTime;
+      }
+    }
+
+    const entryRef = challengeRef.collection('entries').doc(memberUid);
+    batch.set(entryRef, {
+      displayName: nameMap.get(memberUid) || 'Faith learner',
+      score,
+      total: questions.length,
+      correct: score === questions.length,
+      elapsedSeconds: totalResponseTime,
+      verified: true,
+      updatedAt: FieldValue.serverTimestamp(),
+    }, { merge: true });
+  }
+
+  batch.update(challengeRef, {
+    status: 'completed',
+    completedAt: FieldValue.serverTimestamp(),
+  });
+
+  await batch.commit();
+  return { status: 'completed' };
 });
 
 exports.submitGroupChallenge = onCall(callableOptions, async (request) => {
   const uid = requireUser(request);
   const groupId = requireText(request.data.groupId, 'group ID');
   const challengeId = requireText(request.data.challengeId, 'challenge ID');
-  const elapsedSeconds = Number(request.data.elapsedSeconds) || 0;
+  const clientElapsedSeconds = Number(request.data.elapsedSeconds) || 0;
   const displayName = leaderboardName(request.data.displayName);
 
   const membership = db.doc(`groups/${groupId}/members/${uid}`);
@@ -527,7 +820,7 @@ exports.submitGroupChallenge = onCall(callableOptions, async (request) => {
   const [membershipSnapshot, challengeSnapshot] = await Promise.all([
     membership.get(), challenge.get(),
   ]);
-  if (!membershipSnapshot.exists || !challengeSnapshot.exists || challengeSnapshot.get('active') !== true) {
+  if (!membershipSnapshot.exists || !challengeSnapshot.exists) {
     throw new HttpsError('not-found', 'Group challenge is unavailable.');
   }
 
@@ -538,6 +831,20 @@ exports.submitGroupChallenge = onCall(callableOptions, async (request) => {
     const answers = request.data.answers;
     const questions = challengeSnapshot.get('questions') || [];
     const questionIds = challengeSnapshot.get('questionIds') || questions.map((q) => q.id);
+
+    // Strict validation of answer array length
+    if (answers.length !== questions.length) {
+      throw new HttpsError('invalid-argument', 'Answer count does not match challenge questions.');
+    }
+
+    // Server-verified elapsed time
+    const startedAt = challengeSnapshot.get('startedAt');
+    let elapsedSeconds = clientElapsedSeconds;
+    if (startedAt && startedAt.toDate) {
+      const serverElapsed = Math.max(1, Math.floor((Date.now() - startedAt.toDate().getTime()) / 1000));
+      elapsedSeconds = Math.min(serverElapsed, clientElapsedSeconds > 0 ? clientElapsedSeconds : serverElapsed);
+    }
+    elapsedSeconds = Math.min(7200, Math.max(0, elapsedSeconds));
 
     // Fetch all answers in a single batch read from contentPrivate
     const answerRefs = questionIds.map((qId) =>
@@ -572,39 +879,45 @@ exports.submitGroupChallenge = onCall(callableOptions, async (request) => {
     }
 
     const entry = challenge.collection('entries').doc(uid);
+    let finalScore = score;
+    let finalElapsed = elapsedSeconds;
+    let isAlreadySubmitted = false;
+
     await db.runTransaction(async (transaction) => {
       const previous = await transaction.get(entry);
       if (previous.exists) {
-        throw new HttpsError(
-          'already-exists',
-          'Each verified group challenge may be submitted only once.',
-        );
+        // Idempotent: return existing stored result
+        finalScore = previous.get('score') || score;
+        finalElapsed = previous.get('elapsedSeconds') || elapsedSeconds;
+        isAlreadySubmitted = true;
+        return;
       }
       transaction.set(entry, {
         displayName,
         score,
         total: questions.length,
         correct: score === questions.length,
-        elapsedSeconds: Math.min(3600, Math.max(0, elapsedSeconds)),
+        elapsedSeconds,
         verified: true,
         updatedAt: FieldValue.serverTimestamp(),
       }, { merge: true });
     });
 
     return {
-      score,
+      score: finalScore,
       total: questions.length,
-      elapsedSeconds,
+      elapsedSeconds: finalElapsed,
       breakdown,
       challengeId,
-      correct: score > 0,
+      correct: finalScore > 0,
+      alreadySubmitted: isAlreadySubmitted,
     };
   }
 
   // Single-question legacy challenge
   const answerIndex = request.data.answerIndex;
   if (!Number.isInteger(answerIndex) || answerIndex < 0 || answerIndex > 3 ||
-      !Number.isInteger(elapsedSeconds) || elapsedSeconds < 0 || elapsedSeconds > 600) {
+      !Number.isInteger(clientElapsedSeconds) || clientElapsedSeconds < 0 || clientElapsedSeconds > 600) {
     throw new HttpsError('invalid-argument', 'Invalid answer submission.');
   }
   const questionId = challengeSnapshot.get('questionId');
@@ -612,25 +925,26 @@ exports.submitGroupChallenge = onCall(callableOptions, async (request) => {
   if (!answer.exists) throw new HttpsError('not-found', 'Challenge answer is unavailable.');
   const correct = answerIndex === answer.get('correctAnswer');
   const entry = challenge.collection('entries').doc(uid);
+
+  let legacyScore = correct ? 1 : 0;
   await db.runTransaction(async (transaction) => {
     const previous = await transaction.get(entry);
     if (previous.exists) {
-      throw new HttpsError(
-        'already-exists',
-        'Each verified group challenge may be submitted only once.',
-      );
+      legacyScore = previous.get('score') || legacyScore;
+      return;
     }
     transaction.set(entry, {
       displayName,
       score: correct ? 1 : 0,
       total: 1,
       correct,
-      elapsedSeconds,
+      elapsedSeconds: clientElapsedSeconds,
       verified: true,
       updatedAt: FieldValue.serverTimestamp(),
     }, { merge: true });
   });
-  return { correct, score: correct ? 1 : 0, total: 1, challengeId };
+
+  return { correct, score: legacyScore, total: 1, challengeId };
 });
 
 // Requires the Blaze plan when deployed because Cloud Scheduler invokes it.

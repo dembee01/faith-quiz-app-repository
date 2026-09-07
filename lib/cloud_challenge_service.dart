@@ -135,6 +135,8 @@ abstract interface class CloudGroupGateway {
   Future<void> signOut();
   Stream<List<QuizGroup>> myGroups();
   Stream<List<GroupChallenge>> groupChallenges(String groupId);
+  Stream<QuizGroup> streamGroup(String groupId);
+  Stream<GroupChallenge> streamChallenge(String groupId, String challengeId);
   Future<CloudChallenge?> loadToday();
   Future<String> createGroup(String name, {int durationMinutes = 10});
   Future<void> joinGroup(String groupId);
@@ -147,6 +149,28 @@ abstract interface class CloudGroupGateway {
     required String groupId,
     required int questionCount,
     String? title,
+    String mode = 'competitive',
+  });
+  Future<void> startGroupChallenge({
+    required String groupId,
+    required String challengeId,
+  });
+  Future<void> submitFellowshipAnswer({
+    required String groupId,
+    required String challengeId,
+    required int questionIndex,
+    required String questionId,
+    required int selectedOptionIndex,
+    required int responseLatencyMs,
+    String? username,
+  });
+  Future<void> revealFellowshipAnswer({
+    required String groupId,
+    required String challengeId,
+  });
+  Future<void> advanceFellowshipQuestion({
+    required String groupId,
+    required String challengeId,
   });
   Future<CloudSubmission> submitGroupChallenge({
     required String groupId,
@@ -235,9 +259,9 @@ class QuizGroup {
   }
 
   factory QuizGroup.fromDocument(
-    QueryDocumentSnapshot<Map<String, dynamic>> document,
+    DocumentSnapshot<Map<String, dynamic>> document,
   ) {
-    final data = document.data();
+    final data = document.data() ?? const <String, dynamic>{};
     DateTime? exp;
     final rawExp = data['expiresAt'];
     if (rawExp is Timestamp) {
@@ -245,10 +269,14 @@ class QuizGroup {
     } else if (rawExp is String) {
       exp = DateTime.tryParse(rawExp);
     }
+    final currentUid = FirebaseAuth.instance.currentUser?.uid;
+    final ownerId = data['ownerId'] as String?;
+    final role = data['role'] as String? ??
+        (ownerId != null && ownerId == currentUid ? 'owner' : 'member');
     return QuizGroup(
       id: document.id,
       name: data['name'] as String? ?? 'Faith Quiz group',
-      role: data['role'] as String? ?? 'member',
+      role: role,
       joinCode: data['joinCode'] as String?,
       expiresAt: exp,
       durationMinutes: (data['durationMinutes'] as num?)?.toInt(),
@@ -296,6 +324,17 @@ class GroupChallenge {
     required this.explanation,
     required this.scriptureReference,
     this.items = const [],
+    this.mode = 'competitive',
+    this.status = 'active',
+    this.currentQuestionIndex = 0,
+    this.startedAt,
+    this.currentQuestionOpenedAt,
+    this.revealedAt,
+    this.revealedAnswer,
+    this.revealedExplanation,
+    this.revealedScriptureReference,
+    this.answeredUids = const [],
+    this.ownerId,
   });
 
   final String id;
@@ -306,11 +345,29 @@ class GroupChallenge {
   final String explanation;
   final String scriptureReference;
   final List<GroupChallengeItem> items;
+  final String mode; // 'competitive' or 'fellowship'
+  final String status; // 'lobby', 'active', 'question_open', 'question_revealed', 'completed'
+  final int currentQuestionIndex;
+  final DateTime? startedAt;
+  final DateTime? currentQuestionOpenedAt;
+  final DateTime? revealedAt;
+  final int? revealedAnswer;
+  final String? revealedExplanation;
+  final String? revealedScriptureReference;
+  final List<String> answeredUids;
+  final String? ownerId;
+
+  bool get isCompetitive => mode == 'competitive';
+  bool get isFellowship => mode == 'fellowship';
+  bool get isLobby => status == 'lobby';
+  bool get isCompleted => status == 'completed';
+  bool get isQuestionOpen => status == 'question_open';
+  bool get isQuestionRevealed => status == 'question_revealed';
 
   factory GroupChallenge.fromDocument(
-    QueryDocumentSnapshot<Map<String, dynamic>> document,
+    DocumentSnapshot<Map<String, dynamic>> document,
   ) {
-    final data = document.data();
+    final data = document.data() ?? const <String, dynamic>{};
     final rawQuestions = data['questions'] as List?;
     final items = rawQuestions != null
         ? rawQuestions
@@ -318,6 +375,18 @@ class GroupChallenge {
             .map((m) => GroupChallengeItem.fromMap(Map<String, dynamic>.from(m)))
             .toList()
         : const <GroupChallengeItem>[];
+
+    DateTime? parseTimestamp(dynamic val) {
+      if (val is Timestamp) return val.toDate();
+      if (val is String) return DateTime.tryParse(val);
+      return null;
+    }
+
+    final rawAnswered = data['answeredUids'] as List?;
+    final answeredUids = rawAnswered != null
+        ? rawAnswered.whereType<String>().toList()
+        : const <String>[];
+
     return GroupChallenge(
       id: document.id,
       title: data['title'] as String? ?? 'Bible Challenge',
@@ -332,6 +401,17 @@ class GroupChallenge {
       scriptureReference: data['scriptureReference'] as String? ??
           (items.isNotEmpty ? items.first.scriptureReference : ''),
       items: items,
+      mode: data['mode'] as String? ?? 'competitive',
+      status: data['status'] as String? ?? 'active',
+      currentQuestionIndex: (data['currentQuestionIndex'] as num?)?.toInt() ?? 0,
+      startedAt: parseTimestamp(data['startedAt']),
+      currentQuestionOpenedAt: parseTimestamp(data['currentQuestionOpenedAt']),
+      revealedAt: parseTimestamp(data['revealedAt']),
+      revealedAnswer: (data['revealedAnswer'] as num?)?.toInt(),
+      revealedExplanation: data['revealedExplanation'] as String?,
+      revealedScriptureReference: data['revealedScriptureReference'] as String?,
+      answeredUids: answeredUids,
+      ownerId: data['ownerId'] as String?,
     );
   }
 }
@@ -566,6 +646,25 @@ class CloudChallengeService
       );
 
   @override
+  Stream<QuizGroup> streamGroup(String groupId) => _firestore
+      .collection('groups')
+      .doc(groupId)
+      .snapshots()
+      .where((doc) => doc.exists && doc.data() != null)
+      .map((doc) => QuizGroup.fromDocument(doc));
+
+  @override
+  Stream<GroupChallenge> streamChallenge(String groupId, String challengeId) =>
+      _firestore
+          .collection('groups')
+          .doc(groupId)
+          .collection('challenges')
+          .doc(challengeId)
+          .snapshots()
+          .where((doc) => doc.exists && doc.data() != null)
+          .map((doc) => GroupChallenge.fromDocument(doc));
+
+  @override
   Stream<List<LeaderboardEntry>> groupLeaderboard(
     String groupId,
     String challengeId,
@@ -701,6 +800,7 @@ class CloudChallengeService
     required String groupId,
     required int questionCount,
     String? title,
+    String mode = 'competitive',
   }) async {
     await _user();
     final result = await _functions
@@ -709,9 +809,69 @@ class CloudChallengeService
           'groupId': groupId,
           'catalogue': RemoteFeatureService.instance.activeCloudCatalogue,
           'questionCount': questionCount,
+          'mode': mode,
           'title': ?title,
         });
     return (result.data as Map)['challengeId'] as String;
+  }
+
+  @override
+  Future<void> startGroupChallenge({
+    required String groupId,
+    required String challengeId,
+  }) async {
+    await _user();
+    await _functions.httpsCallable('startGroupChallenge').call(<String, Object>{
+      'groupId': groupId,
+      'challengeId': challengeId,
+    });
+  }
+
+  @override
+  Future<void> submitFellowshipAnswer({
+    required String groupId,
+    required String challengeId,
+    required int questionIndex,
+    required String questionId,
+    required int selectedOptionIndex,
+    required int responseLatencyMs,
+    String? username,
+  }) async {
+    await _user();
+    await _functions.httpsCallable('submitFellowshipAnswer').call(<String, Object>{
+      'groupId': groupId,
+      'challengeId': challengeId,
+      'questionIndex': questionIndex,
+      'questionId': questionId,
+      'answerIndex': selectedOptionIndex,
+      'selectedOptionIndex': selectedOptionIndex,
+      'responseLatencyMs': responseLatencyMs,
+      'username': ?username,
+    });
+  }
+
+  @override
+  Future<void> revealFellowshipAnswer({
+    required String groupId,
+    required String challengeId,
+  }) async {
+    await _user();
+    await _functions.httpsCallable('revealFellowshipAnswer').call(<String, Object>{
+      'groupId': groupId,
+      'challengeId': challengeId,
+    });
+  }
+
+  @override
+  Future<void> advanceFellowshipQuestion({
+    required String groupId,
+    required String challengeId,
+  }) async {
+    await _user();
+    await _functions.httpsCallable('advanceFellowshipQuestion').call(<String, Object>{
+      'groupId': groupId,
+      'challengeId': challengeId,
+    });
   }
 
   @override

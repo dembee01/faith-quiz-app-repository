@@ -3507,6 +3507,8 @@ class GroupDetailScreen extends StatefulWidget {
 class _GroupDetailScreenState extends State<GroupDetailScreen> {
   late final CloudGroupGateway _service;
   late final Stream<List<GroupChallenge>> _challengesStream;
+  StreamSubscription<QuizGroup>? _groupSub;
+  late QuizGroup _currentGroup;
   bool _publishing = false;
   bool _extending = false;
   Timer? _countdownTimer;
@@ -3516,8 +3518,17 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
   void initState() {
     super.initState();
     _service = widget.service ?? CloudChallengeService();
+    _currentGroup = widget.group;
     _challengesStream = _service.groupChallenges(widget.group.id);
     _expiresAt = widget.group.expiresAt;
+    _groupSub = _service.streamGroup(widget.group.id).listen((updated) {
+      if (mounted) {
+        setState(() {
+          _currentGroup = updated;
+          _expiresAt = updated.expiresAt;
+        });
+      }
+    });
     if (_expiresAt != null) {
       _countdownTimer = Timer.periodic(const Duration(seconds: 1), (_) {
         if (mounted) setState(() {});
@@ -3528,6 +3539,7 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
   @override
   void dispose() {
     _countdownTimer?.cancel();
+    _groupSub?.cancel();
     super.dispose();
   }
 
@@ -3568,30 +3580,33 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
     );
   }
 
-  Future<void> _createQuiz(int count) async {
+  Future<void> _createQuiz(int count, String mode) async {
     if (_publishing) return;
     setState(() => _publishing = true);
     try {
-      final id = await _service.createGroupQuiz(
+      final modeLabel = mode == 'fellowship' ? 'Fellowship' : 'Competitive';
+      await _service.createGroupQuiz(
         groupId: widget.group.id,
         questionCount: count,
-        title: '${widget.group.name} Challenge ($count Qs)',
+        mode: mode,
+        title: '${_currentGroup.name} $modeLabel ($count Qs)',
       );
       if (mounted) {
         ScaffoldMessenger.maybeOf(context)?.showSnackBar(
           SnackBar(
             content: Text(
-              'Group challenge with $count questions published: $id',
+              '$modeLabel challenge with $count questions published!',
             ),
           ),
         );
       }
-    } catch (_) {
+    } catch (e) {
       if (mounted) {
+        final message = e is FirebaseFunctionsException && e.message != null
+            ? e.message!
+            : 'The group challenge could not be published.';
         ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-          const SnackBar(
-            content: Text('The group challenge could not be published.'),
-          ),
+          SnackBar(content: Text(message)),
         );
       }
     } finally {
@@ -3600,61 +3615,214 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
   }
 
   void _showCreateQuizDialog() {
+    String selectedMode = 'competitive';
+    int selectedCount = 10;
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: _slateSurface,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (sheetContext) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Text(
-                'NEW GROUP CHALLENGE',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: _gold,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.2,
+      builder: (sheetContext) => StatefulBuilder(
+        builder: (context, setSheetState) => SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Text(
+                  'NEW GROUP CHALLENGE',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: _gold,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.2,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Choose question count. Questions rotate and alternate Old and New Testaments.',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: _slateTextSecondary, fontSize: 13),
-              ),
-              const SizedBox(height: 20),
-              for (final count in const [10, 20, 30]) ...[
-                OutlinedButton(
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    side: const BorderSide(color: _gold, width: 1.2),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
+                const SizedBox(height: 16),
+                const Text(
+                  'SELECT CHALLENGE MODE',
+                  style: TextStyle(
+                    color: _slateTextSecondary,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.0,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: InkWell(
+                        onTap: () => setSheetState(() => selectedMode = 'competitive'),
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                          decoration: BoxDecoration(
+                            color: selectedMode == 'competitive'
+                                ? _gold.withValues(alpha: .18)
+                                : _slateSurfaceVariant,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: selectedMode == 'competitive' ? _gold : Colors.white12,
+                              width: selectedMode == 'competitive' ? 1.5 : 1.0,
+                            ),
+                          ),
+                          child: Column(
+                            children: [
+                              Icon(
+                                Icons.speed,
+                                color: selectedMode == 'competitive' ? _gold : _slateTextSecondary,
+                                size: 24,
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                'COMPETITIVE',
+                                style: TextStyle(
+                                  color: selectedMode == 'competitive' ? _gold : _slateTextPrimary,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              const Text(
+                                'Self-paced\nTie-break by time',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: _slateTextSecondary,
+                                  fontSize: 10,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: InkWell(
+                        onTap: () => setSheetState(() => selectedMode = 'fellowship'),
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                          decoration: BoxDecoration(
+                            color: selectedMode == 'fellowship'
+                                ? _gold.withValues(alpha: .18)
+                                : _slateSurfaceVariant,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: selectedMode == 'fellowship' ? _gold : Colors.white12,
+                              width: selectedMode == 'fellowship' ? 1.5 : 1.0,
+                            ),
+                          ),
+                          child: Column(
+                            children: [
+                              Icon(
+                                Icons.groups_outlined,
+                                color: selectedMode == 'fellowship' ? _gold : _slateTextSecondary,
+                                size: 24,
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                'FELLOWSHIP',
+                                style: TextStyle(
+                                  color: selectedMode == 'fellowship' ? _gold : _slateTextPrimary,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              const Text(
+                                'Host-led study\nReveal & discuss',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: _slateTextSecondary,
+                                  fontSize: 10,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 18),
+                const Text(
+                  'SELECT QUESTION COUNT',
+                  style: TextStyle(
+                    color: _slateTextSecondary,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.0,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                for (final count in const [10, 20, 30]) ...[
+                  InkWell(
+                    onTap: () => setSheetState(() => selectedCount = count),
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                      decoration: BoxDecoration(
+                        color: selectedCount == count
+                            ? _gold.withValues(alpha: .15)
+                            : _slateSurfaceVariant,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: selectedCount == count ? _gold : Colors.white10,
+                          width: selectedCount == count ? 1.5 : 1.0,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            selectedCount == count
+                                ? Icons.radio_button_checked
+                                : Icons.radio_button_off,
+                            color: selectedCount == count ? _gold : _slateTextSecondary,
+                            size: 18,
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            '$count QUESTIONS',
+                            style: TextStyle(
+                              color: selectedCount == count ? _gold : _slateTextPrimary,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                          ),
+                          const Spacer(),
+                          Text(
+                            count == 10
+                                ? 'Quick'
+                                : count == 20
+                                    ? 'Standard'
+                                    : 'Deep Study',
+                            style: const TextStyle(
+                              color: _slateTextSecondary,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
+                ],
+                const SizedBox(height: 12),
+                SlatePillButton(
+                  label: 'CREATE CHALLENGE',
                   onPressed: () {
                     Navigator.of(sheetContext).pop();
-                    _createQuiz(count);
+                    _createQuiz(selectedCount, selectedMode);
                   },
-                  child: Text(
-                    '$count QUESTIONS ${count == 10 ? '• QUICK' : count == 20 ? '• STANDARD' : '• DEEP STUDY (MAX)'}',
-                    style: const TextStyle(
-                      color: _slateTextPrimary,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                    ),
-                  ),
                 ),
-                const SizedBox(height: 10),
               ],
-            ],
+            ),
           ),
         ),
       ),
@@ -3672,7 +3840,7 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
             padding: const EdgeInsets.fromLTRB(22, 16, 22, 40),
             child: Column(
               children: [
-                SlatePageHeader(title: widget.group.name.toUpperCase()),
+                SlatePageHeader(title: _currentGroup.name.toUpperCase()),
                 const SizedBox(height: 10),
                 Container(
                   padding: const EdgeInsets.symmetric(
@@ -3695,7 +3863,7 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                widget.group.joinCode != null
+                                _currentGroup.joinCode != null
                                     ? 'JOIN CODE'
                                     : 'GROUP ID',
                                 style: const TextStyle(
@@ -3703,11 +3871,11 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
                                   fontSize: 10,
                                   letterSpacing: 1.2,
                                   fontWeight: FontWeight.bold,
-                                ),
+                                  ),
                               ),
                               const SizedBox(height: 2),
                               SelectableText(
-                                widget.group.joinCode ?? widget.group.id,
+                                _currentGroup.joinCode ?? _currentGroup.id,
                                 style: const TextStyle(
                                   color: _gold,
                                   fontSize: 20,
@@ -3719,7 +3887,7 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
                           ),
                           FilledButton.tonalIcon(
                             onPressed: () => _copyCode(
-                              widget.group.joinCode ?? widget.group.id,
+                              _currentGroup.joinCode ?? _currentGroup.id,
                             ),
                             icon: const Icon(
                               Icons.copy,
@@ -3774,7 +3942,7 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
                                     ),
                                   ],
                                 ),
-                                if (widget.group.isOwner)
+                                if (_currentGroup.isOwner)
                                   TextButton.icon(
                                     onPressed: _extending ? null : _extendGroup,
                                     icon: const Icon(
@@ -3805,7 +3973,7 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
                     ],
                   ),
                 ),
-                if (widget.group.role == 'owner') ...[
+                if (_currentGroup.isOwner) ...[
                   const SizedBox(height: 12),
                   SlatePillButton(
                     label: _publishing
@@ -3819,67 +3987,1001 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
                         : _showCreateQuizDialog,
                   ),
                 ],
-              const SizedBox(height: 18),
-              Expanded(
-                child: StreamBuilder<List<GroupChallenge>>(
-                  stream: _challengesStream,
-                  builder: (context, snapshot) {
-                    if (snapshot.hasError) {
-                      return const Center(
-                        child: Text('Group challenges are unavailable.'),
-                      );
-                    }
-                    if (!snapshot.hasData) {
-                      return const Center(
-                        child: CircularProgressIndicator(color: _gold),
-                      );
-                    }
-                    final challenges = snapshot.data!;
-                    if (challenges.isEmpty) {
-                      return const Center(
-                        child: Text(
-                          'The owner has not published a group challenge yet.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(color: _slateTextSecondary),
-                        ),
-                      );
-                    }
-                    return ListView.separated(
-                      itemCount: challenges.length,
-                      separatorBuilder: (_, _) => const SizedBox(height: 10),
-                      itemBuilder: (context, index) {
-                        final challenge = challenges[index];
-                        final count = challenge.questionCount;
-                        final countLabel =
-                            count > 1 ? '$count Questions' : '1 Question';
-                        return SlateSettingCard(
-                          title: challenge.title.isNotEmpty
-                              ? challenge.title
-                              : 'Verified group challenge',
-                          subtitle:
-                              '$countLabel • Timed session • Deferred results',
-                          icon: Icons.quiz_outlined,
-                          onTap: () => Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => GroupQuestionScreen(
-                                store: widget.store,
-                                groupId: widget.group.id,
-                                challenge: challenge,
-                                service: _service,
-                              ),
-                            ),
+                const SizedBox(height: 18),
+                Expanded(
+                  child: StreamBuilder<List<GroupChallenge>>(
+                    stream: _challengesStream,
+                    builder: (context, snapshot) {
+                      if (snapshot.hasError) {
+                        return const Center(
+                          child: Text('Group challenges are unavailable.'),
+                        );
+                      }
+                      if (!snapshot.hasData) {
+                        return const Center(
+                          child: CircularProgressIndicator(color: _gold),
+                        );
+                      }
+                      final challenges = snapshot.data!;
+                      if (challenges.isEmpty) {
+                        return const Center(
+                          child: Text(
+                            'The owner has not published a group challenge yet.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: _slateTextSecondary),
                           ),
                         );
-                      },
+                      }
+                      return ListView.separated(
+                        itemCount: challenges.length,
+                        separatorBuilder: (_, _) => const SizedBox(height: 10),
+                        itemBuilder: (context, index) {
+                          final challenge = challenges[index];
+                          final count = challenge.questionCount;
+                          final countLabel =
+                              count > 1 ? '$count Questions' : '1 Question';
+                          final modeLabel = challenge.isFellowship
+                              ? 'Fellowship'
+                              : 'Competitive';
+                          final statusLabel = challenge.isLobby
+                              ? 'Lobby (Tap to enter)'
+                              : challenge.isCompleted
+                                  ? 'Completed'
+                                  : 'In Progress';
+                          return SlateSettingCard(
+                            title: challenge.title.isNotEmpty
+                                ? challenge.title
+                                : '$modeLabel Bible Challenge',
+                            subtitle:
+                                '$modeLabel • $countLabel • $statusLabel',
+                            icon: challenge.isFellowship
+                                ? Icons.groups_outlined
+                                : Icons.speed,
+                            onTap: () {
+                              if (challenge.isLobby) {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) => GroupLobbyScreen(
+                                      store: widget.store,
+                                      groupId: widget.group.id,
+                                      challenge: challenge,
+                                      group: _currentGroup,
+                                      service: _service,
+                                    ),
+                                  ),
+                                );
+                              } else if (challenge.isFellowship) {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) => FellowshipQuestionScreen(
+                                      store: widget.store,
+                                      groupId: widget.group.id,
+                                      challenge: challenge,
+                                      service: _service,
+                                    ),
+                                  ),
+                                );
+                              } else {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) => GroupQuestionScreen(
+                                      store: widget.store,
+                                      groupId: widget.group.id,
+                                      challenge: challenge,
+                                      service: _service,
+                                    ),
+                                  ),
+                                );
+                              }
+                            },
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class GroupLobbyScreen extends StatefulWidget {
+  const GroupLobbyScreen({
+    super.key,
+    required this.store,
+    required this.groupId,
+    required this.challenge,
+    required this.group,
+    this.service,
+  });
+
+  final ProgressStore store;
+  final String groupId;
+  final GroupChallenge challenge;
+  final QuizGroup group;
+  final CloudGroupGateway? service;
+
+  @override
+  State<GroupLobbyScreen> createState() => _GroupLobbyScreenState();
+}
+
+class _GroupLobbyScreenState extends State<GroupLobbyScreen> {
+  late final CloudGroupGateway _service;
+  late final Stream<GroupChallenge> _challengeStream;
+  late final Stream<QuizGroup> _groupStream;
+  bool _starting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _service = widget.service ?? CloudChallengeService();
+    _challengeStream = _service.streamChallenge(widget.groupId, widget.challenge.id);
+    _groupStream = _service.streamGroup(widget.groupId);
+  }
+
+  Future<void> _startChallenge() async {
+    if (_starting) return;
+    setState(() => _starting = true);
+    try {
+      await _service.startGroupChallenge(
+        groupId: widget.groupId,
+        challengeId: widget.challenge.id,
+      );
+    } catch (e) {
+      if (mounted) {
+        final message = e is FirebaseFunctionsException && e.message != null
+            ? e.message!
+            : 'Could not start challenge. Please try again.';
+        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+          SnackBar(content: Text(message)),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _starting = false);
+    }
+  }
+
+  void _copyCode(String code) {
+    Clipboard.setData(ClipboardData(text: code));
+    ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+      SnackBar(content: Text('Copied "$code" to clipboard!')),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: DivineBackground(
+        reduceMotion: widget.store.reduceMotion,
+        child: SafeArea(
+          child: StreamBuilder<GroupChallenge>(
+            stream: _challengeStream,
+            initialData: widget.challenge,
+            builder: (context, challengeSnap) {
+              final challenge = challengeSnap.data ?? widget.challenge;
+
+              if (!challenge.isLobby) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (!mounted) return;
+                  if (challenge.isFellowship) {
+                    Navigator.of(context).pushReplacement(
+                      MaterialPageRoute(
+                        builder: (_) => FellowshipQuestionScreen(
+                          store: widget.store,
+                          groupId: widget.groupId,
+                          challenge: challenge,
+                          service: _service,
+                        ),
+                      ),
                     );
-                  },
+                  } else {
+                    Navigator.of(context).pushReplacement(
+                      MaterialPageRoute(
+                        builder: (_) => GroupQuestionScreen(
+                          store: widget.store,
+                          groupId: widget.groupId,
+                          challenge: challenge,
+                          service: _service,
+                        ),
+                      ),
+                    );
+                  }
+                });
+              }
+
+              final isHost = widget.group.isOwner ||
+                  (challenge.ownerId != null &&
+                      challenge.ownerId == _service.currentUser?.uid);
+
+              return StreamBuilder<QuizGroup>(
+                stream: _groupStream,
+                initialData: widget.group,
+                builder: (context, groupSnap) {
+                  final group = groupSnap.data ?? widget.group;
+                  final remaining = group.remainingTime;
+                  final remainingStr = remaining != null
+                      ? '${remaining.inMinutes}:${(remaining.inSeconds % 60).toString().padLeft(2, '0')} remaining'
+                      : 'Active Session';
+
+                  return Padding(
+                    padding: const EdgeInsets.fromLTRB(22, 16, 22, 40),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const SlatePageHeader(title: 'CHALLENGE LOBBY'),
+                        const SizedBox(height: 16),
+                        Container(
+                          padding: const EdgeInsets.all(18),
+                          decoration: BoxDecoration(
+                            color: _slateSurface,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: Colors.white12),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          group.name.toUpperCase(),
+                                          style: const TextStyle(
+                                            color: _slateTextPrimary,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 16,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          remainingStr,
+                                          style: const TextStyle(
+                                            color: _gold,
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  if (group.joinCode != null)
+                                    FilledButton.tonalIcon(
+                                      onPressed: () =>
+                                          _copyCode(group.joinCode!),
+                                      icon: const Icon(
+                                        Icons.copy,
+                                        size: 14,
+                                        color: _gold,
+                                      ),
+                                      label: Text(
+                                        group.joinCode!,
+                                        style: const TextStyle(
+                                          color: _gold,
+                                          fontWeight: FontWeight.bold,
+                                          letterSpacing: 1.5,
+                                        ),
+                                      ),
+                                      style: FilledButton.styleFrom(
+                                        backgroundColor: _slateSurfaceVariant,
+                                        visualDensity: VisualDensity.compact,
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        SlateCard(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(
+                                    challenge.isFellowship
+                                        ? Icons.groups_outlined
+                                        : Icons.speed,
+                                    color: _gold,
+                                    size: 24,
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Text(
+                                      challenge.isFellowship
+                                          ? 'FELLOWSHIP / HOST-LED MODE'
+                                          : 'COMPETITIVE MODE',
+                                      style: const TextStyle(
+                                        color: _gold,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 15,
+                                        letterSpacing: 0.8,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 10),
+                              Text(
+                                challenge.isFellowship
+                                    ? 'Everyone stays synchronized on the same question. The host controls answer reveals and question advancement, allowing Scripture discussion.'
+                                    : 'Players begin together and progress independently through the questions. Accuracy comes first; completion time breaks ties.',
+                                style: const TextStyle(
+                                  color: _slateTextSecondary,
+                                  fontSize: 13,
+                                  height: 1.35,
+                                ),
+                              ),
+                              const Divider(color: Colors.white12, height: 24),
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Text(
+                                    'Question Count',
+                                    style: TextStyle(
+                                      color: _slateTextSecondary,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                  Text(
+                                    '${challenge.questionCount} Questions',
+                                    style: const TextStyle(
+                                      color: _slateTextPrimary,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 6),
+                              const Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    'Question Order',
+                                    style: TextStyle(
+                                      color: _slateTextSecondary,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                  Text(
+                                    'Identical for all players',
+                                    style: TextStyle(
+                                      color: _slateTextPrimary,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Spacer(),
+                        if (isHost) ...[
+                          const Text(
+                            'You are the Host. When all group members have joined, press start.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: _slateTextSecondary,
+                              fontSize: 12,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          SlatePillButton(
+                            label: _starting
+                                ? 'STARTING…'
+                                : challenge.isFellowship
+                                    ? 'START FELLOWSHIP'
+                                    : 'START CHALLENGE',
+                            loading: _starting,
+                            onPressed: _starting ? null : _startChallenge,
+                          ),
+                        ] else ...[
+                          const Center(
+                            child: Column(
+                              children: [
+                                CircularProgressIndicator(color: _gold),
+                                SizedBox(height: 16),
+                                Text(
+                                  'Waiting for host to start…',
+                                  style: TextStyle(
+                                    color: _gold,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                SizedBox(height: 6),
+                                Text(
+                                  'The challenge will start for everyone simultaneously.',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: _slateTextSecondary,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const Spacer(),
+                        ],
+                      ],
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class FellowshipQuestionScreen extends StatefulWidget {
+  const FellowshipQuestionScreen({
+    super.key,
+    required this.store,
+    required this.groupId,
+    required this.challenge,
+    this.service,
+  });
+
+  final ProgressStore store;
+  final String groupId;
+  final GroupChallenge challenge;
+  final CloudGroupGateway? service;
+
+  @override
+  State<FellowshipQuestionScreen> createState() =>
+      _FellowshipQuestionScreenState();
+}
+
+class _FellowshipQuestionScreenState extends State<FellowshipQuestionScreen> {
+  late final CloudGroupGateway _service;
+  late final Stream<GroupChallenge> _challengeStream;
+  late final List<GroupChallengeItem> _questions;
+  final Map<int, int> _myAnswers = <int, int>{};
+  bool _submittingAnswer = false;
+  bool _revealing = false;
+  bool _advancing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _service = widget.service ?? CloudChallengeService();
+    _challengeStream =
+        _service.streamChallenge(widget.groupId, widget.challenge.id);
+    _questions = widget.challenge.items.isNotEmpty
+        ? widget.challenge.items
+        : [
+            GroupChallengeItem(
+              id: widget.challenge.id,
+              question: widget.challenge.question,
+              options: widget.challenge.options,
+              scriptureReference: widget.challenge.scriptureReference,
+              testament: '',
+              propheticFocus: '',
+            ),
+          ];
+  }
+
+  Future<void> _submitAnswer(
+    int qIndex,
+    String qId,
+    int optionIndex,
+    DateTime? openedAt,
+  ) async {
+    if (_submittingAnswer || _myAnswers.containsKey(qIndex)) return;
+    setState(() {
+      _myAnswers[qIndex] = optionIndex;
+      _submittingAnswer = true;
+    });
+    final latency = openedAt != null
+        ? DateTime.now().difference(openedAt).inMilliseconds
+        : 0;
+    try {
+      await _service.submitFellowshipAnswer(
+        groupId: widget.groupId,
+        challengeId: widget.challenge.id,
+        questionIndex: qIndex,
+        questionId: qId,
+        selectedOptionIndex: optionIndex,
+        responseLatencyMs: latency,
+        username: widget.store.leaderboardName,
+      );
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+          const SnackBar(
+            content: Text('Could not record answer. Please try again.'),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _submittingAnswer = false);
+    }
+  }
+
+  Future<void> _revealAnswer() async {
+    if (_revealing) return;
+    setState(() => _revealing = true);
+    try {
+      await _service.revealFellowshipAnswer(
+        groupId: widget.groupId,
+        challengeId: widget.challenge.id,
+      );
+    } catch (e) {
+      if (mounted) {
+        final msg = e is FirebaseFunctionsException && e.message != null
+            ? e.message!
+            : 'Could not reveal answer.';
+        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+          SnackBar(content: Text(msg)),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _revealing = false);
+    }
+  }
+
+  Future<void> _advanceQuestion() async {
+    if (_advancing) return;
+    setState(() => _advancing = true);
+    try {
+      await _service.advanceFellowshipQuestion(
+        groupId: widget.groupId,
+        challengeId: widget.challenge.id,
+      );
+    } catch (e) {
+      if (mounted) {
+        final msg = e is FirebaseFunctionsException && e.message != null
+            ? e.message!
+            : 'Could not advance question.';
+        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+          SnackBar(content: Text(msg)),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _advancing = false);
+    }
+  }
+
+  String _formatTime(int seconds) {
+    final m = seconds ~/ 60;
+    final s = seconds % 60;
+    return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+  }
+
+  Widget _buildResultsView() {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(22, 16, 22, 40),
+      children: [
+        const SlatePageHeader(title: 'FELLOWSHIP RESULTS'),
+        const SizedBox(height: 16),
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: _slateSurface,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: _gold.withValues(alpha: .5), width: 1.5),
+          ),
+          child: const Column(
+            children: [
+              Icon(Icons.groups_outlined, color: _gold, size: 48),
+              SizedBox(height: 8),
+              Text(
+                'STUDY COMPLETED',
+                style: TextStyle(
+                  color: _gold,
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.1,
+                ),
+              ),
+              SizedBox(height: 4),
+              Text(
+                'Rankings sorted by Scripture accuracy, then answer response time',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: _slateTextSecondary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ],
           ),
         ),
+        const SizedBox(height: 24),
+        const SlateSectionHeader('FELLOWSHIP LEADERBOARD'),
+        const SizedBox(height: 10),
+        StreamBuilder<List<LeaderboardEntry>>(
+          stream: _service.groupLeaderboard(
+            widget.groupId,
+            widget.challenge.id,
+          ),
+          builder: (context, snapshot) {
+            if (snapshot.hasError) {
+              return const Center(child: Text('Leaderboard unavailable.'));
+            }
+            if (!snapshot.hasData) {
+              return const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(16),
+                  child: CircularProgressIndicator(color: _gold),
+                ),
+              );
+            }
+            final entries = snapshot.data!;
+            if (entries.isEmpty) {
+              return const Text(
+                'Gathering fellowship scores…',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: _slateTextSecondary),
+              );
+            }
+            return ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: entries.length,
+              separatorBuilder: (_, _) => const SizedBox(height: 8),
+              itemBuilder: (context, index) {
+                final entry = entries[index];
+                final isTop3 = index < 3;
+                final isYou =
+                    entry.displayName == widget.store.leaderboardName ||
+                    entry.id == _service.currentUser?.uid;
+                return Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 10,
+                  ),
+                  decoration: BoxDecoration(
+                    color: _slateSurface,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isYou
+                          ? _gold
+                          : isTop3
+                              ? _gold.withValues(alpha: .4)
+                              : Colors.white.withValues(alpha: .08),
+                      width: isYou ? 1.5 : 1.0,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Text(
+                        '#${index + 1}',
+                        style: TextStyle(
+                          color: isTop3 ? _gold : _slateTextSecondary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                entry.displayName,
+                                style: TextStyle(
+                                  color: isYou
+                                      ? _gold
+                                      : _slateTextPrimary,
+                                  fontWeight: isYou
+                                      ? FontWeight.bold
+                                      : FontWeight.w600,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            if (isYou) ...[
+                              const SizedBox(width: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: _gold.withValues(alpha: .2),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: const Text(
+                                  'YOU',
+                                  style: TextStyle(
+                                    color: _gold,
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: 0.8,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                      Text(
+                        '${entry.score} pts • ${_formatTime(entry.elapsedSeconds)}',
+                        style: const TextStyle(
+                          color: _slateTextSecondary,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            );
+          },
+        ),
+        const SizedBox(height: 24),
+        SlatePillButton(
+          label: 'BACK TO GROUP',
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildActiveQuestionView(GroupChallenge challenge) {
+    final currentIndex = challenge.currentQuestionIndex.clamp(
+      0,
+      _questions.length - 1,
+    );
+    final currentQ = _questions[currentIndex];
+    final isHost = challenge.ownerId != null &&
+        challenge.ownerId == _service.currentUser?.uid;
+    final isRevealed = challenge.isQuestionRevealed;
+    final mySelection = _myAnswers[currentIndex];
+    final hasAnswered = mySelection != null ||
+        challenge.answeredUids.contains(_service.currentUser?.uid);
+    final isLast = currentIndex == _questions.length - 1;
+    final correctAnswer = challenge.revealedAnswer ?? 0;
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(22, 16, 22, 40),
+      children: [
+        const SlatePageHeader(title: 'FELLOWSHIP STUDY'),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          decoration: BoxDecoration(
+            color: _slateSurface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.white.withValues(alpha: .12)),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.people_alt_outlined, color: _gold, size: 18),
+                  const SizedBox(width: 6),
+                  Text(
+                    '${challenge.answeredUids.length} answered',
+                    style: const TextStyle(
+                      color: _slateTextPrimary,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: _gold.withValues(alpha: .15),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  'QUESTION ${currentIndex + 1} OF ${_questions.length}',
+                  style: const TextStyle(
+                    color: _gold,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 10),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: LinearProgressIndicator(
+            value: (currentIndex + 1) / _questions.length,
+            backgroundColor: Colors.white.withValues(alpha: .08),
+            valueColor: const AlwaysStoppedAnimation<Color>(_gold),
+            minHeight: 5,
+          ),
+        ),
+        const SizedBox(height: 18),
+        SlateCard(
+          child: Text(
+            currentQ.question,
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  height: 1.25,
+                ),
+          ),
+        ),
+        const SizedBox(height: 18),
+        for (var i = 0; i < currentQ.options.length; i++)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: SlateAnswerTile(
+              letter: String.fromCharCode(65 + i),
+              text: currentQ.options[i],
+              selected: mySelection == i,
+              correct: isRevealed && i == correctAnswer,
+              feedback: isRevealed,
+              onTap: () {
+                if (!hasAnswered && !isRevealed && !_submittingAnswer) {
+                  _submitAnswer(
+                    currentIndex,
+                    currentQ.id,
+                    i,
+                    challenge.currentQuestionOpenedAt,
+                  );
+                }
+              },
+            ),
+          ),
+        if (isRevealed && challenge.revealedExplanation != null) ...[
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: _slateSurface,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: _correct.withValues(alpha: .4),
+                width: 1.2,
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.menu_book_outlined,
+                      color: _gold,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      challenge.revealedScriptureReference?.isNotEmpty == true
+                          ? challenge.revealedScriptureReference!
+                          : (currentQ.scriptureReference.isNotEmpty
+                              ? currentQ.scriptureReference
+                              : 'Scripture Insight'),
+                      style: const TextStyle(
+                        color: _gold,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+                if (challenge.revealedExplanation!.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    challenge.revealedExplanation!,
+                    style: const TextStyle(
+                      color: _slateTextPrimary,
+                      fontSize: 13,
+                      height: 1.4,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+        const SizedBox(height: 20),
+        if (isHost) ...[
+          if (!isRevealed)
+            SlatePillButton(
+              label: _revealing ? 'REVEALING…' : 'REVEAL ANSWER',
+              loading: _revealing,
+              onPressed: _revealing ? null : _revealAnswer,
+            )
+          else
+            SlatePillButton(
+              label: _advancing
+                  ? 'ADVANCING…'
+                  : (isLast
+                      ? 'COMPLETE FELLOWSHIP'
+                      : 'NEXT QUESTION'),
+              loading: _advancing,
+              onPressed: _advancing ? null : _advanceQuestion,
+            ),
+        ] else ...[
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: _slateSurfaceVariant,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (!isRevealed && hasAnswered) ...[
+                  const Icon(Icons.check_circle_outline, color: _gold, size: 18),
+                  const SizedBox(width: 8),
+                  const Text(
+                    'Answer locked. Waiting for host to reveal…',
+                    style: TextStyle(
+                      color: _slateTextPrimary,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ] else if (!isRevealed) ...[
+                  const Icon(Icons.touch_app_outlined, color: _gold, size: 18),
+                  const SizedBox(width: 8),
+                  const Text(
+                    'Select your answer before host reveals!',
+                    style: TextStyle(
+                      color: _slateTextSecondary,
+                      fontSize: 13,
+                    ),
+                  ),
+                ] else ...[
+                  const Icon(Icons.forum_outlined, color: _gold, size: 18),
+                  const SizedBox(width: 8),
+                  const Text(
+                    'Host discussing Scripture. Ready for next!',
+                    style: TextStyle(
+                      color: _slateTextPrimary,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: DivineBackground(
+        reduceMotion: widget.store.reduceMotion,
+        child: SafeArea(
+          child: StreamBuilder<GroupChallenge>(
+            stream: _challengeStream,
+            initialData: widget.challenge,
+            builder: (context, snapshot) {
+              final challenge = snapshot.data ?? widget.challenge;
+              if (challenge.isCompleted) {
+                return _buildResultsView();
+              }
+              return _buildActiveQuestionView(challenge);
+            },
+          ),
+        ),
       ),
-    ),
     );
   }
 }
