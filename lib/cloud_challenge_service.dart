@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 import 'remote_feature_service.dart';
@@ -575,29 +576,36 @@ class CloudChallengeService
   @override
   Future<User?> signInWithGoogle() async {
     try {
+      debugPrint('[AuthDebug] Starting GoogleSignIn with serverClientId...');
       final googleSignIn = GoogleSignIn(
+        serverClientId:
+            '349710501534-vmhpfs7okhq6p7rr5mnio7kqt53v7smn.apps.googleusercontent.com',
         scopes: ['email', 'profile'],
       );
       final googleAccount = await googleSignIn.signIn();
+      debugPrint('[AuthDebug] googleAccount: $googleAccount');
       if (googleAccount == null) {
-        // User dismissed the account selection dialog
+        debugPrint('[AuthDebug] User cancelled account selection');
         return null;
       }
       final googleAuth = await googleAccount.authentication;
+      debugPrint(
+        '[AuthDebug] googleAuth accessToken: ${googleAuth.accessToken != null}, '
+        'idToken: ${googleAuth.idToken != null} (${googleAuth.idToken?.length ?? 0} chars)',
+      );
       final credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
+      debugPrint('[AuthDebug] Signing in with credential...');
       final userCredential = await _auth.signInWithCredential(credential);
+      debugPrint(
+        '[AuthDebug] Signed in successfully: ${userCredential.user?.uid}, email: ${userCredential.user?.email}',
+      );
       return userCredential.user;
-    } catch (_) {
-      try {
-        final provider = GoogleAuthProvider();
-        final userCredential = await _auth.signInWithProvider(provider);
-        return userCredential.user;
-      } catch (_) {
-        return null;
-      }
+    } catch (e, st) {
+      debugPrint('[AuthDebug] GoogleSignIn exception: $e\n$st');
+      return null;
     }
   }
 

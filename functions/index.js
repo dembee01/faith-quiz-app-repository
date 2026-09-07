@@ -91,12 +91,16 @@ exports.claimUsername = onCall(callableOptions, async (request) => {
   const globalLeaderboardRef = db.doc(`leaderboards/global_challenge/entries/${uid}`);
 
   await db.runTransaction(async (transaction) => {
+    // 1. ALL READS MUST PRECEDE ALL WRITES
     const usernameSnap = await transaction.get(usernameRef);
+    const userSnap = await transaction.get(userRef);
+    const lbSnap = await transaction.get(globalLeaderboardRef);
+
     if (usernameSnap.exists && usernameSnap.get('uid') !== uid) {
       throw new HttpsError('already-exists', `The username "@${username}" is already taken. Please choose another.`);
     }
 
-    const userSnap = await transaction.get(userRef);
+    // 2. ALL WRITES AFTER READS
     const oldUsername = userSnap.exists ? userSnap.get('username') : null;
     if (oldUsername && oldUsername.toLowerCase() !== usernameKey) {
       transaction.delete(db.doc(`usernames/${oldUsername.toLowerCase()}`));
@@ -114,8 +118,6 @@ exports.claimUsername = onCall(callableOptions, async (request) => {
       updatedAt: FieldValue.serverTimestamp(),
     }, { merge: true });
 
-    // Update username on global leaderboard if an entry exists
-    const lbSnap = await transaction.get(globalLeaderboardRef);
     if (lbSnap.exists) {
       transaction.set(globalLeaderboardRef, {
         displayName: username,

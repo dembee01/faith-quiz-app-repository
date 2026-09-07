@@ -12,7 +12,28 @@
           "package_name": "com.example.faithquiz"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "349710501534-bdg6tpolf0btqpvls9pvt9mr7g201hrs.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.faithquiz",
+            "certificate_hash": "717a9f2cba995cf1846ada78e6ced10614e8301a"
+          }
+        },
+        {
+          "client_id": "349710501534-c77iv1prscrv91g5r1o1qbfb48n91tug.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.faithquiz",
+            "certificate_hash": "c462dd7a6e29bb0d04e164b00966cdfef4cdfae0"
+          }
+        },
+        {
+          "client_id": "349710501534-vmhpfs7okhq6p7rr5mnio7kqt53v7smn.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyCbM2lUeJEUJzx2gR-pxIseuJUpbGai8Wo"
@@ -20,7 +41,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "349710501534-vmhpfs7okhq6p7rr5mnio7kqt53v7smn.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "349710501534-2cd8qsip5bu80cf5fio2qtd8vbr3sm89.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.faithquiz"
+              }
+            }
+          ]
         }
       }
     }
