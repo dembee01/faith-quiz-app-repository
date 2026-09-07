@@ -3616,10 +3616,19 @@ class _GroupQuestionScreenState extends State<GroupQuestionScreen> {
     } on FirebaseFunctionsException catch (error) {
       if (!mounted) return;
       if (error.code == 'already-exists') {
+        setState(() {
+          _result = GroupQuizResult(
+            challengeId: widget.challenge.id,
+            score: 0,
+            total: _questions.length,
+            elapsedSeconds: _totalSeconds,
+            breakdown: const [],
+          );
+        });
         ScaffoldMessenger.maybeOf(context)?.showSnackBar(
           const SnackBar(
             content: Text(
-              'Each verified group challenge may be submitted only once.',
+              'You already submitted this challenge. Showing group leaderboard.',
             ),
           ),
         );
@@ -3810,7 +3819,9 @@ class _GroupQuestionScreenState extends State<GroupQuestionScreen> {
               const Icon(Icons.stars, color: _gold, size: 48),
               const SizedBox(height: 8),
               Text(
-                '${res.score} / ${res.total} CORRECT',
+                res.breakdown.isEmpty
+                    ? 'CHALLENGE COMPLETED'
+                    : '${res.score} / ${res.total} CORRECT',
                 style: const TextStyle(
                   color: _gold,
                   fontSize: 26,
@@ -3820,7 +3831,9 @@ class _GroupQuestionScreenState extends State<GroupQuestionScreen> {
               ),
               const SizedBox(height: 4),
               Text(
-                '$pct% Score • Total Time: ${_formatTime(res.elapsedSeconds)}',
+                res.breakdown.isEmpty
+                    ? 'Check your recorded standing on the group leaderboard below'
+                    : '$pct% Score • Total Time: ${_formatTime(res.elapsedSeconds)}',
                 style: const TextStyle(
                   color: _slateTextSecondary,
                   fontSize: 14,
@@ -3913,14 +3926,16 @@ class _GroupQuestionScreenState extends State<GroupQuestionScreen> {
             );
           },
         ),
-        const SizedBox(height: 28),
-        SlateSectionHeader(
-          'QUESTION REVIEW (${_questions.length} QUESTIONS)',
-        ),
-        const SizedBox(height: 12),
-        for (var i = 0; i < _questions.length; i++) ...[
-          _buildQuestionReviewCard(i, res),
-          const SizedBox(height: 14),
+        if (res.breakdown.isNotEmpty) ...[
+          const SizedBox(height: 28),
+          SlateSectionHeader(
+            'QUESTION REVIEW (${_questions.length} QUESTIONS)',
+          ),
+          const SizedBox(height: 12),
+          for (var i = 0; i < _questions.length; i++) ...[
+            _buildQuestionReviewCard(i, res),
+            const SizedBox(height: 14),
+          ],
         ],
         const SizedBox(height: 16),
         SlatePillButton(
