@@ -10,11 +10,17 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _FakeCloudGateway implements CloudChallengeGateway {
-  _FakeCloudGateway(this.question, {required this.correct, this.nextQuestion});
+  _FakeCloudGateway(
+    this.question, {
+    required this.correct,
+    this.nextQuestion,
+    this.alreadySubmitted = false,
+  });
 
   final CloudChallenge question;
   final CloudChallenge? nextQuestion;
   final bool correct;
+  final bool alreadySubmitted;
   int? submittedAnswer;
   int _callCount = 0;
 
@@ -38,6 +44,10 @@ class _FakeCloudGateway implements CloudChallengeGateway {
     return CloudSubmission(
       correct: correct,
       challengeId: challenge.challengeId,
+      alreadySubmitted: alreadySubmitted,
+      score: 15,
+      totalAnswered: 5,
+      level: 2,
     );
   }
 }
@@ -46,10 +56,12 @@ class _FakeGroupGateway implements CloudGroupGateway {
   _FakeGroupGateway({
     this.groups = const [],
     this.challenges = const [],
+    this.leaderboardEntries = const [],
   });
 
   final List<QuizGroup> groups;
   final List<GroupChallenge> challenges;
+  final List<LeaderboardEntry> leaderboardEntries;
 
   @override
   Future<bool> get isAvailable async => true;
@@ -133,6 +145,19 @@ class _FakeGroupGateway implements CloudGroupGateway {
     String groupId,
     String challengeId,
   ) => Stream.value(const []);
+
+  @override
+  Stream<List<LeaderboardEntry>> globalLeaderboard() =>
+      Stream.value(leaderboardEntries);
+
+  @override
+  Future<String?> getClaimedUsername() async => 'testuser';
+
+  @override
+  Future<bool> checkUsernameAvailable(String username) async => true;
+
+  @override
+  Future<bool> claimUsername(String username) async => true;
 }
 
 void main() {
@@ -554,6 +579,104 @@ void main() {
 
       expect(find.text('GROUP CHALLENGES'), findsOneWidget);
       expect(find.text('Grace Church'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'online challenge evaluates Jonah correctly and never flips to incorrect even on repeated submission',
+    (tester) async {
+      const question = CloudChallenge(
+        id: 'prophets-jonah-1',
+        challengeId: 'prophets-jonah-1',
+        question: 'Which prophet was swallowed by a great fish when fleeing God?',
+        options: ['Jonah', 'Nahum', 'Micah', 'Amos'],
+        explanation: 'Jonah spent three days in the belly of the fish before repenting.',
+        scriptureReference: 'Jonah 1:17',
+        testament: 'Old Testament',
+        propheticFocus: 'Jonah',
+      );
+
+      final gateway = _FakeCloudGateway(
+        question,
+        correct: true,
+        alreadySubmitted: true,
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: CloudChallengeScreen(
+            store: ProgressStore(),
+            service: gateway,
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      // Tap "Jonah"
+      expect(find.text('Jonah'), findsOneWidget);
+      await tester.tap(find.text('Jonah'));
+      await tester.pump();
+
+      // Submit
+      expect(find.text('LOCK IN ANSWER'), findsOneWidget);
+      await tester.ensureVisible(find.text('LOCK IN ANSWER'));
+      await tester.pump();
+      await tester.tap(find.text('LOCK IN ANSWER'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+
+      // Correctness must be true, showing VERIFIED CORRECT (ALREADY RECORDED) and the explanation
+      expect(find.text('VERIFIED CORRECT (ALREADY RECORDED)'), findsOneWidget);
+      expect(find.text('Jonah spent three days in the belly of the fish before repenting.'), findsOneWidget);
+      expect(find.text('INCORRECT'), findsNothing);
+      expect(find.text('ANSWER RECORDED (PREVIOUSLY ATTEMPTED)'), findsNothing);
+      expect(find.text('NEXT QUESTION'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'leaderboard screen displays global challenge rankings with score, level, and total questions',
+    (tester) async {
+      final store = ProgressStore();
+      final entries = [
+        const LeaderboardEntry(
+          id: 'user-1',
+          displayName: 'FaithWarrior',
+          score: 350,
+          elapsedSeconds: 42,
+          level: 4,
+          totalAnswered: 35,
+          accuracy: 100,
+        ),
+        const LeaderboardEntry(
+          id: 'user-2',
+          displayName: 'BibleScholar',
+          score: 280,
+          elapsedSeconds: 55,
+          level: 3,
+          totalAnswered: 30,
+          accuracy: 93,
+        ),
+      ];
+
+      final service = _FakeGroupGateway(leaderboardEntries: entries);
+      await tester.pumpWidget(
+        MaterialApp(
+          home: LeaderboardScreen(store: store, service: service),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('LEADERBOARD'), findsOneWidget);
+      expect(find.text('GLOBAL CHALLENGE'), findsOneWidget);
+      expect(find.text('FaithWarrior'), findsOneWidget);
+      expect(find.text('350 pts'), findsOneWidget);
+      expect(find.text('Level 4 • 35 Questions • 100% Acc'), findsOneWidget);
+
+      expect(find.text('BibleScholar'), findsOneWidget);
+      expect(find.text('280 pts'), findsOneWidget);
     },
   );
 }

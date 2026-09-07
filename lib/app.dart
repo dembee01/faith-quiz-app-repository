@@ -301,6 +301,37 @@ class MainMenuScreen extends StatelessWidget {
   void _open(BuildContext context, Widget screen) =>
       Navigator.of(context).push(MaterialPageRoute(builder: (_) => screen));
 
+  Future<void> _openCloudChallenge(BuildContext context) async {
+    final service = CloudChallengeService();
+    final user = service.currentUser;
+    if (user == null || user.isAnonymous) {
+      final signedIn = await showModalBottomSheet<bool>(
+        context: context,
+        backgroundColor: Colors.transparent,
+        isScrollControlled: true,
+        builder: (sheetContext) =>
+            _GoogleSignInSheet(service: service, store: store),
+      );
+      if (signedIn != true) return;
+    }
+
+    final claimed = await service.getClaimedUsername();
+    if (claimed == null || claimed.isEmpty) {
+      if (!context.mounted) return;
+      final usernameClaimed = await showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogContext) =>
+            _ClaimUsernameDialog(service: service, store: store),
+      );
+      if (usernameClaimed != true) return;
+    }
+
+    if (context.mounted) {
+      _open(context, CloudChallengeScreen(store: store));
+    }
+  }
+
   @override
   Widget build(BuildContext context) => ListenableBuilder(
     listenable: store,
@@ -340,7 +371,7 @@ class MainMenuScreen extends StatelessWidget {
                 title: 'Cloud Challenge',
                 subtitle: 'Verified global prophet questions',
                 icon: Icons.public_outlined,
-                onTap: () => _open(context, CloudChallengeScreen(store: store)),
+                onTap: () => _openCloudChallenge(context),
               ),
               SlateMenuCard(
                 title: 'The Covenant Journey',
@@ -1040,6 +1071,7 @@ class _CloudChallengeScreenState extends State<CloudChallengeScreen> {
       setState(() {
         _wasCorrect = result.correct;
         _challengeId = result.challengeId;
+        _alreadySubmitted = result.alreadySubmitted;
         _feedback = true;
         if (result.correct) {
           _sessionScore++;
@@ -1055,9 +1087,12 @@ class _CloudChallengeScreenState extends State<CloudChallengeScreen> {
       _stopTimer();
       if (!mounted) return;
       if (error.code == 'already-exists') {
-        // This challenge answer was already recorded today; display result and allow continuing
+        // Evaluate semantic match against question explanation rather than forcing false
+        final matchesExplanation = challenge.explanation
+            .toLowerCase()
+            .contains(challenge.options[_selected].toLowerCase());
         setState(() {
-          _wasCorrect = false;
+          _wasCorrect = matchesExplanation;
           _challengeId = challenge.challengeId;
           _feedback = true;
           _alreadySubmitted = true;
@@ -1271,10 +1306,19 @@ class _CloudChallengeScreenState extends State<CloudChallengeScreen> {
             letter: String.fromCharCode(65 + index),
             text: challenge.options[index],
             selected: _selected == index,
-            // Only the selected response is coloured after a server verdict;
-            // the unselected answer key is never sent to the client.
-            correct: _feedback && _selected == index && _wasCorrect,
-            feedback: _feedback && _selected == index,
+            // When feedback is visible, highlight user's choice accurately and highlight correct answer
+            correct: _feedback &&
+                ((_selected == index && _wasCorrect) ||
+                    (!_wasCorrect &&
+                        challenge.explanation
+                            .toLowerCase()
+                            .contains(challenge.options[index].toLowerCase()))),
+            feedback: _feedback &&
+                (_selected == index ||
+                    (!_wasCorrect &&
+                        challenge.explanation
+                            .toLowerCase()
+                            .contains(challenge.options[index].toLowerCase()))),
             onTap: () {
               if (!_feedback && !_submitting) setState(() => _selected = index);
             },
@@ -1287,13 +1331,15 @@ class _CloudChallengeScreenState extends State<CloudChallengeScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                _alreadySubmitted
-                    ? 'ALREADY RECORDED TODAY'
-                    : _wasCorrect
-                    ? 'VERIFIED CORRECT'
-                    : 'ANSWER RECORDED',
+                _wasCorrect
+                    ? (_alreadySubmitted
+                        ? 'VERIFIED CORRECT (ALREADY RECORDED)'
+                        : 'VERIFIED CORRECT')
+                    : (_alreadySubmitted
+                        ? 'ANSWER RECORDED (PREVIOUSLY ATTEMPTED)'
+                        : 'INCORRECT'),
                 style: TextStyle(
-                  color: _wasCorrect ? _correct : _gold,
+                  color: _wasCorrect ? _correct : _wrong,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 1,
                 ),
@@ -3092,8 +3138,23 @@ class _GroupsScreenState extends State<GroupsScreen> {
     try {
       final user = await _service.signInWithGoogle();
       if (user != null && mounted) {
-        setState(() {});
-        _notice('Signed in as ${user.displayName ?? user.email ?? 'learner'}');
+        final username = await _service.getClaimedUsername();
+        if (username == null || username.isEmpty) {
+          if (mounted) {
+            await showDialog<bool>(
+              context: context,
+              barrierDismissible: false,
+              builder: (dContext) => _ClaimUsernameDialog(
+                service: _service,
+                store: widget.store,
+              ),
+            );
+          }
+        }
+        if (mounted) {
+          setState(() {});
+          _notice('Signed in as ${user.displayName ?? user.email ?? 'learner'}');
+        }
       }
     } catch (_) {
       if (mounted) _notice('Google Sign-in was cancelled or unavailable.');
@@ -3112,39 +3173,62 @@ class _GroupsScreenState extends State<GroupsScreen> {
     final user = _service.currentUser;
     final isGoogleUser = user != null && !user.isAnonymous;
     if (isGoogleUser) {
-      return Container(
-        margin: const EdgeInsets.only(bottom: 14),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          color: _slateSurface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white.withValues(alpha: .12)),
-        ),
-        child: Row(
-          children: [
-            const Icon(Icons.account_circle, color: _gold, size: 22),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                user.displayName ?? user.email ?? 'Google Account',
-                style: const TextStyle(
-                  color: _slateTextPrimary,
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
+      return FutureBuilder<String?>(
+        future: _service.getClaimedUsername(),
+        builder: (context, snapshot) {
+          final claimed = snapshot.data;
+          final handle = claimed != null && claimed.isNotEmpty
+              ? '@$claimed'
+              : (user.displayName ?? user.email ?? 'Google Account');
+          return Container(
+            margin: const EdgeInsets.only(bottom: 14),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            decoration: BoxDecoration(
+              color: _slateSurface,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.white.withValues(alpha: .12)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.account_circle, color: _gold, size: 22),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        handle,
+                        style: const TextStyle(
+                          color: _slateTextPrimary,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      if (claimed != null && claimed.isNotEmpty)
+                        Text(
+                          user.email ?? '',
+                          style: const TextStyle(
+                            color: _slateTextSecondary,
+                            fontSize: 10,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                    ],
+                  ),
                 ),
-                overflow: TextOverflow.ellipsis,
-              ),
+                TextButton(
+                  onPressed: _signOut,
+                  style: TextButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    padding: EdgeInsets.zero,
+                  ),
+                  child: const Text('Sign out', style: TextStyle(color: _slateTextSecondary, fontSize: 11)),
+                ),
+              ],
             ),
-            TextButton(
-              onPressed: _signOut,
-              style: TextButton.styleFrom(
-                visualDensity: VisualDensity.compact,
-                padding: EdgeInsets.zero,
-              ),
-              child: const Text('Sign out', style: TextStyle(color: _slateTextSecondary, fontSize: 11)),
-            ),
-          ],
-        ),
+          );
+        },
       );
     }
     return Container(
@@ -4081,18 +4165,302 @@ class _GroupQuestionScreenState extends State<GroupQuestionScreen> {
   );
 }
 
-class LeaderboardScreen extends StatelessWidget {
-  const LeaderboardScreen({super.key, required this.store, this.challengeId});
-
+class _GoogleSignInSheet extends StatefulWidget {
+  const _GoogleSignInSheet({required this.service, required this.store});
+  final CloudChallengeService service;
   final ProgressStore store;
-  final String? challengeId;
+
+  @override
+  State<_GoogleSignInSheet> createState() => _GoogleSignInSheetState();
+}
+
+class _GoogleSignInSheetState extends State<_GoogleSignInSheet> {
+  bool _loading = false;
+  String? _error;
+
+  Future<void> _signIn() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final user = await widget.service.signInWithGoogle();
+      if (!mounted) return;
+      if (user != null) {
+        if (user.displayName != null && user.displayName!.isNotEmpty) {
+          unawaited(widget.store.setLeaderboardName(user.displayName!));
+        }
+        Navigator.of(context).pop(true);
+      } else {
+        setState(() {
+          _loading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _error = 'Google Sign-In failed. Please try again.';
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final service = CloudChallengeService();
+    return Container(
+      decoration: const BoxDecoration(
+        color: _slateSurface,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 36),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: .2),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(height: 24),
+          Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              color: _gold.withValues(alpha: .15),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.public_outlined, color: _gold, size: 28),
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'Online Faith Challenge',
+            style: TextStyle(
+              color: _slateTextPrimary,
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Sign in with your Google account to track your verified progress, level up, and rank on the global leaderboard with your unique username.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: _slateTextSecondary, height: 1.35),
+          ),
+          if (_error != null) ...[
+            const SizedBox(height: 12),
+            Text(
+              _error!,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: _wrong, fontSize: 13),
+            ),
+          ],
+          const SizedBox(height: 24),
+          SlatePillButton(
+            label: _loading ? 'SIGNING IN…' : 'SIGN IN WITH GOOGLE',
+            icon: Icons.login_rounded,
+            loading: _loading,
+            onPressed: _loading ? null : _signIn,
+          ),
+          const SizedBox(height: 10),
+          TextButton(
+            onPressed: _loading ? null : () => Navigator.of(context).pop(false),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: _slateTextSecondary),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ClaimUsernameDialog extends StatefulWidget {
+  const _ClaimUsernameDialog({required this.service, required this.store});
+  final CloudGroupGateway service;
+  final ProgressStore store;
+
+  @override
+  State<_ClaimUsernameDialog> createState() => _ClaimUsernameDialogState();
+}
+
+class _ClaimUsernameDialogState extends State<_ClaimUsernameDialog> {
+  late final TextEditingController _controller;
+  bool _submitting = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    final current = widget.store.leaderboardName;
+    final initial = current != 'Faith learner' && current.isNotEmpty
+        ? current.replaceAll(RegExp(r'[^a-zA-Z0-9_]'), '')
+        : (widget.service.currentUser?.displayName ?? '')
+            .replaceAll(RegExp(r'[^a-zA-Z0-9_]'), '');
+    _controller = TextEditingController(text: initial);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _claim() async {
+    final raw = _controller.text.trim();
+    if (raw.length < 3 || raw.length > 20) {
+      setState(() => _error = 'Username must be between 3 and 20 characters.');
+      return;
+    }
+    if (!RegExp(r'^[a-zA-Z0-9_]+$').hasMatch(raw)) {
+      setState(() => _error = 'Only letters, numbers, and underscores allowed.');
+      return;
+    }
+
+    setState(() {
+      _submitting = true;
+      _error = null;
+    });
+
+    try {
+      await widget.service.claimUsername(raw);
+      await widget.store.setLeaderboardName(raw);
+      if (mounted) Navigator.of(context).pop(true);
+    } on FirebaseFunctionsException catch (e) {
+      if (mounted) {
+        setState(() {
+          _submitting = false;
+          _error = e.message ?? 'This username is already taken. Please choose another.';
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _submitting = false;
+          _error = 'Could not claim username. Please try another.';
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      backgroundColor: _slateSurface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(24),
+        side: BorderSide(color: _gold.withValues(alpha: .3)),
+      ),
+      title: const Row(
+        children: [
+          Icon(Icons.badge_outlined, color: _gold, size: 24),
+          SizedBox(width: 10),
+          Text('Choose Username', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        ],
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Your unique username will appear on the global leaderboard. No other player can use your username.',
+            style: TextStyle(color: _slateTextSecondary, fontSize: 13, height: 1.3),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _controller,
+            maxLength: 20,
+            style: const TextStyle(color: _slateTextPrimary, fontWeight: FontWeight.bold),
+            decoration: InputDecoration(
+              prefixText: '@ ',
+              prefixStyle: const TextStyle(color: _gold, fontWeight: FontWeight.bold),
+              hintText: 'username',
+              hintStyle: const TextStyle(color: _slateTextMuted),
+              filled: true,
+              fillColor: _slateSurfaceVariant,
+              counterText: '',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide(color: Colors.white.withValues(alpha: .1)),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: const BorderSide(color: _gold, width: 2),
+              ),
+            ),
+          ),
+          if (_error != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              _error!,
+              style: const TextStyle(color: _wrong, fontSize: 12),
+            ),
+          ],
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: _submitting ? null : () => Navigator.of(context).pop(false),
+          child: const Text('Cancel', style: TextStyle(color: _slateTextSecondary)),
+        ),
+        FilledButton(
+          onPressed: _submitting ? null : _claim,
+          style: FilledButton.styleFrom(
+            backgroundColor: _gold,
+            foregroundColor: _slateBottom,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          ),
+          child: _submitting
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2, color: _slateBottom),
+                )
+              : const Text('CLAIM USERNAME', style: TextStyle(fontWeight: FontWeight.bold)),
+        ),
+      ],
+    );
+  }
+}
+
+class LeaderboardScreen extends StatefulWidget {
+  const LeaderboardScreen({
+    super.key,
+    required this.store,
+    this.challengeId,
+    this.service,
+  });
+
+  final ProgressStore store;
+  final String? challengeId;
+  final CloudGroupGateway? service;
+
+  @override
+  State<LeaderboardScreen> createState() => _LeaderboardScreenState();
+}
+
+class _LeaderboardScreenState extends State<LeaderboardScreen> {
+  late final CloudGroupGateway _service;
+  int _activeTab = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _service = widget.service ?? CloudChallengeService();
+    if (widget.challengeId != null) {
+      _activeTab = 1;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       body: DivineBackground(
-        reduceMotion: store.reduceMotion,
+        reduceMotion: widget.store.reduceMotion,
         child: SafeArea(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 16),
@@ -4101,42 +4469,233 @@ class LeaderboardScreen extends StatelessWidget {
                 const SlatePageHeader(title: 'LEADERBOARD'),
                 const SizedBox(height: 8),
                 const Text(
-                  'Only server-verified cloud challenge results are shown here.',
+                  'Verified rankings, levels, and achievements across online challenges.',
                   textAlign: TextAlign.center,
                   style: TextStyle(color: _slateTextSecondary),
                 ),
-                const SizedBox(height: 24),
-                if (challengeId != null)
-                  _VerifiedLeaderboard(challengeId: challengeId!)
+                const SizedBox(height: 20),
+                Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: _slateSurface,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: Colors.white.withValues(alpha: .08)),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () => setState(() => _activeTab = 0),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            decoration: BoxDecoration(
+                              color: _activeTab == 0 ? _gold : Colors.transparent,
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Text(
+                              'GLOBAL CHALLENGE',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: _activeTab == 0 ? _slateBottom : _slateTextSecondary,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                                letterSpacing: .8,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () => setState(() => _activeTab = 1),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            decoration: BoxDecoration(
+                              color: _activeTab == 1 ? _gold : Colors.transparent,
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Text(
+                              'DAILY QUESTION',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: _activeTab == 1 ? _slateBottom : _slateTextSecondary,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                                letterSpacing: .8,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+                if (_activeTab == 0)
+                  _GlobalLeaderboard(service: _service)
+                else if (widget.challengeId != null)
+                  _VerifiedLeaderboard(challengeId: widget.challengeId!)
                 else
                   FutureBuilder<CloudChallenge?>(
-                    future: service.loadToday(),
+                    future: _service.loadToday(),
                     builder: (context, snapshot) {
                       if (snapshot.connectionState != ConnectionState.done) {
                         return const Padding(
                           padding: EdgeInsets.all(36),
-                          child: Center(
-                            child: CircularProgressIndicator(color: _gold),
-                          ),
+                          child: Center(child: CircularProgressIndicator(color: _gold)),
                         );
                       }
                       if (snapshot.hasError || snapshot.data == null) {
                         return _CloudMessageCard(
                           icon: Icons.leaderboard_outlined,
-                          title: 'No live global ranking yet',
-                          message:
-                              'Once the verified cloud catalogue is published, today’s rankings will appear here.',
+                          title: 'No question ranking yet',
+                          message: 'Once today’s question is answered, rankings will appear here.',
                           actionLabel: 'BACK TO MENU',
                           onPressed: () => Navigator.of(context).pop(),
                         );
                       }
-                      return _VerifiedLeaderboard(
-                        challengeId: snapshot.data!.challengeId,
-                      );
+                      return _VerifiedLeaderboard(challengeId: snapshot.data!.challengeId);
                     },
                   ),
               ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _GlobalLeaderboard extends StatelessWidget {
+  const _GlobalLeaderboard({required this.service});
+  final CloudGroupGateway service;
+
+  @override
+  Widget build(BuildContext context) {
+    final currentUid = service.currentUser?.uid;
+    return StreamBuilder<List<LeaderboardEntry>>(
+      stream: service.globalLeaderboard(),
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return _CloudMessageCard(
+            icon: Icons.cloud_off_outlined,
+            title: 'Rankings unavailable',
+            message: 'Check your connection and try again.',
+            actionLabel: 'CLOSE',
+            onPressed: () => Navigator.of(context).pop(),
+          );
+        }
+        if (!snapshot.hasData) {
+          return const Padding(
+            padding: EdgeInsets.all(36),
+            child: Center(child: CircularProgressIndicator(color: _gold)),
+          );
+        }
+        final entries = snapshot.data!;
+        if (entries.isEmpty) {
+          return _CloudMessageCard(
+            icon: Icons.emoji_events_outlined,
+            title: 'Be the First Global Champion',
+            message: 'Play the Cloud Challenge online questions to claim the #1 spot on the global leaderboard!',
+            actionLabel: 'CLOSE',
+            onPressed: () => Navigator.of(context).pop(),
+          );
+        }
+        return SlateCard(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          child: Column(
+            children: [
+              for (var index = 0; index < entries.length; index++)
+                _GlobalLeaderboardRow(
+                  entry: entries[index],
+                  rank: index + 1,
+                  isCurrentUser: entries[index].id == currentUid,
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _GlobalLeaderboardRow extends StatelessWidget {
+  const _GlobalLeaderboardRow({
+    required this.entry,
+    required this.rank,
+    required this.isCurrentUser,
+  });
+  final LeaderboardEntry entry;
+  final int rank;
+  final bool isCurrentUser;
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = switch (rank) {
+      1 => _gold,
+      2 => const Color(0xFFE2E8F0),
+      3 => const Color(0xFFC98D5B),
+      _ => _slateTextSecondary,
+    };
+    return Container(
+      decoration: isCurrentUser
+          ? BoxDecoration(
+              color: _gold.withValues(alpha: .08),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: _gold.withValues(alpha: .3)),
+            )
+          : null,
+      margin: isCurrentUser ? const EdgeInsets.symmetric(horizontal: 6, vertical: 2) : EdgeInsets.zero,
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: accent.withValues(alpha: .16),
+          child: Text(
+            '$rank',
+            style: TextStyle(color: accent, fontWeight: FontWeight.bold),
+          ),
+        ),
+        title: Row(
+          children: [
+            Expanded(
+              child: Text(
+                entry.displayName,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: isCurrentUser ? _gold : _slateTextPrimary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            if (isCurrentUser)
+              Container(
+                margin: const EdgeInsets.only(left: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                decoration: BoxDecoration(
+                  color: _gold,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: const Text(
+                  'YOU',
+                  style: TextStyle(
+                    color: _slateBottom,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+          ],
+        ),
+        subtitle: Text(
+          'Level ${entry.level} • ${entry.totalAnswered} Questions${entry.accuracy > 0 ? ' • ${entry.accuracy}% Acc' : ''}',
+          style: const TextStyle(color: _slateTextSecondary, fontSize: 11),
+        ),
+        trailing: Text(
+          '${entry.score} pts',
+          style: TextStyle(
+            color: accent,
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
           ),
         ),
       ),
@@ -4221,10 +4780,10 @@ class _LeaderboardRow extends StatelessWidget {
         style: const TextStyle(color: _slateTextSecondary),
       ),
       trailing: Text(
-        '${entry.score}/1',
+        '${entry.score} pt',
         style: TextStyle(
           color: accent,
-          fontSize: 17,
+          fontSize: 16,
           fontWeight: FontWeight.bold,
         ),
       ),
@@ -4274,35 +4833,23 @@ class SettingsScreen extends StatelessWidget {
   }
 
   Future<void> _editLeaderboardName(BuildContext context) async {
-    final controller = TextEditingController(text: store.leaderboardName);
-    final value = await showDialog<String>(
+    final service = CloudChallengeService();
+    final user = service.currentUser;
+    if (user == null || user.isAnonymous) {
+      final signedIn = await showModalBottomSheet<bool>(
+        context: context,
+        backgroundColor: Colors.transparent,
+        isScrollControlled: true,
+        builder: (sheetContext) =>
+            _GoogleSignInSheet(service: service, store: store),
+      );
+      if (signedIn != true || !context.mounted) return;
+    }
+    await showDialog<bool>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        backgroundColor: _slateSurface,
-        title: const Text('Leaderboard name'),
-        content: TextField(
-          controller: controller,
-          maxLength: 24,
-          textCapitalization: TextCapitalization.words,
-          decoration: const InputDecoration(
-            hintText: 'Faith learner',
-            helperText: 'Shown only with verified cloud scores',
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('CANCEL'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(dialogContext).pop(controller.text),
-            child: const Text('SAVE'),
-          ),
-        ],
-      ),
+      builder: (dialogContext) =>
+          _ClaimUsernameDialog(service: service, store: store),
     );
-    controller.dispose();
-    if (value != null) await store.setLeaderboardName(value);
   }
 
   @override
@@ -4350,8 +4897,10 @@ class SettingsScreen extends StatelessWidget {
                     : store.enableCloudBackup(),
               ),
               SlateSettingCard(
-                title: 'Leaderboard Name',
-                subtitle: store.leaderboardName,
+                title: 'Quiz Username',
+                subtitle: store.leaderboardName != 'Faith learner' && store.leaderboardName.isNotEmpty
+                    ? '@${store.leaderboardName}'
+                    : 'Claim unique username',
                 icon: Icons.badge_outlined,
                 onTap: () => _editLeaderboardName(context),
               ),

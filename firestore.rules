@@ -80,6 +80,18 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // User profiles and usernames are readable to signed-in users, but writes
+    // are strictly controlled by Admin SDK callable functions.
+    match /users/{userId} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+
+    match /usernames/{username} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+
     // A deliberate deny-by-default boundary for features added later.
     match /{document=**} {
       allow read, write: if false;

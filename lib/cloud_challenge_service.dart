@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 import 'remote_feature_service.dart';
 
@@ -44,9 +45,20 @@ class CloudChallenge {
 }
 
 class CloudSubmission {
-  const CloudSubmission({required this.correct, required this.challengeId});
+  const CloudSubmission({
+    required this.correct,
+    required this.challengeId,
+    this.alreadySubmitted = false,
+    this.score = 0,
+    this.totalAnswered = 0,
+    this.level = 1,
+  });
   final bool correct;
   final String challengeId;
+  final bool alreadySubmitted;
+  final int score;
+  final int totalAnswered;
+  final int level;
 }
 
 abstract interface class CloudChallengeGateway {
@@ -150,6 +162,10 @@ abstract interface class CloudGroupGateway {
     String groupId,
     String challengeId,
   );
+  Stream<List<LeaderboardEntry>> globalLeaderboard();
+  Future<void> claimUsername(String username);
+  Future<String?> getClaimedUsername();
+  Future<bool> checkUsernameAvailable(String username);
 }
 
 class LeaderboardEntry {
@@ -158,12 +174,18 @@ class LeaderboardEntry {
     required this.displayName,
     required this.score,
     required this.elapsedSeconds,
+    this.level = 1,
+    this.totalAnswered = 0,
+    this.accuracy = 0,
   });
 
   final String id;
   final String displayName;
   final int score;
   final int elapsedSeconds;
+  final int level;
+  final int totalAnswered;
+  final int accuracy;
 
   factory LeaderboardEntry.fromDocument(
     QueryDocumentSnapshot<Map<String, dynamic>> document,
@@ -174,6 +196,9 @@ class LeaderboardEntry {
       displayName: data['displayName'] as String? ?? 'Faith learner',
       score: (data['score'] as num?)?.toInt() ?? 0,
       elapsedSeconds: (data['elapsedSeconds'] as num?)?.toInt() ?? 0,
+      level: (data['level'] as num?)?.toInt() ?? 1,
+      totalAnswered: (data['totalAnswered'] as num?)?.toInt() ?? 0,
+      accuracy: (data['accuracy'] as num?)?.toInt() ?? 0,
     );
   }
 }
@@ -399,6 +424,10 @@ class CloudChallengeService
     return CloudSubmission(
       correct: data['correct'] == true,
       challengeId: data['challengeId'] as String? ?? challenge.challengeId,
+      alreadySubmitted: data['alreadySubmitted'] == true,
+      score: (data['score'] as num?)?.toInt() ?? 0,
+      totalAnswered: (data['totalAnswered'] as num?)?.toInt() ?? 0,
+      level: (data['level'] as num?)?.toInt() ?? 1,
     );
   }
 
@@ -408,6 +437,27 @@ class CloudChallengeService
       .collection('entries')
       .orderBy('score', descending: true)
       .limit(25)
+      .snapshots()
+      .map((snapshot) {
+        final entries = snapshot.docs
+            .map(LeaderboardEntry.fromDocument)
+            .toList();
+        entries.sort((left, right) {
+          final byScore = right.score.compareTo(left.score);
+          return byScore != 0
+              ? byScore
+              : left.elapsedSeconds.compareTo(right.elapsedSeconds);
+        });
+        return entries;
+      });
+
+  @override
+  Stream<List<LeaderboardEntry>> globalLeaderboard() => _firestore
+      .collection('leaderboards')
+      .doc('global_challenge')
+      .collection('entries')
+      .orderBy('score', descending: true)
+      .limit(50)
       .snapshots()
       .map((snapshot) {
         final entries = snapshot.docs
@@ -525,11 +575,63 @@ class CloudChallengeService
   @override
   Future<User?> signInWithGoogle() async {
     try {
-      final provider = GoogleAuthProvider();
-      final userCredential = await _auth.signInWithProvider(provider);
+      final googleSignIn = GoogleSignIn(
+        scopes: ['email', 'profile'],
+      );
+      final googleAccount = await googleSignIn.signIn();
+      if (googleAccount == null) {
+        // User dismissed the account selection dialog
+        return null;
+      }
+      final googleAuth = await googleAccount.authentication;
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+      final userCredential = await _auth.signInWithCredential(credential);
       return userCredential.user;
     } catch (_) {
-      return null;
+      try {
+        final provider = GoogleAuthProvider();
+        final userCredential = await _auth.signInWithProvider(provider);
+        return userCredential.user;
+      } catch (_) {
+        return null;
+      }
+    }
+  }
+
+  @override
+  Future<String?> getClaimedUsername() async {
+    final user = _auth.currentUser;
+    if (user == null) return null;
+    try {
+      final doc = await _firestore.collection('users').doc(user.uid).get();
+      if (doc.exists && doc.data() != null) {
+        return doc.data()!['username'] as String?;
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  @override
+  Future<void> claimUsername(String username) async {
+    await _user();
+    await _functions.httpsCallable('claimUsername').call(<String, Object>{
+      'username': username.trim(),
+    });
+  }
+
+  @override
+  Future<bool> checkUsernameAvailable(String username) async {
+    try {
+      final result = await _functions
+          .httpsCallable('checkUsernameAvailable')
+          .call(<String, Object>{'username': username.trim()});
+      final data = Map<String, dynamic>.from(result.data as Map);
+      return data['available'] == true;
+    } catch (_) {
+      return false;
     }
   }
 

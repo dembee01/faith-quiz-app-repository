@@ -67,13 +67,84 @@ function leaderboardName(value) {
   return requireText(value || 'Faith learner', 'display name', 24);
 }
 
+function validateUsername(value) {
+  if (typeof value !== 'string') {
+    throw new HttpsError('invalid-argument', 'Username must be a string.');
+  }
+  const trimmed = value.trim();
+  if (trimmed.length < 3 || trimmed.length > 20) {
+    throw new HttpsError('invalid-argument', 'Username must be between 3 and 20 characters.');
+  }
+  if (!/^[a-zA-Z0-9_]+$/.test(trimmed)) {
+    throw new HttpsError('invalid-argument', 'Username can only contain letters, numbers, and underscores.');
+  }
+  return trimmed;
+}
+
+exports.claimUsername = onCall(callableOptions, async (request) => {
+  const uid = requireUser(request);
+  const username = validateUsername(request.data.username);
+  const usernameKey = username.toLowerCase();
+
+  const usernameRef = db.doc(`usernames/${usernameKey}`);
+  const userRef = db.doc(`users/${uid}`);
+  const globalLeaderboardRef = db.doc(`leaderboards/global_challenge/entries/${uid}`);
+
+  await db.runTransaction(async (transaction) => {
+    const usernameSnap = await transaction.get(usernameRef);
+    if (usernameSnap.exists && usernameSnap.get('uid') !== uid) {
+      throw new HttpsError('already-exists', `The username "@${username}" is already taken. Please choose another.`);
+    }
+
+    const userSnap = await transaction.get(userRef);
+    const oldUsername = userSnap.exists ? userSnap.get('username') : null;
+    if (oldUsername && oldUsername.toLowerCase() !== usernameKey) {
+      transaction.delete(db.doc(`usernames/${oldUsername.toLowerCase()}`));
+    }
+
+    transaction.set(usernameRef, {
+      uid,
+      username,
+      claimedAt: FieldValue.serverTimestamp(),
+    });
+
+    transaction.set(userRef, {
+      username,
+      displayName: username,
+      updatedAt: FieldValue.serverTimestamp(),
+    }, { merge: true });
+
+    // Update username on global leaderboard if an entry exists
+    const lbSnap = await transaction.get(globalLeaderboardRef);
+    if (lbSnap.exists) {
+      transaction.set(globalLeaderboardRef, {
+        displayName: username,
+        updatedAt: FieldValue.serverTimestamp(),
+      }, { merge: true });
+    }
+  });
+
+  return { username };
+});
+
+exports.checkUsernameAvailable = onCall(callableOptions, async (request) => {
+  const uid = request.auth ? request.auth.uid : null;
+  const username = validateUsername(request.data.username);
+  const usernameKey = username.toLowerCase();
+  const usernameSnap = await db.doc(`usernames/${usernameKey}`).get();
+  if (!usernameSnap.exists) {
+    return { available: true, username };
+  }
+  return { available: usernameSnap.get('uid') === uid, username };
+});
+
 // A client supplies only its selected answer. The correct answer is verified
 // server-side so modified apps cannot submit fabricated scores.
 exports.submitCloudChallenge = onCall(callableOptions, async (request) => {
   const uid = requireUser(request);
   const catalogue = requireText(request.data.catalogue, 'catalogue');
   const questionId = requireText(request.data.questionId, 'question ID');
-  const displayName = leaderboardName(request.data.displayName);
+  let displayName = leaderboardName(request.data.displayName);
   const answerIndex = request.data.answerIndex;
   const elapsedSeconds = request.data.elapsedSeconds;
   if (!Number.isInteger(answerIndex) || answerIndex < 0 || answerIndex > 3 ||
@@ -87,25 +158,89 @@ exports.submitCloudChallenge = onCall(callableOptions, async (request) => {
   }
   const correct = answerIndex === answerData.correctAnswer;
   const challengeId = answerData.challengeId;
-  const entryRef = db.doc(`leaderboards/${challengeId}/entries/${uid}`);
+
+  // Use user's claimed username if available
+  const userDoc = await db.doc(`users/${uid}`).get();
+  if (userDoc.exists && userDoc.get('username')) {
+    displayName = userDoc.get('username');
+  }
+
+  const userProgressRef = db.doc(`users/${uid}/cloudAnswers/${questionId}`);
+  const globalLeaderboardRef = db.doc(`leaderboards/global_challenge/entries/${uid}`);
+  const singleChallengeEntryRef = db.doc(`leaderboards/${challengeId}/entries/${uid}`);
+
+  let updatedStats = { score: 0, totalAnswered: 0, level: 1 };
+  let alreadySubmitted = false;
+
   await db.runTransaction(async (transaction) => {
-    const previous = await transaction.get(entryRef);
-    if (previous.exists) {
-      throw new HttpsError(
-        'already-exists',
-        'Each verified cloud challenge may be submitted only once.',
-      );
-    }
-    transaction.set(entryRef, {
-      score: correct ? 1 : 0,
+    const [progressSnap, globalSnap, singleSnap] = await Promise.all([
+      transaction.get(userProgressRef),
+      transaction.get(globalLeaderboardRef),
+      transaction.get(singleChallengeEntryRef),
+    ]);
+
+    alreadySubmitted = progressSnap.exists;
+    const previouslyCorrect = progressSnap.exists && progressSnap.get('correct') === true;
+
+    // Record question submission in user history
+    transaction.set(userProgressRef, {
+      catalogue,
+      questionId,
+      challengeId,
+      answerIndex,
       correct,
       elapsedSeconds,
-      displayName,
-      updatedAt: FieldValue.serverTimestamp(),
-      verified: true,
+      answeredAt: FieldValue.serverTimestamp(),
     }, { merge: true });
+
+    // Calculate global leaderboard stats
+    const currentScore = globalSnap.exists ? (globalSnap.get('score') || 0) : 0;
+    const currentAnswered = globalSnap.exists ? (globalSnap.get('totalAnswered') || 0) : 0;
+
+    // If new question, increment totalAnswered
+    const newAnswered = currentAnswered + (alreadySubmitted ? 0 : 1);
+    // If not previously correct and now correct, increment score
+    const newScore = currentScore + (!previouslyCorrect && correct ? 1 : 0);
+    const newLevel = Math.floor(newScore / 5) + 1; // 5 correct answers per level
+
+    updatedStats = {
+      score: newScore,
+      totalAnswered: newAnswered,
+      level: newLevel,
+    };
+
+    transaction.set(globalLeaderboardRef, {
+      uid,
+      displayName,
+      score: newScore,
+      totalAnswered: newAnswered,
+      level: newLevel,
+      accuracy: newAnswered > 0 ? Math.round((newScore / newAnswered) * 100) : 0,
+      verified: true,
+      updatedAt: FieldValue.serverTimestamp(),
+    }, { merge: true });
+
+    // Single question leaderboard (for backward compatibility)
+    if (!singleSnap.exists || (!previouslyCorrect && correct)) {
+      transaction.set(singleChallengeEntryRef, {
+        score: correct ? 1 : 0,
+        correct,
+        elapsedSeconds,
+        displayName,
+        updatedAt: FieldValue.serverTimestamp(),
+        verified: true,
+      }, { merge: true });
+    }
   });
-  return { correct, challengeId };
+
+  return {
+    correct,
+    challengeId,
+    alreadySubmitted,
+    score: updatedStats.score,
+    totalAnswered: updatedStats.totalAnswered,
+    level: updatedStats.level,
+  };
 });
 
 exports.createGroup = onCall(callableOptions, async (request) => {
