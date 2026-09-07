@@ -136,8 +136,9 @@ abstract interface class CloudGroupGateway {
   Stream<List<QuizGroup>> myGroups();
   Stream<List<GroupChallenge>> groupChallenges(String groupId);
   Future<CloudChallenge?> loadToday();
-  Future<String> createGroup(String name);
+  Future<String> createGroup(String name, {int durationMinutes = 10});
   Future<void> joinGroup(String groupId);
+  Future<void> extendGroup(String groupId, {int additionalMinutes = 10});
   Future<String> createGroupChallenge({
     required String groupId,
     required CloudChallenge challenge,
@@ -207,20 +208,50 @@ class LeaderboardEntry {
 }
 
 class QuizGroup {
-  const QuizGroup({required this.id, required this.name, required this.role});
+  const QuizGroup({
+    required this.id,
+    required this.name,
+    required this.role,
+    this.joinCode,
+    this.expiresAt,
+    this.durationMinutes,
+  });
 
   final String id;
   final String name;
   final String role;
+  final String? joinCode;
+  final DateTime? expiresAt;
+  final int? durationMinutes;
+
+  bool get isOwner => role == 'owner';
+  bool get isExpired =>
+      expiresAt != null && DateTime.now().isAfter(expiresAt!);
+
+  Duration? get remainingTime {
+    if (expiresAt == null) return null;
+    final diff = expiresAt!.difference(DateTime.now());
+    return diff.isNegative ? Duration.zero : diff;
+  }
 
   factory QuizGroup.fromDocument(
     QueryDocumentSnapshot<Map<String, dynamic>> document,
   ) {
     final data = document.data();
+    DateTime? exp;
+    final rawExp = data['expiresAt'];
+    if (rawExp is Timestamp) {
+      exp = rawExp.toDate();
+    } else if (rawExp is String) {
+      exp = DateTime.tryParse(rawExp);
+    }
     return QuizGroup(
       id: document.id,
       name: data['name'] as String? ?? 'Faith Quiz group',
       role: data['role'] as String? ?? 'member',
+      joinCode: data['joinCode'] as String?,
+      expiresAt: exp,
+      durationMinutes: (data['durationMinutes'] as num?)?.toInt(),
     );
   }
 }
@@ -477,12 +508,16 @@ class CloudChallengeService
       });
 
   @override
-  Future<String> createGroup(String name) async {
+  Future<String> createGroup(String name, {int durationMinutes = 10}) async {
     await _user();
     final result = await _functions.httpsCallable('createGroup').call(
-      <String, Object>{'name': name.trim()},
+      <String, Object>{
+        'name': name.trim(),
+        'durationMinutes': durationMinutes,
+      },
     );
-    return (result.data as Map)['groupId'] as String;
+    final data = Map<String, dynamic>.from(result.data as Map);
+    return (data['joinCode'] as String?) ?? (data['groupId'] as String);
   }
 
   @override
@@ -490,6 +525,16 @@ class CloudChallengeService
     await _user();
     await _functions.httpsCallable('joinGroup').call(<String, Object>{
       'groupId': groupId.trim(),
+      'joinCode': groupId.trim(),
+    });
+  }
+
+  @override
+  Future<void> extendGroup(String groupId, {int additionalMinutes = 10}) async {
+    await _user();
+    await _functions.httpsCallable('extendGroup').call(<String, Object>{
+      'groupId': groupId.trim(),
+      'additionalMinutes': additionalMinutes,
     });
   }
 

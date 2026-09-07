@@ -89,10 +89,14 @@ class _FakeGroupGateway implements CloudGroupGateway {
   Future<CloudChallenge?> loadToday() async => null;
 
   @override
-  Future<String> createGroup(String name) async => 'grp-mock-123';
+  Future<String> createGroup(String name, {int durationMinutes = 10}) async =>
+      'grp-mock-123';
 
   @override
   Future<void> joinGroup(String groupId) async {}
+
+  @override
+  Future<void> extendGroup(String groupId, {int additionalMinutes = 10}) async {}
 
   @override
   Future<String> createGroupChallenge({
@@ -472,9 +476,41 @@ void main() {
       await tester.pump();
 
       expect(find.text('FELLOWSHIP'), findsOneWidget);
-      expect(find.text('GROUP CODE: grp-test-123'), findsOneWidget);
+      expect(find.text('grp-test-123'), findsOneWidget);
+      expect(find.text('COPY'), findsOneWidget);
       expect(find.text('CREATE GROUP QUIZ (10 - 30 Qs)'), findsOneWidget);
       expect(find.text('Bible Challenge'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'GroupDetailScreen shows joinCode, session countdown, and allows extending session',
+    (tester) async {
+      final store = ProgressStore();
+      final futureExpiry = DateTime.now().add(const Duration(minutes: 10));
+      final group = QuizGroup(
+        id: 'grp-456',
+        name: 'Youth Ministry',
+        role: 'owner',
+        joinCode: '654321',
+        expiresAt: futureExpiry,
+        durationMinutes: 10,
+      );
+      final service = _FakeGroupGateway();
+      await tester.pumpWidget(
+        MaterialApp(
+          home: GroupDetailScreen(store: store, group: group, service: service),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('654321'), findsOneWidget);
+      expect(find.text('JOIN CODE'), findsOneWidget);
+      expect(find.text('COPY'), findsOneWidget);
+      expect(find.text('+10 MIN'), findsOneWidget);
+
+      await tester.tap(find.text('+10 MIN'));
+      await tester.pump();
     },
   );
 

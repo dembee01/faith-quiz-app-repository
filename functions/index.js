@@ -1,5 +1,5 @@
 const { getApps, initializeApp } = require('firebase-admin/app');
-const { getFirestore, FieldValue } = require('firebase-admin/firestore');
+const { getFirestore, FieldValue, Timestamp } = require('firebase-admin/firestore');
 const { getMessaging } = require('firebase-admin/messaging');
 const { setGlobalOptions } = require('firebase-functions/v2');
 const { HttpsError, onCall } = require('firebase-functions/v2/https');
@@ -246,39 +246,162 @@ exports.submitCloudChallenge = onCall(callableOptions, async (request) => {
   };
 });
 
+function generateJoinCode() {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
 exports.createGroup = onCall(callableOptions, async (request) => {
   const uid = requireUser(request);
   const name = requireText(request.data.name, 'group name', 40);
+  const durationMinutes = Number(request.data.durationMinutes);
+  // Default to 10 minutes if not specified or invalid. If durationMinutes <= 0, no expiry.
+  const minutes = Number.isInteger(durationMinutes) ? durationMinutes : 10;
+  const now = Date.now();
+  const expiresAt = minutes > 0 ? new Date(now + minutes * 60 * 1000) : null;
+  const expiresAtTimestamp = expiresAt ? Timestamp.fromDate(expiresAt) : null;
+
+  // Generate unique 6-digit join code
+  let joinCode = generateJoinCode();
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const existing = await db.collection('joinCodes').doc(joinCode).get();
+    if (!existing.exists) break;
+    const exp = existing.get('expiresAt');
+    if (exp && exp.toDate() < new Date()) break;
+    joinCode = generateJoinCode();
+  }
+
   const group = db.collection('groups').doc();
   const createdAt = FieldValue.serverTimestamp();
+
   await db.runTransaction(async (transaction) => {
-    transaction.set(group, { name, ownerUid: uid, createdAt });
+    transaction.set(group, {
+      name,
+      ownerUid: uid,
+      createdAt,
+      joinCode,
+      expiresAt: expiresAtTimestamp,
+      durationMinutes: minutes,
+    });
+    transaction.set(db.collection('joinCodes').doc(joinCode), {
+      groupId: group.id,
+      name,
+      ownerUid: uid,
+      createdAt,
+      expiresAt: expiresAtTimestamp,
+      durationMinutes: minutes,
+    });
     transaction.set(group.collection('members').doc(uid), { role: 'owner', joinedAt: createdAt });
     transaction.set(db.doc(`users/${uid}/groups/${group.id}`), {
       name,
       role: 'owner',
       joinedAt: createdAt,
+      joinCode,
+      expiresAt: expiresAtTimestamp,
+      durationMinutes: minutes,
     });
   });
-  return { groupId: group.id };
+
+  return {
+    groupId: group.id,
+    joinCode,
+    expiresAt: expiresAt ? expiresAt.toISOString() : null,
+    durationMinutes: minutes,
+  };
 });
 
 exports.joinGroup = onCall(callableOptions, async (request) => {
   const uid = requireUser(request);
-  const groupId = requireText(request.data.groupId, 'group ID');
-  const group = db.doc(`groups/${groupId}`);
+  const rawInput = requireText(request.data.groupId || request.data.joinCode, 'group code').trim();
+
+  let targetGroupId = rawInput;
+  const joinCodeDoc = await db.collection('joinCodes').doc(rawInput).get();
+
+  if (joinCodeDoc.exists) {
+    const exp = joinCodeDoc.get('expiresAt');
+    if (exp && exp.toDate() < new Date()) {
+      throw new HttpsError(
+        'deadline-exceeded',
+        'This group invitation has expired. Ask the host for an updated code.',
+      );
+    }
+    targetGroupId = joinCodeDoc.get('groupId');
+  }
+
+  const group = db.doc(`groups/${targetGroupId}`);
+  let groupName = 'Faith Quiz group';
+  let groupJoinCode = null;
+  let groupExpiresAt = null;
+  let groupDurationMinutes = null;
+
   await db.runTransaction(async (transaction) => {
     const snapshot = await transaction.get(group);
-    if (!snapshot.exists) throw new HttpsError('not-found', 'Group not found.');
+    if (!snapshot.exists) throw new HttpsError('not-found', 'Group not found. Please verify the code.');
+
+    const exp = snapshot.get('expiresAt');
+    if (exp && exp.toDate() < new Date()) {
+      throw new HttpsError('deadline-exceeded', 'This group session has expired.');
+    }
+
+    groupName = snapshot.get('name') || 'Faith Quiz group';
+    groupJoinCode = snapshot.get('joinCode') || null;
+    groupExpiresAt = snapshot.get('expiresAt') || null;
+    groupDurationMinutes = snapshot.get('durationMinutes') || null;
+
     const joinedAt = FieldValue.serverTimestamp();
     transaction.set(group.collection('members').doc(uid), { role: 'member', joinedAt }, { merge: true });
-    transaction.set(db.doc(`users/${uid}/groups/${groupId}`), {
-      name: snapshot.get('name') || 'Faith Quiz group',
+    transaction.set(db.doc(`users/${uid}/groups/${targetGroupId}`), {
+      name: groupName,
       role: 'member',
       joinedAt,
+      joinCode: groupJoinCode,
+      expiresAt: groupExpiresAt,
+      durationMinutes: groupDurationMinutes,
     }, { merge: true });
   });
-  return { groupId };
+
+  return {
+    groupId: targetGroupId,
+    name: groupName,
+    joinCode: groupJoinCode,
+  };
+});
+
+exports.extendGroup = onCall(callableOptions, async (request) => {
+  const uid = requireUser(request);
+  const groupId = requireText(request.data.groupId, 'group ID');
+  const additionalMinutes = Number(request.data.additionalMinutes) || 10;
+
+  const group = db.doc(`groups/${groupId}`);
+  const member = db.doc(`groups/${groupId}/members/${uid}`);
+  const [groupSnap, memberSnap] = await Promise.all([group.get(), member.get()]);
+
+  if (!groupSnap.exists || !memberSnap.exists) {
+    throw new HttpsError('not-found', 'Group not found.');
+  }
+  if (memberSnap.get('role') !== 'owner') {
+    throw new HttpsError('permission-denied', 'Only the group owner can extend the session.');
+  }
+
+  const currentExp = groupSnap.get('expiresAt');
+  const baseTime = (currentExp && currentExp.toDate() > new Date())
+    ? currentExp.toDate().getTime()
+    : Date.now();
+  const newExp = new Date(baseTime + additionalMinutes * 60 * 1000);
+  const newExpTimestamp = Timestamp.fromDate(newExp);
+  const joinCode = groupSnap.get('joinCode');
+
+  const batch = db.batch();
+  batch.update(group, { expiresAt: newExpTimestamp });
+  if (joinCode) {
+    batch.set(db.collection('joinCodes').doc(joinCode), { expiresAt: newExpTimestamp }, { merge: true });
+  }
+  batch.set(db.doc(`users/${uid}/groups/${groupId}`), { expiresAt: newExpTimestamp }, { merge: true });
+  await batch.commit();
+
+  return {
+    groupId,
+    expiresAt: newExp.toISOString(),
+  };
 });
 
 // Group hosts select from the same curated public catalogue. Members can
@@ -298,6 +421,9 @@ exports.createGroupChallenge = onCall(callableOptions, async (request) => {
   }
   if (membershipSnapshot.get('role') !== 'owner') {
     throw new HttpsError('permission-denied', 'Only the group owner can create a challenge.');
+  }
+  if (groupSnapshot.get('expiresAt') && groupSnapshot.get('expiresAt').toDate() < new Date()) {
+    throw new HttpsError('failed-precondition', 'This group session has expired. Please extend the session to create a new challenge.');
   }
 
   const requestedCount = Number(request.data.questionCount);

@@ -3,6 +3,7 @@ import 'dart:math';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:cloud_functions/cloud_functions.dart' show FirebaseFunctionsException;
 
 import 'answer_feedback.dart';
@@ -3099,45 +3100,102 @@ class _GroupsScreenState extends State<GroupsScreen> {
 
   Future<void> _showNameDialog({required bool join}) async {
     final controller = TextEditingController();
-    final value = await showDialog<String>(
+    int selectedDuration = 10;
+    final result = await showDialog<bool>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        backgroundColor: _slateSurface,
-        title: Text(join ? 'Join group' : 'Create group'),
-        content: TextField(
-          controller: controller,
-          maxLength: join ? 80 : 40,
-          decoration: InputDecoration(
-            hintText: join ? 'Group code' : 'e.g. Grace Fellowship',
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: _slateSurface,
+          title: Text(join ? 'Join Group' : 'Create Group'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextField(
+                controller: controller,
+                maxLength: join ? 80 : 40,
+                autofocus: true,
+                decoration: InputDecoration(
+                  hintText: join
+                      ? '6-digit code or group ID'
+                      : 'e.g. Grace Fellowship',
+                ),
+              ),
+              if (!join) ...[
+                const SizedBox(height: 8),
+                const Text(
+                  'Session duration:',
+                  style: TextStyle(
+                    color: _slateTextSecondary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [
+                    for (final item in const [
+                      (10, '10 min'),
+                      (30, '30 min'),
+                      (60, '1 hour'),
+                      (0, 'No expiry'),
+                    ])
+                      ChoiceChip(
+                        label: Text(item.$2, style: const TextStyle(fontSize: 11)),
+                        selected: selectedDuration == item.$1,
+                        selectedColor: _gold,
+                        labelStyle: TextStyle(
+                          color: selectedDuration == item.$1
+                              ? _slateButtonText
+                              : _slateTextPrimary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        onSelected: (selected) {
+                          if (selected) {
+                            setDialogState(() => selectedDuration = item.$1);
+                          }
+                        },
+                      ),
+                  ],
+                ),
+              ],
+            ],
           ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('CANCEL'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: Text(join ? 'JOIN' : 'CREATE'),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('CANCEL'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(dialogContext, controller.text),
-            child: Text(join ? 'JOIN' : 'CREATE'),
-          ),
-        ],
       ),
     );
+    final text = controller.text.trim();
     controller.dispose();
-    if (value == null || value.trim().isEmpty || !mounted) return;
+    if (result != true || text.isEmpty || !mounted) return;
     try {
       if (join) {
-        await _service.joinGroup(value);
-        if (mounted) _notice('You joined the group.');
+        await _service.joinGroup(text);
+        if (mounted) _notice('You joined the group!');
       } else {
-        final code = await _service.createGroup(value);
-        if (mounted) _notice('Group created. Share code: $code');
-      }
-    } catch (_) {
-      if (mounted) {
-        _notice(
-          'That group action could not be verified. Try again when online.',
+        final code = await _service.createGroup(
+          text,
+          durationMinutes: selectedDuration,
         );
+        if (mounted) _notice('Group created! Share code: $code');
+      }
+    } catch (e) {
+      if (mounted) {
+        final msg = e is FirebaseFunctionsException && e.message != null
+            ? e.message!
+            : 'That group action could not be completed. Try again.';
+        _notice(msg);
       }
     }
   }
@@ -3381,11 +3439,31 @@ class _GroupsScreenState extends State<GroupsScreen> {
                               const SizedBox(height: 10),
                           itemBuilder: (context, index) {
                             final group = groups[index];
+                            final isExpired = group.isExpired;
+                            final codeDisplay = group.joinCode != null
+                                ? 'Code: ${group.joinCode}'
+                                : group.id;
+                            final String timeStatus;
+                            if (group.expiresAt == null) {
+                              timeStatus = 'Open session';
+                            } else if (isExpired) {
+                              timeStatus = 'Expired';
+                            } else {
+                              final mins = group.remainingTime?.inMinutes ?? 0;
+                              timeStatus = mins > 0
+                                  ? '${mins}m left'
+                                  : '<1m left';
+                            }
+                            final roleDisplay = group.role == 'owner'
+                                ? 'Owner'
+                                : 'Member';
                             return SlateSettingCard(
                               title: group.name,
                               subtitle:
-                                  '${group.role == 'owner' ? 'Owner' : 'Member'} • ${group.id}',
-                              icon: Icons.group_outlined,
+                                  '$roleDisplay • $codeDisplay • $timeStatus',
+                              icon: isExpired
+                                  ? Icons.timer_off_outlined
+                                  : Icons.group_outlined,
                               onTap: () => Navigator.of(context).push(
                                 MaterialPageRoute(
                                   builder: (_) => GroupDetailScreen(
@@ -3430,12 +3508,64 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
   late final CloudGroupGateway _service;
   late final Stream<List<GroupChallenge>> _challengesStream;
   bool _publishing = false;
+  bool _extending = false;
+  Timer? _countdownTimer;
+  late DateTime? _expiresAt;
 
   @override
   void initState() {
     super.initState();
     _service = widget.service ?? CloudChallengeService();
     _challengesStream = _service.groupChallenges(widget.group.id);
+    _expiresAt = widget.group.expiresAt;
+    if (_expiresAt != null) {
+      _countdownTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+        if (mounted) setState(() {});
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _countdownTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _extendGroup() async {
+    if (_extending) return;
+    setState(() => _extending = true);
+    try {
+      await _service.extendGroup(widget.group.id, additionalMinutes: 10);
+      final base = (_expiresAt != null && _expiresAt!.isAfter(DateTime.now()))
+          ? _expiresAt!
+          : DateTime.now();
+      setState(() {
+        _expiresAt = base.add(const Duration(minutes: 10));
+      });
+      if (mounted) {
+        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+          const SnackBar(content: Text('Session extended by 10 minutes!')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        final message = e is FirebaseFunctionsException && e.message != null
+            ? e.message!
+            : 'Could not extend session. Please try again.';
+        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+          SnackBar(content: Text(message)),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _extending = false);
+    }
+  }
+
+  void _copyCode(String code) {
+    Clipboard.setData(ClipboardData(text: code));
+    ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+      SnackBar(content: Text('Copied "$code" to clipboard!')),
+    );
   }
 
   Future<void> _createQuiz(int count) async {
@@ -3532,34 +3662,163 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-    body: DivineBackground(
-      reduceMotion: widget.store.reduceMotion,
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(22, 16, 22, 40),
-          child: Column(
-            children: [
-              SlatePageHeader(title: widget.group.name.toUpperCase()),
-              const SizedBox(height: 8),
-              SelectableText(
-                'GROUP CODE: ${widget.group.id}',
-                style: const TextStyle(
-                  color: _slateTextSecondary,
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
+  Widget build(BuildContext context) {
+    final isExpired = _expiresAt != null && DateTime.now().isAfter(_expiresAt!);
+    return Scaffold(
+      body: DivineBackground(
+        reduceMotion: widget.store.reduceMotion,
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(22, 16, 22, 40),
+            child: Column(
+              children: [
+                SlatePageHeader(title: widget.group.name.toUpperCase()),
+                const SizedBox(height: 10),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                  decoration: BoxDecoration(
+                    color: _slateSurface,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: .12),
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                widget.group.joinCode != null
+                                    ? 'JOIN CODE'
+                                    : 'GROUP ID',
+                                style: const TextStyle(
+                                  color: _slateTextSecondary,
+                                  fontSize: 10,
+                                  letterSpacing: 1.2,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              SelectableText(
+                                widget.group.joinCode ?? widget.group.id,
+                                style: const TextStyle(
+                                  color: _gold,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 3.0,
+                                ),
+                              ),
+                            ],
+                          ),
+                          FilledButton.tonalIcon(
+                            onPressed: () => _copyCode(
+                              widget.group.joinCode ?? widget.group.id,
+                            ),
+                            icon: const Icon(
+                              Icons.copy,
+                              size: 16,
+                              color: _gold,
+                            ),
+                            label: const Text(
+                              'COPY',
+                              style: TextStyle(
+                                color: _gold,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                              ),
+                            ),
+                            style: FilledButton.styleFrom(
+                              visualDensity: VisualDensity.compact,
+                              backgroundColor: _slateSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (_expiresAt != null) ...[
+                        const Divider(color: Colors.white12, height: 16),
+                        Builder(
+                          builder: (context) {
+                            final diff = _expiresAt!.difference(DateTime.now());
+                            final remainingStr = isExpired
+                                ? 'Session Expired'
+                                : '${diff.inMinutes}:${(diff.inSeconds % 60).toString().padLeft(2, '0')} remaining';
+                            return Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(
+                                      isExpired
+                                          ? Icons.timer_off_outlined
+                                          : Icons.timer_outlined,
+                                      size: 16,
+                                      color: isExpired ? _wrong : _gold,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      remainingStr,
+                                      style: TextStyle(
+                                        color: isExpired
+                                            ? _wrong
+                                            : _slateTextPrimary,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                if (widget.group.isOwner)
+                                  TextButton.icon(
+                                    onPressed: _extending ? null : _extendGroup,
+                                    icon: const Icon(
+                                      Icons.add_alarm,
+                                      size: 16,
+                                      color: _gold,
+                                    ),
+                                    label: Text(
+                                      _extending ? 'EXTENDING…' : '+10 MIN',
+                                      style: const TextStyle(
+                                        color: _gold,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    style: TextButton.styleFrom(
+                                      visualDensity: VisualDensity.compact,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            );
+                          },
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
-              ),
-              if (widget.group.role == 'owner') ...[
-                const SizedBox(height: 16),
-                SlatePillButton(
-                  label: _publishing
-                      ? 'PUBLISHING QUESTION…'
-                      : 'CREATE GROUP QUIZ (10 - 30 Qs)',
-                  loading: _publishing,
-                  onPressed: _publishing ? null : _showCreateQuizDialog,
-                ),
-              ],
+                if (widget.group.role == 'owner') ...[
+                  const SizedBox(height: 12),
+                  SlatePillButton(
+                    label: _publishing
+                        ? 'PUBLISHING QUIZ…'
+                        : isExpired
+                            ? 'SESSION EXPIRED (EXTEND TO HOST)'
+                            : 'CREATE GROUP QUIZ (10 - 30 Qs)',
+                    loading: _publishing,
+                    onPressed: _publishing || isExpired
+                        ? null
+                        : _showCreateQuizDialog,
+                  ),
+                ],
               const SizedBox(height: 18),
               Expanded(
                 child: StreamBuilder<List<GroupChallenge>>(
@@ -3621,7 +3880,8 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
         ),
       ),
     ),
-  );
+    );
+  }
 }
 
 class GroupQuestionScreen extends StatefulWidget {
