@@ -211,6 +211,12 @@ exports.submitCloudChallenge = onCall(callableOptions, async (request) => {
       level: newLevel,
     };
 
+    // Design note: the global cumulative leaderboard ranks by accuracy
+    // (score DESC, i.e. total correct answers) with per-question elapsed
+    // time as a tie-breaker. Cumulative time is not meaningful because a
+    // player who has answered 200 questions will always have more total
+    // time than one who answered 10. The `accuracy` percentage field
+    // (score / totalAnswered) is shown as the meaningful secondary metric.
     transaction.set(globalLeaderboardRef, {
       uid,
       displayName,
@@ -461,8 +467,12 @@ exports.createGroupChallenge = onCall(callableOptions, async (request) => {
     throw new HttpsError('failed-precondition', 'This group session has expired. Please extend the session to create a new challenge.');
   }
 
-  // Enforce mode: 'competitive' or 'fellowship'
-  const mode = request.data.mode === 'fellowship' ? 'fellowship' : 'competitive';
+  // Enforce mode: only 'competitive' or 'fellowship' accepted; reject all others
+  const rawMode = request.data.mode;
+  if (rawMode !== undefined && rawMode !== 'competitive' && rawMode !== 'fellowship') {
+    throw new HttpsError('invalid-argument', 'Mode must be either "competitive" or "fellowship".');
+  }
+  const mode = rawMode === 'fellowship' ? 'fellowship' : 'competitive';
 
   // Strict Question Count Validation: MUST be exactly 10, 20, or 30
   const requestedCount = Number(request.data.questionCount);
@@ -471,14 +481,26 @@ exports.createGroupChallenge = onCall(callableOptions, async (request) => {
   }
   const questionCount = requestedCount;
 
+  // Read authoritative catalogue metadata for question count.
+  // Falls back to 500 for backward compatibility with faith-quiz-global-v1.
+  const catalogueMeta = await db.doc(`content/${catalogue}`).get();
+  const totalQuestions = catalogueMeta.exists && Number.isInteger(catalogueMeta.get('questionCount'))
+    ? catalogueMeta.get('questionCount')
+    : 500;
+
+  // Verify the coprime stride 263 is actually coprime with the catalogue size.
+  // GCD must be 1 for a full permutation cycle.
+  function gcd(a, b) { while (b) { [a, b] = [b, a % b]; } return a; }
+  const stride = gcd(263, totalQuestions) === 1 ? 263 : 1; // fallback to sequential if not coprime
+
   // Server-controlled randomized seed (client seed disallowed to prevent manipulation)
-  const seed = Math.floor(Math.random() * 500);
+  const seed = Math.floor(Math.random() * totalQuestions);
 
   // Multi-question rotated cloud challenge: select questionCount distinct indices
-  // using coprime stride 263 to interleave Old Testament and New Testament questions.
+  // using coprime stride to interleave Old Testament and New Testament questions.
   const targetIndices = [];
   for (let i = 0; i < questionCount; i++) {
-    targetIndices.push((seed + i * 263) % 500);
+    targetIndices.push((seed + i * stride) % totalQuestions);
   }
 
   // Firestore allows `in` queries with up to 30 elements in a single read query
@@ -611,42 +633,63 @@ exports.submitFellowshipAnswer = onCall(callableOptions, async (request) => {
     throw new HttpsError('permission-denied', 'Only group members can submit answers.');
   }
 
+  // Atomic transaction: validate challenge state + check answer immutability + create answer
+  // This eliminates the race between answer submission and host reveal/advance,
+  // and guarantees exactly-once semantics (answer immutability after first submission).
   const challengeRef = db.doc(`groups/${groupId}/challenges/${challengeId}`);
-  const challengeSnap = await challengeRef.get();
-  if (!challengeSnap.exists) {
-    throw new HttpsError('not-found', 'Challenge not found.');
-  }
-
-  if (challengeSnap.get('status') !== 'question_open') {
-    throw new HttpsError('failed-precondition', 'Question is not currently open for answers.');
-  }
-
-  const currentQIndex = challengeSnap.get('currentQuestionIndex') || 0;
-  if (questionIndex !== currentQIndex) {
-    throw new HttpsError('failed-precondition', 'Can only answer the active question.');
-  }
-
   const answerRef = challengeRef.collection('fellowshipAnswers').doc(`${questionIndex}_${uid}`);
-  const openedAt = challengeSnap.get('currentQuestionOpenedAt');
-  const responseTimeSeconds = openedAt && openedAt.toDate
-    ? Math.max(0, Math.floor((Date.now() - openedAt.toDate().getTime()) / 1000))
-    : 0;
+  let resultAnswerIndex = answerIndex;
+  let alreadyAnswered = false;
 
-  const batch = db.batch();
-  batch.set(answerRef, {
-    uid,
-    questionIndex,
-    answerIndex,
-    answeredAt: FieldValue.serverTimestamp(),
-    responseTimeSeconds,
-  }, { merge: true });
+  await db.runTransaction(async (transaction) => {
+    // ALL READS FIRST
+    const [challengeSnap, existingAnswer] = await Promise.all([
+      transaction.get(challengeRef),
+      transaction.get(answerRef),
+    ]);
 
-  batch.update(challengeRef, {
-    answeredUids: FieldValue.arrayUnion(uid),
+    if (!challengeSnap.exists) {
+      throw new HttpsError('not-found', 'Challenge not found.');
+    }
+
+    // Validate challenge is in the correct state for answers
+    if (challengeSnap.get('status') !== 'question_open') {
+      throw new HttpsError('failed-precondition', 'Question is not currently open for answers.');
+    }
+
+    const currentQIndex = challengeSnap.get('currentQuestionIndex') || 0;
+    if (questionIndex !== currentQIndex) {
+      throw new HttpsError('failed-precondition', 'Can only answer the active question.');
+    }
+
+    // Immutability: if answer already exists, return idempotent success
+    if (existingAnswer.exists) {
+      resultAnswerIndex = existingAnswer.get('answerIndex');
+      alreadyAnswered = true;
+      return; // Transaction completes without writes
+    }
+
+    // Calculate response time from question open timestamp
+    const openedAt = challengeSnap.get('currentQuestionOpenedAt');
+    const responseTimeSeconds = openedAt && openedAt.toDate
+      ? Math.max(0, Math.floor((Date.now() - openedAt.toDate().getTime()) / 1000))
+      : 0;
+
+    // ALL WRITES AFTER READS
+    transaction.set(answerRef, {
+      uid,
+      questionIndex,
+      answerIndex,
+      answeredAt: FieldValue.serverTimestamp(),
+      responseTimeSeconds,
+    });
+
+    transaction.update(challengeRef, {
+      answeredUids: FieldValue.arrayUnion(uid),
+    });
   });
 
-  await batch.commit();
-  return { success: true, questionIndex, answerIndex };
+  return { success: true, questionIndex, answerIndex: resultAnswerIndex, alreadyAnswered };
 });
 
 exports.revealFellowshipAnswer = onCall(callableOptions, async (request) => {
@@ -659,44 +702,68 @@ exports.revealFellowshipAnswer = onCall(callableOptions, async (request) => {
     throw new HttpsError('permission-denied', 'Only the group owner can reveal answers.');
   }
 
+  // Atomic transaction: validate status is 'question_open' before transitioning
+  // to 'question_revealed'. Prevents double-reveal race conditions.
   const challengeRef = db.doc(`groups/${groupId}/challenges/${challengeId}`);
-  const challengeSnap = await challengeRef.get();
-  if (!challengeSnap.exists) {
-    throw new HttpsError('not-found', 'Challenge not found.');
-  }
+  let revealResult = {};
 
-  if (challengeSnap.get('status') !== 'question_open') {
-    throw new HttpsError('failed-precondition', 'Question must be open before revealing.');
-  }
+  await db.runTransaction(async (transaction) => {
+    const challengeSnap = await transaction.get(challengeRef);
+    if (!challengeSnap.exists) {
+      throw new HttpsError('not-found', 'Challenge not found.');
+    }
 
-  const catalogue = challengeSnap.get('catalogue') || 'faith-quiz-global-v1';
-  const currentQIndex = challengeSnap.get('currentQuestionIndex') || 0;
-  const questions = challengeSnap.get('questions') || [];
-  if (currentQIndex >= questions.length) {
-    throw new HttpsError('out-of-range', 'Invalid question index.');
-  }
+    const currentStatus = challengeSnap.get('status');
+    // Idempotent: if already revealed, return current state
+    if (currentStatus === 'question_revealed') {
+      const currentQIndex = challengeSnap.get('currentQuestionIndex') || 0;
+      revealResult = {
+        status: 'question_revealed',
+        currentQuestionIndex: currentQIndex,
+        revealedAnswer: challengeSnap.get('revealedAnswer'),
+        revealedExplanation: challengeSnap.get('revealedExplanation') || '',
+        revealedScriptureReference: challengeSnap.get('revealedScriptureReference') || '',
+      };
+      return;
+    }
 
-  const q = questions[currentQIndex];
-  const privateAnswer = await db.doc(`contentPrivate/${catalogue}/answers/${q.id}`).get();
-  const correctAnswer = privateAnswer.exists ? privateAnswer.get('correctAnswer') : 0;
-  const explanation = privateAnswer.exists ? (privateAnswer.get('explanation') || '') : '';
-  const scriptureReference = q.scriptureReference || '';
+    if (currentStatus !== 'question_open') {
+      throw new HttpsError('failed-precondition', 'Question must be open before revealing.');
+    }
 
-  await challengeRef.update({
-    status: 'question_revealed',
-    revealedAnswer: correctAnswer,
-    revealedExplanation: explanation,
-    revealedScriptureReference: scriptureReference,
-    revealedAt: FieldValue.serverTimestamp(),
+    const catalogue = challengeSnap.get('catalogue') || 'faith-quiz-global-v1';
+    const currentQIndex = challengeSnap.get('currentQuestionIndex') || 0;
+    const questions = challengeSnap.get('questions') || [];
+    if (currentQIndex >= questions.length) {
+      throw new HttpsError('out-of-range', 'Invalid question index.');
+    }
+
+    const q = questions[currentQIndex];
+    // Note: reading contentPrivate inside a transaction is safe because it's
+    // a read-only server-owned document that never changes during gameplay.
+    const privateAnswer = await transaction.get(db.doc(`contentPrivate/${catalogue}/answers/${q.id}`));
+    const correctAnswer = privateAnswer.exists ? privateAnswer.get('correctAnswer') : 0;
+    const explanation = privateAnswer.exists ? (privateAnswer.get('explanation') || '') : '';
+    const scriptureReference = q.scriptureReference || '';
+
+    transaction.update(challengeRef, {
+      status: 'question_revealed',
+      revealedAnswer: correctAnswer,
+      revealedExplanation: explanation,
+      revealedScriptureReference: scriptureReference,
+      revealedAt: FieldValue.serverTimestamp(),
+    });
+
+    revealResult = {
+      status: 'question_revealed',
+      currentQuestionIndex: currentQIndex,
+      revealedAnswer: correctAnswer,
+      revealedExplanation: explanation,
+      revealedScriptureReference: scriptureReference,
+    };
   });
 
-  return {
-    status: 'question_revealed',
-    currentQuestionIndex: currentQIndex,
-    revealedAnswer: correctAnswer,
-    revealedExplanation: explanation,
-    revealedScriptureReference: scriptureReference,
-  };
+  return revealResult;
 });
 
 exports.advanceFellowshipQuestion = onCall(callableOptions, async (request) => {
@@ -709,103 +776,134 @@ exports.advanceFellowshipQuestion = onCall(callableOptions, async (request) => {
     throw new HttpsError('permission-denied', 'Only the group owner can advance questions.');
   }
 
+  // Atomic transaction: validate status is 'question_revealed' before advancing.
+  // Prevents double-advance race conditions and ensures state machine integrity.
   const challengeRef = db.doc(`groups/${groupId}/challenges/${challengeId}`);
-  const challengeSnap = await challengeRef.get();
-  if (!challengeSnap.exists) {
-    throw new HttpsError('not-found', 'Challenge not found.');
-  }
+  let advanceResult = {};
+  let needsCompletion = false;
+  let completionData = {};
 
-  if (challengeSnap.get('status') !== 'question_revealed') {
-    throw new HttpsError('failed-precondition', 'Answer must be revealed before advancing.');
-  }
-
-  const currentQIndex = challengeSnap.get('currentQuestionIndex') || 0;
-  const questions = challengeSnap.get('questions') || [];
-  const nextIndex = currentQIndex + 1;
-
-  if (nextIndex < questions.length) {
-    // Advance to next question
-    await challengeRef.update({
-      status: 'question_open',
-      currentQuestionIndex: nextIndex,
-      currentQuestionOpenedAt: FieldValue.serverTimestamp(),
-      revealedAnswer: FieldValue.delete(),
-      revealedExplanation: FieldValue.delete(),
-      revealedScriptureReference: FieldValue.delete(),
-      answeredUids: [],
-    });
-    return {
-      status: 'question_open',
-      currentQuestionIndex: nextIndex,
-    };
-  }
-
-  // All questions finished! Complete fellowship and grade all members!
-  const catalogue = challengeSnap.get('catalogue') || 'faith-quiz-global-v1';
-  const questionIds = challengeSnap.get('questionIds') || questions.map((q) => q.id);
-
-  // Fetch all answer docs from contentPrivate in batch
-  const answerRefs = questionIds.map((qId) => db.doc(`contentPrivate/${catalogue}/answers/${qId}`));
-  const answerSnaps = await db.getAll(...answerRefs);
-  const correctMap = new Map();
-  answerSnaps.forEach((doc) => {
-    if (doc.exists) correctMap.set(doc.id, doc.get('correctAnswer'));
-  });
-
-  // Fetch all fellowshipAnswers
-  const allAnswersSnap = await challengeRef.collection('fellowshipAnswers').get();
-  const userAnswers = new Map(); // uid -> Map(qIndex -> { answerIndex, responseTime })
-  allAnswersSnap.docs.forEach((d) => {
-    const data = d.data();
-    if (!userAnswers.has(data.uid)) userAnswers.set(data.uid, new Map());
-    userAnswers.get(data.uid).set(data.questionIndex, {
-      answerIndex: data.answerIndex,
-      responseTime: data.responseTimeSeconds || 0,
-    });
-  });
-
-  // Fetch members to get displayNames
-  const membersSnap = await db.collection(`groups/${groupId}/members`).get();
-  const nameMap = new Map();
-  membersSnap.docs.forEach((d) => {
-    nameMap.set(d.id, d.get('displayName') || 'Faith learner');
-  });
-
-  const batch = db.batch();
-  for (const [memberUid, answersMap] of userAnswers.entries()) {
-    let score = 0;
-    let totalResponseTime = 0;
-    for (let i = 0; i < questions.length; i++) {
-      const q = questions[i];
-      const correctAns = correctMap.get(q.id);
-      const userAns = answersMap.get(i);
-      if (userAns && userAns.answerIndex === correctAns) {
-        score++;
-      }
-      if (userAns) {
-        totalResponseTime += userAns.responseTime;
-      }
+  await db.runTransaction(async (transaction) => {
+    const challengeSnap = await transaction.get(challengeRef);
+    if (!challengeSnap.exists) {
+      throw new HttpsError('not-found', 'Challenge not found.');
     }
 
-    const entryRef = challengeRef.collection('entries').doc(memberUid);
-    batch.set(entryRef, {
-      displayName: nameMap.get(memberUid) || 'Faith learner',
-      score,
-      total: questions.length,
-      correct: score === questions.length,
-      elapsedSeconds: totalResponseTime,
-      verified: true,
-      updatedAt: FieldValue.serverTimestamp(),
-    }, { merge: true });
-  }
+    const currentStatus = challengeSnap.get('status');
 
-  batch.update(challengeRef, {
-    status: 'completed',
-    completedAt: FieldValue.serverTimestamp(),
+    // Idempotent: if already completed, return current state
+    if (currentStatus === 'completed') {
+      advanceResult = { status: 'completed' };
+      return;
+    }
+
+    if (currentStatus !== 'question_revealed') {
+      throw new HttpsError('failed-precondition', 'Answer must be revealed before advancing.');
+    }
+
+    const currentQIndex = challengeSnap.get('currentQuestionIndex') || 0;
+    const questions = challengeSnap.get('questions') || [];
+    const nextIndex = currentQIndex + 1;
+
+    if (nextIndex < questions.length) {
+      // Advance to next question within the transaction
+      transaction.update(challengeRef, {
+        status: 'question_open',
+        currentQuestionIndex: nextIndex,
+        currentQuestionOpenedAt: FieldValue.serverTimestamp(),
+        revealedAnswer: FieldValue.delete(),
+        revealedExplanation: FieldValue.delete(),
+        revealedScriptureReference: FieldValue.delete(),
+        answeredUids: [],
+      });
+      advanceResult = {
+        status: 'question_open',
+        currentQuestionIndex: nextIndex,
+      };
+      return;
+    }
+
+    // All questions finished — mark for completion grading outside transaction
+    // (completion grading requires reading fellowshipAnswers subcollection which
+    // may exceed transaction read limits)
+    needsCompletion = true;
+    completionData = {
+      catalogue: challengeSnap.get('catalogue') || 'faith-quiz-global-v1',
+      questions,
+      questionIds: challengeSnap.get('questionIds') || questions.map((q) => q.id),
+    };
+
+    // Atomically mark as completed to prevent double-advance
+    transaction.update(challengeRef, {
+      status: 'completed',
+      completedAt: FieldValue.serverTimestamp(),
+    });
   });
 
-  await batch.commit();
-  return { status: 'completed' };
+  if (needsCompletion) {
+    // Grade all members outside the transaction (subcollection reads)
+    const { catalogue, questions, questionIds } = completionData;
+
+    // Fetch all answer docs from contentPrivate in batch
+    const answerRefs = questionIds.map((qId) => db.doc(`contentPrivate/${catalogue}/answers/${qId}`));
+    const answerSnaps = await db.getAll(...answerRefs);
+    const correctMap = new Map();
+    answerSnaps.forEach((doc) => {
+      if (doc.exists) correctMap.set(doc.id, doc.get('correctAnswer'));
+    });
+
+    // Fetch all fellowshipAnswers
+    const allAnswersSnap = await challengeRef.collection('fellowshipAnswers').get();
+    const userAnswers = new Map(); // uid -> Map(qIndex -> { answerIndex, responseTime })
+    allAnswersSnap.docs.forEach((d) => {
+      const data = d.data();
+      if (!userAnswers.has(data.uid)) userAnswers.set(data.uid, new Map());
+      userAnswers.get(data.uid).set(data.questionIndex, {
+        answerIndex: data.answerIndex,
+        responseTime: data.responseTimeSeconds || 0,
+      });
+    });
+
+    // Fetch members to get displayNames
+    const membersSnap = await db.collection(`groups/${groupId}/members`).get();
+    const nameMap = new Map();
+    membersSnap.docs.forEach((d) => {
+      nameMap.set(d.id, d.get('displayName') || 'Faith learner');
+    });
+
+    const batch = db.batch();
+    for (const [memberUid, answersMap] of userAnswers.entries()) {
+      let score = 0;
+      let totalResponseTime = 0;
+      for (let i = 0; i < questions.length; i++) {
+        const q = questions[i];
+        const correctAns = correctMap.get(q.id);
+        const userAns = answersMap.get(i);
+        if (userAns && userAns.answerIndex === correctAns) {
+          score++;
+        }
+        if (userAns) {
+          totalResponseTime += userAns.responseTime;
+        }
+      }
+
+      const entryRef = challengeRef.collection('entries').doc(memberUid);
+      batch.set(entryRef, {
+        displayName: nameMap.get(memberUid) || 'Faith learner',
+        score,
+        total: questions.length,
+        correct: score === questions.length,
+        elapsedSeconds: totalResponseTime,
+        verified: true,
+        updatedAt: FieldValue.serverTimestamp(),
+      }, { merge: true });
+    }
+
+    await batch.commit();
+    advanceResult = { status: 'completed' };
+  }
+
+  return advanceResult;
 });
 
 exports.submitGroupChallenge = onCall(callableOptions, async (request) => {
