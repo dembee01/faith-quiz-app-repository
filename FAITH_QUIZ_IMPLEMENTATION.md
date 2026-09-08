@@ -601,11 +601,9 @@ flutter test
 
 The widget suite covers splash/menu navigation, answer confirmation and
 feedback, timers, Group Challenge mode/count UI, owner/challenge model parsing,
-and the Fellowship finalizing presentation. The current run passes 34 Flutter
-tests. `flutter analyze` currently exits non-zero only because of two
-`curly_braces_in_flow_control_structures` info diagnostics in `lib/app.dart`
-(lines 1348 and 3180); the uncommitted working-tree change adds braces for
-those diagnostics.
+Competitive timeout behavior, authoritative mode routing, and the Fellowship
+finalizing presentation. The current run passes 36 Flutter tests, and
+`flutter analyze` reports no issues.
 
 ### Cloud Function contract tests
 
