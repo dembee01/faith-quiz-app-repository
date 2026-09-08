@@ -3093,6 +3093,96 @@ class _ReviewAnswerBox extends StatelessWidget {
   );
 }
 
+/// Mode cards for the one-step room creation flow. Competitive and Fellowship
+/// are intentionally differentiated by their icon and explanation so the
+/// host understands the pacing before the room is created.
+class _GroupModeChoice extends StatelessWidget {
+  const _GroupModeChoice({
+    required this.mode,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String mode;
+  final bool selected;
+  final VoidCallback onTap;
+
+  bool get isFellowship => mode == 'fellowship';
+
+  @override
+  Widget build(BuildContext context) {
+    final title = isFellowship ? 'FELLOWSHIP' : 'COMPETITIVE';
+    final description = isFellowship
+        ? 'Everyone goes through the questions together. Players answer first, then the host reveals the correct answer and Scripture for discussion before moving to the next question.'
+        : 'Everyone answers the same Bible questions individually. Accuracy is most important, and speed helps decide rankings when needed. Results and rankings are shown when the challenge finishes.';
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: '$title mode. $description',
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: selected
+                ? _gold.withValues(alpha: .17)
+                : _slateSurfaceVariant,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: selected ? _gold : Colors.white12,
+              width: selected ? 1.6 : 1,
+            ),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(
+                isFellowship ? Icons.groups_outlined : Icons.speed,
+                color: selected ? _gold : _slateTextSecondary,
+                size: 25,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        color: selected ? _gold : _slateTextPrimary,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                        letterSpacing: .6,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      description,
+                      style: const TextStyle(
+                        color: _slateTextSecondary,
+                        fontSize: 11,
+                        height: 1.25,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 6),
+              Icon(
+                selected ? Icons.radio_button_checked : Icons.radio_button_off,
+                color: selected ? _gold : _slateTextMuted,
+                size: 20,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class GroupsScreen extends StatefulWidget {
   const GroupsScreen({super.key, required this.store, this.service});
   final ProgressStore store;
@@ -3117,75 +3207,176 @@ class _GroupsScreenState extends State<GroupsScreen> {
 
   Future<void> _showNameDialog({required bool join}) async {
     final controller = TextEditingController();
-    int selectedDuration = 10;
+    var selectedMode = 'competitive';
+    var selectedCount = 10;
+    var selectedCapacity = 4;
     final result = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
           backgroundColor: _slateSurface,
-          title: Text(join ? 'Join Group' : 'Create Group'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              TextField(
-                controller: controller,
-                maxLength: join ? 6 : 40,
-                keyboardType: join ? TextInputType.number : TextInputType.text,
-                autofocus: true,
-                decoration: InputDecoration(
-                  hintText: join
-                      ? 'Enter the 6-digit join code'
-                      : 'e.g. Grace Fellowship',
-                ),
-              ),
-              if (!join) ...[
-                const SizedBox(height: 8),
-                const Text(
-                  'JOIN WINDOW',
-                  style: TextStyle(
-                    color: _slateTextSecondary,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
+          title: Text(join ? 'Join Group Challenge' : 'Create Group Challenge'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TextField(
+                  controller: controller,
+                  maxLength: join ? 6 : 40,
+                  keyboardType: join
+                      ? TextInputType.number
+                      : TextInputType.text,
+                  autofocus: true,
+                  decoration: InputDecoration(
+                    labelText: join ? '6-digit PIN' : 'Group name',
+                    hintText: join
+                        ? 'Enter the PIN shared by the host'
+                        : 'e.g. Faith Night Challenge',
                   ),
                 ),
-                const SizedBox(height: 8),
-                const Text(
-                  'People can join this group for 10 minutes. Extend the window later if needed; this does not limit challenge time.',
-                  style: TextStyle(
-                    color: _slateTextSecondary,
-                    fontSize: 12,
-                    height: 1.3,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 6,
-                  runSpacing: 6,
-                  children: [
-                    ChoiceChip(
-                      label: const Text(
-                        '10 min',
-                        style: TextStyle(fontSize: 11),
-                      ),
-                      selected: selectedDuration == 10,
-                      selectedColor: _gold,
-                      labelStyle: TextStyle(
-                        color: selectedDuration == 10
-                            ? _slateButtonText
-                            : _slateTextPrimary,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      onSelected: (selected) {
-                        if (selected) {
-                          setDialogState(() => selectedDuration = 10);
-                        }
-                      },
+                if (!join) ...[
+                  const SizedBox(height: 6),
+                  const Text(
+                    'CREATE A REAL MULTIPLAYER ROOM',
+                    style: TextStyle(
+                      color: _gold,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: .8,
                     ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Share the PIN, wait for another player, then start when ready.',
+                    style: TextStyle(
+                      color: _slateTextSecondary,
+                      fontSize: 12,
+                      height: 1.3,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'CHALLENGE MODE',
+                    style: TextStyle(
+                      color: _slateTextSecondary,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  _GroupModeChoice(
+                    mode: 'competitive',
+                    selected: selectedMode == 'competitive',
+                    onTap: () =>
+                        setDialogState(() => selectedMode = 'competitive'),
+                  ),
+                  const SizedBox(height: 8),
+                  _GroupModeChoice(
+                    mode: 'fellowship',
+                    selected: selectedMode == 'fellowship',
+                    onTap: () =>
+                        setDialogState(() => selectedMode = 'fellowship'),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'QUESTION COUNT',
+                    style: TextStyle(
+                      color: _slateTextSecondary,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      for (final count in const [10, 20, 30])
+                        ChoiceChip(
+                          label: Text('$count QUESTIONS'),
+                          selected: selectedCount == count,
+                          selectedColor: _gold,
+                          labelStyle: TextStyle(
+                            color: selectedCount == count
+                                ? _slateButtonText
+                                : _slateTextPrimary,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 11,
+                          ),
+                          onSelected: (_) =>
+                              setDialogState(() => selectedCount = count),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'MAXIMUM PLAYERS',
+                    style: TextStyle(
+                      color: _slateTextSecondary,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Total players including you, the host.',
+                    style: TextStyle(color: _slateTextSecondary, fontSize: 12),
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      for (final capacity in List<int>.generate(
+                        9,
+                        (i) => i + 2,
+                      ))
+                        ChoiceChip(
+                          label: Text('$capacity PLAYERS'),
+                          selected: selectedCapacity == capacity,
+                          selectedColor: _gold,
+                          labelStyle: TextStyle(
+                            color: selectedCapacity == capacity
+                                ? _slateButtonText
+                                : _slateTextPrimary,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 11,
+                          ),
+                          onSelected: (_) =>
+                              setDialogState(() => selectedCapacity = capacity),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Includes you + up to ${selectedCapacity - 1} other player${selectedCapacity == 2 ? '' : 's'}.',
+                    style: const TextStyle(
+                      color: _slateTextSecondary,
+                      fontSize: 11,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'JOIN WINDOW • 10 MINUTES',
+                    style: TextStyle(
+                      color: _slateTextSecondary,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: .8,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  const Text(
+                    'The invitation window is separate from quiz question timing.',
+                    style: TextStyle(color: _slateTextSecondary, fontSize: 11),
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
           actions: [
             TextButton(
@@ -3194,7 +3385,7 @@ class _GroupsScreenState extends State<GroupsScreen> {
             ),
             FilledButton(
               onPressed: () => Navigator.pop(dialogContext, true),
-              child: Text(join ? 'JOIN' : 'CREATE'),
+              child: Text(join ? 'JOIN' : 'CREATE ROOM'),
             ),
           ],
         ),
@@ -3204,25 +3395,64 @@ class _GroupsScreenState extends State<GroupsScreen> {
     controller.dispose();
     if (result != true || text.isEmpty || !mounted) return;
     if (join && !RegExp(r'^\d{6}$').hasMatch(text)) {
-      _notice('Enter the 6-digit join code shared by the host.');
+      _notice('Enter the 6-digit PIN shared by the host.');
       return;
     }
     try {
       if (join) {
         await _service.joinGroup(text);
-        if (mounted) _notice('You joined the group!');
-      } else {
-        final code = await _service.createGroup(
-          text,
-          durationMinutes: selectedDuration,
-        );
-        if (mounted) _notice('Group created! Share code: $code');
+        if (mounted) _notice('You joined the group challenge!');
+        return;
       }
+
+      // The callable creates the group, reserves its PIN, selects the
+      // questions, and writes the configured challenge atomically. This keeps
+      // the UI as one creation step and gives the lobby authoritative IDs.
+      final room = await _service.createGroupChallengeRoom(
+        name: text,
+        mode: selectedMode,
+        questionCount: selectedCount,
+        maximumParticipants: selectedCapacity,
+      );
+      if (!mounted) return;
+      final group = QuizGroup(
+        id: room.groupId,
+        name: room.name,
+        role: 'owner',
+        joinCode: room.joinCode,
+        expiresAt: room.expiresAt,
+        durationMinutes: 10,
+        maximumParticipants: room.maximumParticipants,
+        participantCount: room.participantCount,
+      );
+      final challenge = GroupChallenge(
+        id: room.challengeId,
+        title: room.name,
+        mode: room.mode,
+        status: 'lobby',
+        questionCount: room.questionCount,
+        question: '',
+        options: const [],
+        explanation: '',
+        scriptureReference: '',
+        participantCount: room.participantCount,
+      );
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => GroupLobbyScreen(
+            store: widget.store,
+            groupId: room.groupId,
+            challenge: challenge,
+            group: group,
+            service: _service,
+          ),
+        ),
+      );
     } catch (e) {
       if (mounted) {
         final msg = e is FirebaseFunctionsException && e.message != null
             ? e.message!
-            : 'That group action could not be completed. Try again.';
+            : 'That group challenge could not be created. Try again.';
         _notice(msg);
       }
     }
@@ -3422,29 +3652,21 @@ class _GroupsScreenState extends State<GroupsScreen> {
                   const SlatePageHeader(title: 'GROUP CHALLENGES'),
                   const SizedBox(height: 8),
                   const Text(
-                    'Create a group or join with a code from its owner.',
+                    'Create a challenge room, share its PIN, and start when another player joins.',
                     textAlign: TextAlign.center,
                     style: TextStyle(color: _slateTextSecondary),
                   ),
                   const SizedBox(height: 14),
                   _accountBar(),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: SlatePillButton(
-                          label: 'CREATE',
-                          onPressed: () => _showNameDialog(join: false),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: SlatePillButton(
-                          label: 'JOIN',
-                          inverse: true,
-                          onPressed: () => _showNameDialog(join: true),
-                        ),
-                      ),
-                    ],
+                  SlatePillButton(
+                    label: 'CREATE GROUP CHALLENGE',
+                    onPressed: () => _showNameDialog(join: false),
+                  ),
+                  const SizedBox(height: 10),
+                  SlatePillButton(
+                    label: 'JOIN WITH PIN',
+                    inverse: true,
+                    onPressed: () => _showNameDialog(join: true),
                   ),
                   const SizedBox(height: 16),
                   Expanded(
@@ -4243,6 +4465,7 @@ class _GroupLobbyScreenState extends State<GroupLobbyScreen> {
   late final CloudGroupGateway _service;
   late final Stream<GroupChallenge> _challengeStream;
   late final Stream<QuizGroup> _groupStream;
+  late final Stream<List<GroupMember>> _membersStream;
   bool _starting = false;
 
   @override
@@ -4254,6 +4477,7 @@ class _GroupLobbyScreenState extends State<GroupLobbyScreen> {
       widget.challenge.id,
     );
     _groupStream = _service.streamGroup(widget.groupId);
+    _membersStream = _service.streamGroupMembers(widget.groupId);
   }
 
   Future<void> _startChallenge() async {
@@ -4283,6 +4507,34 @@ class _GroupLobbyScreenState extends State<GroupLobbyScreen> {
     ScaffoldMessenger.maybeOf(
       context,
     )?.showSnackBar(SnackBar(content: Text('Copied "$code" to clipboard!')));
+  }
+
+  Future<void> _shareInvite(String code, String groupName) async {
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: _slateSurface,
+        title: const Text('INVITE PLAYERS'),
+        content: SelectableText(
+          'Join $groupName in Faith Quiz with PIN $code.\n\nThe invitation window closes after 10 minutes.',
+          style: const TextStyle(color: _slateTextSecondary, height: 1.35),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('CLOSE'),
+          ),
+          FilledButton.icon(
+            onPressed: () {
+              _copyCode(code);
+              Navigator.of(dialogContext).pop();
+            },
+            icon: const Icon(Icons.copy, size: 16),
+            label: const Text('COPY INVITE'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -4343,258 +4595,401 @@ class _GroupLobbyScreenState extends State<GroupLobbyScreen> {
                       ? 'JOIN WINDOW • ${remaining.inMinutes}:${(remaining.inSeconds % 60).toString().padLeft(2, '0')} remaining'
                       : 'JOIN WINDOW ACTIVE';
 
-                  return Padding(
-                    padding: const EdgeInsets.fromLTRB(22, 16, 22, 40),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        const SlatePageHeader(title: 'CHALLENGE LOBBY'),
-                        const SizedBox(height: 16),
-                        Container(
-                          padding: const EdgeInsets.all(18),
-                          decoration: BoxDecoration(
-                            color: _slateSurface,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: Colors.white12),
-                          ),
+                  return StreamBuilder<List<GroupMember>>(
+                    stream: _membersStream,
+                    initialData: const [],
+                    builder: (context, membersSnap) {
+                      final members = membersSnap.data ?? const <GroupMember>[];
+                      final joinedCount = members.isNotEmpty
+                          ? members.length
+                          : max(
+                              1,
+                              challenge.participantCount ??
+                                  group.participantCount,
+                            );
+                      final capacity = group.maximumParticipants.clamp(2, 10);
+                      final canStart = isHost && joinedCount >= 2;
+
+                      return Padding(
+                        padding: const EdgeInsets.fromLTRB(22, 16, 22, 40),
+                        child: SingleChildScrollView(
                           child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
+                              const SlatePageHeader(title: 'CHALLENGE LOBBY'),
+                              const SizedBox(height: 16),
+                              Container(
+                                padding: const EdgeInsets.all(18),
+                                decoration: BoxDecoration(
+                                  color: _slateSurface,
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(color: Colors.white12),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
                                       children: [
-                                        Text(
-                                          group.name.toUpperCase(),
-                                          style: const TextStyle(
-                                            color: _slateTextPrimary,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 16,
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                group.name,
+                                                style: const TextStyle(
+                                                  color: _slateTextPrimary,
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 16,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 4),
+                                              Text(
+                                                remainingStr,
+                                                style: const TextStyle(
+                                                  color: _gold,
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 8),
+                                              Container(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 8,
+                                                      vertical: 3,
+                                                    ),
+                                                decoration: BoxDecoration(
+                                                  color: isHost
+                                                      ? _gold.withValues(
+                                                          alpha: .18,
+                                                        )
+                                                      : _slateSurfaceVariant,
+                                                  borderRadius:
+                                                      BorderRadius.circular(8),
+                                                ),
+                                                child: Text(
+                                                  isHost
+                                                      ? 'YOU • HOST'
+                                                      : 'MEMBER • HOST-LED LOBBY',
+                                                  style: TextStyle(
+                                                    color: isHost
+                                                        ? _gold
+                                                        : _slateTextSecondary,
+                                                    fontSize: 10,
+                                                    fontWeight: FontWeight.bold,
+                                                    letterSpacing: .5,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
                                           ),
                                         ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          remainingStr,
-                                          style: const TextStyle(
-                                            color: _gold,
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 8),
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 8,
-                                            vertical: 3,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: isHost
-                                                ? _gold.withValues(alpha: .18)
-                                                : _slateSurfaceVariant,
-                                            borderRadius: BorderRadius.circular(
-                                              8,
+                                        if (group.joinCode != null &&
+                                            !group.isExpired)
+                                          FilledButton.tonalIcon(
+                                            onPressed: () =>
+                                                _copyCode(group.joinCode!),
+                                            icon: const Icon(
+                                              Icons.copy,
+                                              size: 14,
+                                              color: _gold,
+                                            ),
+                                            label: Text(
+                                              group.joinCode!,
+                                              style: const TextStyle(
+                                                color: _gold,
+                                                fontWeight: FontWeight.bold,
+                                                letterSpacing: 1.5,
+                                              ),
+                                            ),
+                                            style: FilledButton.styleFrom(
+                                              backgroundColor:
+                                                  _slateSurfaceVariant,
+                                              visualDensity:
+                                                  VisualDensity.compact,
                                             ),
                                           ),
+                                      ],
+                                    ),
+                                    if (group.joinCode != null &&
+                                        !group.isExpired)
+                                      Align(
+                                        alignment: Alignment.centerRight,
+                                        child: TextButton.icon(
+                                          onPressed: () => _shareInvite(
+                                            group.joinCode!,
+                                            group.name,
+                                          ),
+                                          icon: const Icon(
+                                            Icons.share,
+                                            size: 15,
+                                          ),
+                                          label: const Text('SHARE INVITE'),
+                                          style: TextButton.styleFrom(
+                                            foregroundColor: _gold,
+                                            visualDensity:
+                                                VisualDensity.compact,
+                                          ),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                              Text(
+                                '${challenge.isFellowship ? 'Fellowship' : 'Competitive'} • ${challenge.questionCount} Questions',
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  color: _gold,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              SlateCard(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        const Text(
+                                          'PLAYERS',
+                                          style: TextStyle(
+                                            color: _slateTextSecondary,
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.bold,
+                                            letterSpacing: 1,
+                                          ),
+                                        ),
+                                        Text(
+                                          '$joinedCount / $capacity joined',
+                                          style: const TextStyle(
+                                            color: _slateTextPrimary,
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 10),
+                                    if (members.isEmpty)
+                                      const Text(
+                                        'Host',
+                                        style: TextStyle(
+                                          color: _slateTextPrimary,
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      )
+                                    else
+                                      for (final member in members) ...[
+                                        Padding(
+                                          padding: const EdgeInsets.only(
+                                            bottom: 7,
+                                          ),
+                                          child: Row(
+                                            children: [
+                                              Icon(
+                                                member.isOwner
+                                                    ? Icons
+                                                          .workspace_premium_outlined
+                                                    : Icons.person_outline,
+                                                color: member.isOwner
+                                                    ? _gold
+                                                    : _slateTextSecondary,
+                                                size: 18,
+                                              ),
+                                              const SizedBox(width: 8),
+                                              Expanded(
+                                                child: Text(
+                                                  member.displayName,
+                                                  style: const TextStyle(
+                                                    color: _slateTextPrimary,
+                                                    fontSize: 13,
+                                                  ),
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                ),
+                                              ),
+                                              if (member.isOwner)
+                                                const Text(
+                                                  'HOST',
+                                                  style: TextStyle(
+                                                    color: _gold,
+                                                    fontSize: 10,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              SlateCard(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Icon(
+                                          challenge.isFellowship
+                                              ? Icons.groups_outlined
+                                              : Icons.speed,
+                                          color: _gold,
+                                          size: 24,
+                                        ),
+                                        const SizedBox(width: 10),
+                                        Expanded(
                                           child: Text(
-                                            isHost
-                                                ? 'YOU • HOST'
-                                                : 'MEMBER • HOST-LED LOBBY',
-                                            style: TextStyle(
-                                              color: isHost
-                                                  ? _gold
-                                                  : _slateTextSecondary,
-                                              fontSize: 10,
+                                            challenge.isFellowship
+                                                ? 'FELLOWSHIP / HOST-LED MODE'
+                                                : 'COMPETITIVE MODE',
+                                            style: const TextStyle(
+                                              color: _gold,
                                               fontWeight: FontWeight.bold,
-                                              letterSpacing: .5,
+                                              fontSize: 15,
+                                              letterSpacing: 0.8,
                                             ),
                                           ),
                                         ),
                                       ],
                                     ),
-                                  ),
-                                  if (group.joinCode != null &&
-                                      !group.isExpired)
-                                    FilledButton.tonalIcon(
-                                      onPressed: () =>
-                                          _copyCode(group.joinCode!),
-                                      icon: const Icon(
-                                        Icons.copy,
-                                        size: 14,
-                                        color: _gold,
-                                      ),
-                                      label: Text(
-                                        group.joinCode!,
-                                        style: const TextStyle(
-                                          color: _gold,
-                                          fontWeight: FontWeight.bold,
-                                          letterSpacing: 1.5,
-                                        ),
-                                      ),
-                                      style: FilledButton.styleFrom(
-                                        backgroundColor: _slateSurfaceVariant,
-                                        visualDensity: VisualDensity.compact,
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        SlateCard(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Icon(
-                                    challenge.isFellowship
-                                        ? Icons.groups_outlined
-                                        : Icons.speed,
-                                    color: _gold,
-                                    size: 24,
-                                  ),
-                                  const SizedBox(width: 10),
-                                  Expanded(
-                                    child: Text(
+                                    const SizedBox(height: 10),
+                                    Text(
                                       challenge.isFellowship
-                                          ? 'FELLOWSHIP / HOST-LED MODE'
-                                          : 'COMPETITIVE MODE',
+                                          ? 'Everyone goes through the questions together. Players answer first, then the host reveals the correct answer and Scripture for discussion before moving to the next question.'
+                                          : 'Everyone answers the same Bible questions individually. Accuracy is most important, and speed helps decide rankings when needed. Results and rankings are shown when the challenge finishes.',
                                       style: const TextStyle(
-                                        color: _gold,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 15,
-                                        letterSpacing: 0.8,
+                                        color: _slateTextSecondary,
+                                        fontSize: 13,
+                                        height: 1.35,
                                       ),
                                     ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 10),
-                              Text(
-                                challenge.isFellowship
-                                    ? 'Everyone stays synchronized on the same question. The host controls answer reveals and question advancement, allowing Scripture discussion.'
-                                    : 'Players begin together and progress independently through the questions. Accuracy comes first; completion time breaks ties.',
-                                style: const TextStyle(
-                                  color: _slateTextSecondary,
-                                  fontSize: 13,
-                                  height: 1.35,
+                                    const Divider(
+                                      color: Colors.white12,
+                                      height: 24,
+                                    ),
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        const Text(
+                                          'Question Count',
+                                          style: TextStyle(
+                                            color: _slateTextSecondary,
+                                            fontSize: 13,
+                                          ),
+                                        ),
+                                        Text(
+                                          '${challenge.questionCount} Questions',
+                                          style: const TextStyle(
+                                            color: _slateTextPrimary,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 6),
+                                    const Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          'Question Order',
+                                          style: TextStyle(
+                                            color: _slateTextSecondary,
+                                            fontSize: 13,
+                                          ),
+                                        ),
+                                        Text(
+                                          'Identical for all players',
+                                          style: TextStyle(
+                                            color: _slateTextPrimary,
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 13,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
                                 ),
                               ),
-                              const Divider(color: Colors.white12, height: 24),
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  const Text(
-                                    'Question Count',
-                                    style: TextStyle(
-                                      color: _slateTextSecondary,
-                                      fontSize: 13,
-                                    ),
-                                  ),
-                                  Text(
-                                    '${challenge.questionCount} Questions',
-                                    style: const TextStyle(
-                                      color: _slateTextPrimary,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 6),
-                              const Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    'Question Order',
-                                    style: TextStyle(
-                                      color: _slateTextSecondary,
-                                      fontSize: 13,
-                                    ),
-                                  ),
-                                  Text(
-                                    'Identical for all players',
-                                    style: TextStyle(
-                                      color: _slateTextPrimary,
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 13,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                        const Spacer(),
-                        if (isHost) ...[
-                          const Text(
-                            'Waiting for players',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: _gold,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            group.joinCode != null
-                                ? 'Share code ${group.joinCode} with your players, then start when ready.'
-                                : 'Invite players, then start when ready.',
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              color: _slateTextSecondary,
-                              fontSize: 12,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          SlatePillButton(
-                            label: _starting
-                                ? 'STARTING…'
-                                : challenge.isFellowship
-                                ? 'START FELLOWSHIP'
-                                : 'START CHALLENGE',
-                            loading: _starting,
-                            onPressed: _starting ? null : _startChallenge,
-                          ),
-                        ] else ...[
-                          const Center(
-                            child: Column(
-                              children: [
-                                CircularProgressIndicator(color: _gold),
-                                SizedBox(height: 16),
-                                Text(
-                                  'Waiting for the host to start',
-                                  style: TextStyle(
-                                    color: _gold,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                                SizedBox(height: 6),
-                                Text(
-                                  'The host controls when this lobby opens for everyone.',
+                              const SizedBox(height: 16),
+                              if (isHost) ...[
+                                const Text(
+                                  'Share the PIN to invite players',
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
-                                    color: _slateTextSecondary,
-                                    fontSize: 13,
+                                    color: _gold,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
                                   ),
                                 ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  canStart
+                                      ? 'Start when your group is ready. The joined roster is frozen when you start.'
+                                      : 'At least one other player must join before you can start a Group Challenge.',
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                    color: _slateTextSecondary,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                SlatePillButton(
+                                  label: _starting
+                                      ? 'STARTING…'
+                                      : challenge.isFellowship
+                                      ? 'START FELLOWSHIP'
+                                      : 'START CHALLENGE',
+                                  loading: _starting,
+                                  onPressed: canStart && !_starting
+                                      ? _startChallenge
+                                      : null,
+                                ),
+                              ] else ...[
+                                const Center(
+                                  child: Column(
+                                    children: [
+                                      CircularProgressIndicator(color: _gold),
+                                      SizedBox(height: 16),
+                                      Text(
+                                        'Waiting for the host to start',
+                                        style: TextStyle(
+                                          color: _gold,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                                      SizedBox(height: 6),
+                                      Text(
+                                        'The host controls when this lobby opens for everyone.',
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          color: _slateTextSecondary,
+                                          fontSize: 13,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
                               ],
-                            ),
+                            ],
                           ),
-                          const Spacer(),
-                        ],
-                      ],
-                    ),
+                        ),
+                      );
+                    },
                   );
                 },
               );

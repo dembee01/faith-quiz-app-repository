@@ -61,6 +61,7 @@ class _FakeGroupGateway implements CloudGroupGateway {
   _FakeGroupGateway({
     this.groups = const [],
     this.challenges = const [],
+    this.members = const [],
     this.leaderboardEntries = const [],
     this.groupLeaderboardEntries = const [],
     this.challengeEvents,
@@ -68,6 +69,7 @@ class _FakeGroupGateway implements CloudGroupGateway {
 
   final List<QuizGroup> groups;
   final List<GroupChallenge> challenges;
+  final List<GroupMember> members;
   final List<LeaderboardEntry> leaderboardEntries;
   final List<LeaderboardEntry> groupLeaderboardEntries;
   final Stream<GroupChallenge>? challengeEvents;
@@ -101,6 +103,10 @@ class _FakeGroupGateway implements CloudGroupGateway {
       Stream.value(challenges);
 
   @override
+  Stream<List<GroupMember>> streamGroupMembers(String groupId) =>
+      Stream.value(members);
+
+  @override
   Stream<QuizGroup> streamGroup(String groupId) {
     final match = groups.where((g) => g.id == groupId);
     if (match.isNotEmpty) return Stream.value(match.first);
@@ -119,8 +125,28 @@ class _FakeGroupGateway implements CloudGroupGateway {
   Future<CloudChallenge?> loadToday() async => null;
 
   @override
-  Future<String> createGroup(String name, {int durationMinutes = 10}) async =>
-      'grp-mock-123';
+  Future<String> createGroup(
+    String name, {
+    int durationMinutes = 10,
+    int maximumParticipants = 10,
+  }) async => 'grp-mock-123';
+
+  @override
+  Future<GroupChallengeRoomResult> createGroupChallengeRoom({
+    required String name,
+    required String mode,
+    required int questionCount,
+    required int maximumParticipants,
+  }) async => GroupChallengeRoomResult(
+    groupId: 'grp-mock-123',
+    challengeId: 'ch-mock-123',
+    joinCode: '123456',
+    name: name,
+    mode: mode,
+    questionCount: questionCount,
+    maximumParticipants: maximumParticipants,
+    participantCount: 1,
+  );
 
   @override
   Future<void> joinGroup(String groupId) async {}
@@ -1066,6 +1092,7 @@ void main() {
         name: 'Grace Fellowship',
         role: 'owner',
         joinCode: '112233',
+        participantCount: 2,
       );
       const challenge = GroupChallenge(
         id: 'ch-lobby-1',
@@ -1081,6 +1108,10 @@ void main() {
       final service = _FakeGroupGateway(
         groups: [group],
         challenges: [challenge],
+        members: const [
+          GroupMember(uid: 'host', displayName: 'Host', role: 'owner'),
+          GroupMember(uid: 'member', displayName: 'John', role: 'member'),
+        ],
       );
 
       await tester.pumpWidget(
@@ -1097,11 +1128,12 @@ void main() {
       await tester.pump();
 
       expect(find.text('CHALLENGE LOBBY'), findsOneWidget);
-      expect(find.text('GRACE FELLOWSHIP'), findsOneWidget);
+      expect(find.text('Grace Fellowship'), findsOneWidget);
       expect(find.text('112233'), findsOneWidget);
       expect(find.text('COMPETITIVE MODE'), findsOneWidget);
       expect(find.text('START CHALLENGE'), findsOneWidget);
 
+      await tester.scrollUntilVisible(find.text('START CHALLENGE'), 200.0);
       await tester.tap(find.text('START CHALLENGE'));
       await tester.pump();
 
@@ -1154,6 +1186,124 @@ void main() {
       expect(find.text('Waiting for the host to start'), findsOneWidget);
       expect(find.text('START FELLOWSHIP'), findsNothing);
       expect(find.text('START CHALLENGE'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'GroupLobbyScreen disables host start until another player joins and shows capacity',
+    (tester) async {
+      const group = QuizGroup(
+        id: 'grp-lobby-alone',
+        name: 'Waiting Room',
+        role: 'owner',
+        joinCode: '445566',
+        maximumParticipants: 4,
+        participantCount: 1,
+      );
+      const challenge = GroupChallenge(
+        id: 'ch-lobby-alone',
+        title: 'Waiting Room',
+        mode: 'competitive',
+        status: 'lobby',
+        questionCount: 20,
+        question: '',
+        options: [],
+        explanation: '',
+        scriptureReference: '',
+        participantCount: 1,
+      );
+      final service = _FakeGroupGateway(
+        groups: const [group],
+        challenges: const [challenge],
+        members: const [
+          GroupMember(uid: 'host', displayName: 'Host', role: 'owner'),
+        ],
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: GroupLobbyScreen(
+            store: ProgressStore(),
+            groupId: group.id,
+            challenge: challenge,
+            group: group,
+            service: service,
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('1 / 4 joined'), findsOneWidget);
+      expect(find.text('Host'), findsOneWidget);
+      expect(
+        find.text(
+          'At least one other player must join before you can start a Group Challenge.',
+        ),
+        findsOneWidget,
+      );
+      final start = tester.widget<SlatePillButton>(
+        find.widgetWithText(SlatePillButton, 'START CHALLENGE'),
+      );
+      expect(start.onPressed, isNull);
+      expect(service.startChallengeCalled, isFalse);
+    },
+  );
+
+  testWidgets(
+    'GroupsScreen creation dialog configures mode, questions, and host-inclusive capacity',
+    (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: GroupsScreen(
+            store: ProgressStore(),
+            service: _FakeGroupGateway(),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.tap(find.text('CREATE GROUP CHALLENGE'));
+      await tester.pump();
+
+      expect(find.text('Create Group Challenge'), findsOneWidget);
+      expect(find.text('COMPETITIVE'), findsOneWidget);
+      expect(find.text('FELLOWSHIP'), findsOneWidget);
+      expect(find.text('10 QUESTIONS'), findsOneWidget);
+      expect(find.text('20 QUESTIONS'), findsOneWidget);
+      expect(find.text('30 QUESTIONS'), findsOneWidget);
+      expect(find.text('MAXIMUM PLAYERS'), findsOneWidget);
+      expect(
+        find.text('Total players including you, the host.'),
+        findsOneWidget,
+      );
+      expect(find.text('4 PLAYERS'), findsOneWidget);
+      expect(
+        find.text('Includes you + up to 3 other players.'),
+        findsOneWidget,
+      );
+    },
+  );
+
+  testWidgets(
+    'GroupsScreen opens the lobby immediately after atomic room creation',
+    (tester) async {
+      final service = _FakeGroupGateway();
+      await tester.pumpWidget(
+        MaterialApp(
+          home: GroupsScreen(store: ProgressStore(), service: service),
+        ),
+      );
+      await tester.pump();
+      await tester.tap(find.text('CREATE GROUP CHALLENGE'));
+      await tester.pump();
+      await tester.enterText(find.byType(TextField), 'Faith Night');
+      await tester.tap(find.text('CREATE ROOM'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
+
+      expect(find.text('CHALLENGE LOBBY'), findsOneWidget);
+      expect(find.text('Faith Night'), findsOneWidget);
+      expect(find.text('123456'), findsOneWidget);
+      expect(find.text('Competitive • 10 Questions'), findsOneWidget);
     },
   );
 

@@ -138,10 +138,25 @@ abstract interface class CloudGroupGateway {
   Future<void> signOut();
   Stream<List<QuizGroup>> myGroups();
   Stream<List<GroupChallenge>> groupChallenges(String groupId);
+
+  /// Live roster for the lobby. Membership documents are readable only by
+  /// members under the Firestore rules, so this never exposes a public
+  /// address book.
+  Stream<List<GroupMember>> streamGroupMembers(String groupId);
   Stream<QuizGroup> streamGroup(String groupId);
   Stream<GroupChallenge> streamChallenge(String groupId, String challengeId);
   Future<CloudChallenge?> loadToday();
-  Future<String> createGroup(String name, {int durationMinutes = 10});
+  Future<String> createGroup(
+    String name, {
+    int durationMinutes = 10,
+    int maximumParticipants = 10,
+  });
+  Future<GroupChallengeRoomResult> createGroupChallengeRoom({
+    required String name,
+    required String mode,
+    required int questionCount,
+    required int maximumParticipants,
+  });
   Future<void> joinGroup(String groupId);
   Future<void> extendGroup(String groupId, {int additionalMinutes = 10});
   Future<void> deleteGroupChallenge({
@@ -250,6 +265,8 @@ class QuizGroup {
     this.joinCode,
     this.expiresAt,
     this.durationMinutes,
+    this.maximumParticipants = 10,
+    this.participantCount = 1,
   });
 
   final String id;
@@ -258,6 +275,13 @@ class QuizGroup {
   final String? joinCode;
   final DateTime? expiresAt;
   final int? durationMinutes;
+
+  /// Total players allowed, including the host. Legacy groups default to ten.
+  final int maximumParticipants;
+
+  /// Server-reported member count when available. The lobby uses the live
+  /// members subcollection for the authoritative display.
+  final int participantCount;
 
   bool get isOwner => role == 'owner';
   bool get isExpired => expiresAt != null && DateTime.now().isAfter(expiresAt!);
@@ -306,6 +330,116 @@ class QuizGroup {
       joinCode: data['joinCode'] as String?,
       expiresAt: exp,
       durationMinutes: (data['durationMinutes'] as num?)?.toInt(),
+      maximumParticipants:
+          (data['maximumParticipants'] as num?)?.toInt() ??
+          (data['maxParticipants'] as num?)?.toInt() ??
+          (data['capacity'] as num?)?.toInt() ??
+          10,
+      participantCount:
+          (data['participantCount'] as num?)?.toInt() ??
+          (data['memberCount'] as num?)?.toInt() ??
+          1,
+    );
+  }
+}
+
+/// Result returned by the atomic createGroupChallengeRoom callable. Keeping
+/// the IDs and authoritative configuration together lets the client open the
+/// lobby immediately without guessing the newly-created group document.
+class GroupChallengeRoomResult {
+  const GroupChallengeRoomResult({
+    required this.groupId,
+    required this.challengeId,
+    required this.joinCode,
+    required this.name,
+    required this.mode,
+    required this.questionCount,
+    required this.maximumParticipants,
+    required this.participantCount,
+    this.expiresAt,
+  });
+
+  final String groupId;
+  final String challengeId;
+  final String joinCode;
+  final String name;
+  final String mode;
+  final int questionCount;
+  final int maximumParticipants;
+  final int participantCount;
+  final DateTime? expiresAt;
+
+  QuizGroup get group => QuizGroup(
+    id: groupId,
+    name: name,
+    role: 'owner',
+    joinCode: joinCode,
+    expiresAt: expiresAt,
+    durationMinutes: 10,
+    maximumParticipants: maximumParticipants,
+    participantCount: participantCount,
+  );
+
+  GroupChallenge get challenge => GroupChallenge(
+    id: challengeId,
+    title: name,
+    mode: mode,
+    status: 'lobby',
+    questionCount: questionCount,
+    question: '',
+    options: const [],
+    explanation: '',
+    scriptureReference: '',
+    participantCount: participantCount,
+  );
+
+  factory GroupChallengeRoomResult.fromMap(Map<String, dynamic> data) {
+    DateTime? parseTimestamp(dynamic value) {
+      if (value is Timestamp) return value.toDate();
+      if (value is String) return DateTime.tryParse(value);
+      return null;
+    }
+
+    return GroupChallengeRoomResult(
+      groupId: data['groupId'] as String? ?? '',
+      challengeId: data['challengeId'] as String? ?? '',
+      joinCode: data['joinCode'] as String? ?? '',
+      name: data['name'] as String? ?? 'Faith Quiz group',
+      mode: data['mode'] as String? ?? 'competitive',
+      questionCount: (data['questionCount'] as num?)?.toInt() ?? 10,
+      maximumParticipants: (data['maximumParticipants'] as num?)?.toInt() ?? 10,
+      participantCount: (data['participantCount'] as num?)?.toInt() ?? 1,
+      expiresAt: parseTimestamp(data['expiresAt']),
+    );
+  }
+}
+
+/// A member of a private group. This is intentionally a small presentation
+/// model; score and answer data remain in their own protected collections.
+class GroupMember {
+  const GroupMember({
+    required this.uid,
+    required this.displayName,
+    required this.role,
+  });
+
+  final String uid;
+  final String displayName;
+  final String role;
+
+  bool get isOwner => role == 'owner';
+
+  factory GroupMember.fromDocument(
+    QueryDocumentSnapshot<Map<String, dynamic>> document,
+  ) {
+    final data = document.data();
+    return GroupMember(
+      uid: document.id,
+      displayName:
+          data['displayName'] as String? ??
+          data['username'] as String? ??
+          'Faith learner',
+      role: data['role'] as String? ?? 'member',
     );
   }
 }
@@ -360,6 +494,8 @@ class GroupChallenge {
     this.revealedExplanation,
     this.revealedScriptureReference,
     this.answeredUids = const [],
+    this.participantUids = const [],
+    this.participantCount,
     this.ownerId,
   });
 
@@ -382,6 +518,8 @@ class GroupChallenge {
   final String? revealedExplanation;
   final String? revealedScriptureReference;
   final List<String> answeredUids;
+  final List<String> participantUids;
+  final int? participantCount;
   final String? ownerId;
 
   bool get isCompetitive => mode == 'competitive';
@@ -453,6 +591,10 @@ class GroupChallenge {
       revealedExplanation: data['revealedExplanation'] as String?,
       revealedScriptureReference: data['revealedScriptureReference'] as String?,
       answeredUids: answeredUids,
+      participantUids:
+          (data['participantUids'] as List?)?.whereType<String>().toList() ??
+          const [],
+      participantCount: (data['participantCount'] as num?)?.toInt(),
       ownerId:
           data['createdBy'] as String? ??
           data['ownerUid'] as String? ??
@@ -657,13 +799,43 @@ class CloudChallengeService
       });
 
   @override
-  Future<String> createGroup(String name, {int durationMinutes = 10}) async {
+  Future<String> createGroup(
+    String name, {
+    int durationMinutes = 10,
+    int maximumParticipants = 10,
+  }) async {
     await _user();
-    final result = await _functions.httpsCallable('createGroup').call(
-      <String, Object>{'name': name.trim(), 'durationMinutes': durationMinutes},
-    );
+    final result = await _functions
+        .httpsCallable('createGroup')
+        .call(<String, Object>{
+          'name': name.trim(),
+          'durationMinutes': durationMinutes,
+          'maximumParticipants': maximumParticipants,
+        });
     final data = Map<String, dynamic>.from(result.data as Map);
     return (data['joinCode'] as String?) ?? (data['groupId'] as String);
+  }
+
+  @override
+  Future<GroupChallengeRoomResult> createGroupChallengeRoom({
+    required String name,
+    required String mode,
+    required int questionCount,
+    required int maximumParticipants,
+  }) async {
+    await _user();
+    final result = await _functions
+        .httpsCallable('createGroupChallengeRoom')
+        .call(<String, Object>{
+          'name': name.trim(),
+          'mode': mode,
+          'questionCount': questionCount,
+          'maximumParticipants': maximumParticipants,
+          'catalogue': RemoteFeatureService.instance.activeCloudCatalogue,
+        });
+    return GroupChallengeRoomResult.fromMap(
+      Map<String, dynamic>.from(result.data as Map),
+    );
   }
 
   @override
@@ -710,6 +882,15 @@ class CloudChallengeService
       .map(
         (snapshot) => snapshot.docs.map(GroupChallenge.fromDocument).toList(),
       );
+
+  @override
+  Stream<List<GroupMember>> streamGroupMembers(String groupId) => _firestore
+      .collection('groups')
+      .doc(groupId)
+      .collection('members')
+      .orderBy('joinedAt')
+      .snapshots()
+      .map((snapshot) => snapshot.docs.map(GroupMember.fromDocument).toList());
 
   @override
   Stream<QuizGroup> streamGroup(String groupId) => _firestore
@@ -882,7 +1063,7 @@ class CloudChallengeService
           'catalogue': RemoteFeatureService.instance.activeCloudCatalogue,
           'questionCount': questionCount,
           'mode': mode,
-          'title': ?title,
+          if (title != null && title.trim().isNotEmpty) 'title': title.trim(),
         });
     return (result.data as Map)['challengeId'] as String;
   }
@@ -920,7 +1101,8 @@ class CloudChallengeService
           'answerIndex': selectedOptionIndex,
           'selectedOptionIndex': selectedOptionIndex,
           'responseLatencyMs': responseLatencyMs,
-          'username': ?username,
+          if (username != null && username.trim().isNotEmpty)
+            'username': username.trim(),
         });
   }
 
