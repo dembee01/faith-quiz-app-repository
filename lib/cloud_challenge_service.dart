@@ -205,6 +205,7 @@ class LeaderboardEntry {
     this.level = 1,
     this.totalAnswered = 0,
     this.accuracy = 0,
+    this.avgElapsedSeconds = 0,
   });
 
   final String id;
@@ -214,11 +215,13 @@ class LeaderboardEntry {
   final int level;
   final int totalAnswered;
   final int accuracy;
+  final int avgElapsedSeconds;
 
   factory LeaderboardEntry.fromDocument(
     QueryDocumentSnapshot<Map<String, dynamic>> document,
   ) {
     final data = document.data();
+    final rawAvg = data['avgElapsedSeconds'] ?? data['elapsedSeconds'];
     return LeaderboardEntry(
       id: document.id,
       displayName: data['displayName'] as String? ?? 'Faith learner',
@@ -227,6 +230,7 @@ class LeaderboardEntry {
       level: (data['level'] as num?)?.toInt() ?? 1,
       totalAnswered: (data['totalAnswered'] as num?)?.toInt() ?? 0,
       accuracy: (data['accuracy'] as num?)?.toInt() ?? 0,
+      avgElapsedSeconds: (rawAvg as num?)?.toInt() ?? 0,
     );
   }
 }
@@ -579,10 +583,20 @@ class CloudChallengeService
             .map(LeaderboardEntry.fromDocument)
             .toList();
         entries.sort((left, right) {
+          // 1. Primary: total verified correct answers / score DESC
           final byScore = right.score.compareTo(left.score);
-          return byScore != 0
-              ? byScore
-              : left.elapsedSeconds.compareTo(right.elapsedSeconds);
+          if (byScore != 0) return byScore;
+
+          // 2. Secondary: accuracy percentage DESC
+          final byAccuracy = right.accuracy.compareTo(left.accuracy);
+          if (byAccuracy != 0) return byAccuracy;
+
+          // 3. Tertiary: average first-attempt response time ASC
+          final bySpeed = left.avgElapsedSeconds.compareTo(right.avgElapsedSeconds);
+          if (bySpeed != 0) return bySpeed;
+
+          // 4. Stable deterministic tie-breaker
+          return left.id.compareTo(right.id);
         });
         return entries;
       });

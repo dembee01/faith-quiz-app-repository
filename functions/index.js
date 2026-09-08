@@ -212,11 +212,12 @@ exports.submitCloudChallenge = onCall(callableOptions, async (request) => {
     };
 
     // Design note: the global cumulative leaderboard ranks by accuracy
-    // (score DESC, i.e. total correct answers) with per-question elapsed
-    // time as a tie-breaker. Cumulative time is not meaningful because a
-    // player who has answered 200 questions will always have more total
-    // time than one who answered 10. The `accuracy` percentage field
-    // (score / totalAnswered) is shown as the meaningful secondary metric.
+    // (score DESC, i.e. total correct answers) with average first-attempt response
+    // time as a tie-breaker.
+    const currentTotalResponseTime = globalSnap.exists ? (globalSnap.get('totalResponseTime') || 0) : 0;
+    const newTotalResponseTime = currentTotalResponseTime + (alreadySubmitted ? 0 : elapsedSeconds);
+    const avgElapsedSeconds = newAnswered > 0 ? Math.round(newTotalResponseTime / newAnswered) : 0;
+
     transaction.set(globalLeaderboardRef, {
       uid,
       displayName,
@@ -224,6 +225,8 @@ exports.submitCloudChallenge = onCall(callableOptions, async (request) => {
       totalAnswered: newAnswered,
       level: newLevel,
       accuracy: newAnswered > 0 ? Math.round((newScore / newAnswered) * 100) : 0,
+      totalResponseTime: newTotalResponseTime,
+      avgElapsedSeconds,
       verified: true,
       updatedAt: FieldValue.serverTimestamp(),
     }, { merge: true });
@@ -484,9 +487,23 @@ exports.createGroupChallenge = onCall(callableOptions, async (request) => {
   // Read authoritative catalogue metadata for question count.
   // Falls back to 500 for backward compatibility with faith-quiz-global-v1.
   const catalogueMeta = await db.doc(`content/${catalogue}`).get();
-  const totalQuestions = catalogueMeta.exists && Number.isInteger(catalogueMeta.get('questionCount'))
-    ? catalogueMeta.get('questionCount')
-    : 500;
+  let totalQuestions = 500;
+  if (catalogueMeta.exists) {
+    const metaCount = catalogueMeta.get('questionCount');
+    if (metaCount !== undefined) {
+      if (!Number.isInteger(metaCount) || metaCount <= 0) {
+        throw new HttpsError('internal', 'Catalogue metadata questionCount must be a positive integer.');
+      }
+      totalQuestions = metaCount;
+    }
+  }
+
+  if (totalQuestions < requestedCount) {
+    throw new HttpsError(
+      'failed-precondition',
+      `Catalogue contains fewer questions (${totalQuestions}) than requested (${requestedCount}).`
+    );
+  }
 
   // Verify the coprime stride 263 is actually coprime with the catalogue size.
   // GCD must be 1 for a full permutation cycle.
@@ -536,6 +553,13 @@ exports.createGroupChallenge = onCall(callableOptions, async (request) => {
     }
   }
 
+  if (selectedQuestions.length !== requestedCount) {
+    throw new HttpsError(
+      'internal',
+      `Incomplete catalogue questions: expected ${requestedCount} questions for challenge, but only ${selectedQuestions.length} were found in the database.`
+    );
+  }
+
   const defaultTitle = mode === 'fellowship'
     ? `Bible Fellowship (${selectedQuestions.length} Questions)`
     : `Bible Challenge (${selectedQuestions.length} Questions)`;
@@ -573,43 +597,62 @@ exports.startGroupChallenge = onCall(callableOptions, async (request) => {
   const groupId = requireText(request.data.groupId, 'group ID');
   const challengeId = requireText(request.data.challengeId, 'challenge ID');
 
-  const group = db.doc(`groups/${groupId}`);
-  const membership = db.doc(`groups/${groupId}/members/${uid}`);
-  const challenge = db.doc(`groups/${groupId}/challenges/${challengeId}`);
+  const groupRef = db.doc(`groups/${groupId}`);
+  const memberRef = db.doc(`groups/${groupId}/members/${uid}`);
+  const challengeRef = db.doc(`groups/${groupId}/challenges/${challengeId}`);
 
-  const [groupSnap, memberSnap, challengeSnap] = await Promise.all([
-    group.get(), membership.get(), challenge.get(),
-  ]);
+  let resultStatus = 'lobby';
 
-  if (!groupSnap.exists || !memberSnap.exists || !challengeSnap.exists) {
-    throw new HttpsError('not-found', 'Challenge or group not found.');
-  }
-  if (memberSnap.get('role') !== 'owner') {
-    throw new HttpsError('permission-denied', 'Only the group owner can start the challenge.');
-  }
+  await db.runTransaction(async (transaction) => {
+    const [groupSnap, memberSnap, challengeSnap] = await Promise.all([
+      transaction.get(groupRef),
+      transaction.get(memberRef),
+      transaction.get(challengeRef),
+    ]);
 
-  const currentStatus = challengeSnap.get('status') || (challengeSnap.get('active') ? 'active' : 'lobby');
-  if (currentStatus !== 'lobby') {
-    return { status: currentStatus, challengeId };
-  }
+    if (!groupSnap.exists || !memberSnap.exists || !challengeSnap.exists) {
+      throw new HttpsError('not-found', 'Challenge or group not found.');
+    }
+    if (memberSnap.get('role') !== 'owner') {
+      throw new HttpsError('permission-denied', 'Only the group owner can start the challenge.');
+    }
 
-  const mode = challengeSnap.get('mode') || 'competitive';
-  const now = FieldValue.serverTimestamp();
-  const updates = {
-    startedAt: now,
-  };
+    const expiresAt = groupSnap.get('expiresAt');
+    if (expiresAt && expiresAt.toDate && expiresAt.toDate() < new Date()) {
+      throw new HttpsError(
+        'failed-precondition',
+        'This group session has expired. Please extend the session before starting the challenge.'
+      );
+    }
 
-  if (mode === 'fellowship') {
-    updates.status = 'question_open';
-    updates.currentQuestionIndex = 0;
-    updates.currentQuestionOpenedAt = now;
-    updates.answeredUids = [];
-  } else {
-    updates.status = 'active';
-  }
+    const currentStatus = challengeSnap.get('status') || (challengeSnap.get('active') ? 'active' : 'lobby');
+    if (currentStatus !== 'lobby') {
+      // Idempotent: already started, do not overwrite established startedAt
+      resultStatus = currentStatus;
+      return;
+    }
 
-  await challenge.update(updates);
-  return { status: updates.status, challengeId };
+    const mode = challengeSnap.get('mode') || 'competitive';
+    const now = FieldValue.serverTimestamp();
+    const updates = {
+      startedAt: now,
+    };
+
+    if (mode === 'fellowship') {
+      updates.status = 'question_open';
+      updates.currentQuestionIndex = 0;
+      updates.currentQuestionOpenedAt = now;
+      updates.answeredUids = [];
+      resultStatus = 'question_open';
+    } else {
+      updates.status = 'active';
+      resultStatus = 'active';
+    }
+
+    transaction.update(challengeRef, updates);
+  });
+
+  return { status: resultStatus, challengeId };
 });
 
 exports.submitFellowshipAnswer = onCall(callableOptions, async (request) => {
@@ -797,6 +840,18 @@ exports.advanceFellowshipQuestion = onCall(callableOptions, async (request) => {
       return;
     }
 
+    // If currently in 'finalizing' state (e.g. from an earlier interrupted completion),
+    // allow resuming grading
+    if (currentStatus === 'finalizing') {
+      needsCompletion = true;
+      completionData = {
+        catalogue: challengeSnap.get('catalogue') || 'faith-quiz-global-v1',
+        questions: challengeSnap.get('questions') || [],
+        questionIds: challengeSnap.get('questionIds') || (challengeSnap.get('questions') || []).map((q) => q.id),
+      };
+      return;
+    }
+
     if (currentStatus !== 'question_revealed') {
       throw new HttpsError('failed-precondition', 'Answer must be revealed before advancing.');
     }
@@ -823,9 +878,8 @@ exports.advanceFellowshipQuestion = onCall(callableOptions, async (request) => {
       return;
     }
 
-    // All questions finished — mark for completion grading outside transaction
-    // (completion grading requires reading fellowshipAnswers subcollection which
-    // may exceed transaction read limits)
+    // All questions finished — mark as 'finalizing' so grading can run safely
+    // and be retried if interrupted
     needsCompletion = true;
     completionData = {
       catalogue: challengeSnap.get('catalogue') || 'faith-quiz-global-v1',
@@ -833,10 +887,9 @@ exports.advanceFellowshipQuestion = onCall(callableOptions, async (request) => {
       questionIds: challengeSnap.get('questionIds') || questions.map((q) => q.id),
     };
 
-    // Atomically mark as completed to prevent double-advance
     transaction.update(challengeRef, {
-      status: 'completed',
-      completedAt: FieldValue.serverTimestamp(),
+      status: 'finalizing',
+      finalizingAt: FieldValue.serverTimestamp(),
     });
   });
 
@@ -864,15 +917,15 @@ exports.advanceFellowshipQuestion = onCall(callableOptions, async (request) => {
       });
     });
 
-    // Fetch members to get displayNames
+    // Fetch ALL group members to ensure even participants with 0 answers get a 0/N entry
     const membersSnap = await db.collection(`groups/${groupId}/members`).get();
-    const nameMap = new Map();
-    membersSnap.docs.forEach((d) => {
-      nameMap.set(d.id, d.get('displayName') || 'Faith learner');
-    });
-
     const batch = db.batch();
-    for (const [memberUid, answersMap] of userAnswers.entries()) {
+
+    for (const memberDoc of membersSnap.docs) {
+      const memberUid = memberDoc.id;
+      const memberName = memberDoc.get('displayName') || 'Faith learner';
+      const answersMap = userAnswers.get(memberUid) || new Map();
+
       let score = 0;
       let totalResponseTime = 0;
       for (let i = 0; i < questions.length; i++) {
@@ -889,15 +942,21 @@ exports.advanceFellowshipQuestion = onCall(callableOptions, async (request) => {
 
       const entryRef = challengeRef.collection('entries').doc(memberUid);
       batch.set(entryRef, {
-        displayName: nameMap.get(memberUid) || 'Faith learner',
+        displayName: memberName,
         score,
         total: questions.length,
-        correct: score === questions.length,
+        correct: score === questions.length && questions.length > 0,
         elapsedSeconds: totalResponseTime,
         verified: true,
         updatedAt: FieldValue.serverTimestamp(),
       }, { merge: true });
     }
+
+    // Transition challenge to 'completed' ONLY AFTER all entries are written
+    batch.update(challengeRef, {
+      status: 'completed',
+      completedAt: FieldValue.serverTimestamp(),
+    });
 
     await batch.commit();
     advanceResult = { status: 'completed' };
@@ -926,6 +985,33 @@ exports.submitGroupChallenge = onCall(callableOptions, async (request) => {
 
   // Check if this is a multi-question quiz challenge
   if (Array.isArray(request.data.answers)) {
+    // 1. Mode check — reject using Competitive submit path for Fellowship challenges
+    const mode = challengeSnapshot.get('mode') || 'competitive';
+    if (mode === 'fellowship') {
+      throw new HttpsError(
+        'failed-precondition',
+        'Fellowship challenges must be completed via host-led progression.'
+      );
+    }
+    if (mode !== 'competitive') {
+      throw new HttpsError('failed-precondition', 'Invalid challenge mode.');
+    }
+
+    // 2. Status check — strictly forbid pre-start submissions and answer leakage during lobby
+    const status = challengeSnapshot.get('status') || 'lobby';
+    if (status === 'lobby') {
+      throw new HttpsError(
+        'failed-precondition',
+        'Challenge has not started yet. Pre-start submissions are forbidden.'
+      );
+    }
+    if (status !== 'active' && status !== 'completed') {
+      throw new HttpsError(
+        'failed-precondition',
+        `Challenge cannot be submitted in status "${status}".`
+      );
+    }
+
     const answers = request.data.answers;
     const questions = challengeSnapshot.get('questions') || [];
     const questionIds = challengeSnapshot.get('questionIds') || questions.map((q) => q.id);
@@ -935,14 +1021,17 @@ exports.submitGroupChallenge = onCall(callableOptions, async (request) => {
       throw new HttpsError('invalid-argument', 'Answer count does not match challenge questions.');
     }
 
-    // Server-verified elapsed time
+    // 3. Server-authoritative elapsed time:
+    // Leaderboard elapsed time must not be reducible by client input.
+    // Use server-authoritative startedAt and current server time for official ranking.
     const startedAt = challengeSnapshot.get('startedAt');
-    let elapsedSeconds = clientElapsedSeconds;
+    let officialElapsedSeconds = 60;
     if (startedAt && startedAt.toDate) {
-      const serverElapsed = Math.max(1, Math.floor((Date.now() - startedAt.toDate().getTime()) / 1000));
-      elapsedSeconds = Math.min(serverElapsed, clientElapsedSeconds > 0 ? clientElapsedSeconds : serverElapsed);
+      officialElapsedSeconds = Math.max(1, Math.floor((Date.now() - startedAt.toDate().getTime()) / 1000));
+    } else if (Number.isInteger(clientElapsedSeconds) && clientElapsedSeconds > 0) {
+      officialElapsedSeconds = Math.min(7200, clientElapsedSeconds);
     }
-    elapsedSeconds = Math.min(7200, Math.max(0, elapsedSeconds));
+    officialElapsedSeconds = Math.min(7200, Math.max(1, officialElapsedSeconds));
 
     // Fetch all answers in a single batch read from contentPrivate
     const answerRefs = questionIds.map((qId) =>
@@ -978,7 +1067,7 @@ exports.submitGroupChallenge = onCall(callableOptions, async (request) => {
 
     const entry = challenge.collection('entries').doc(uid);
     let finalScore = score;
-    let finalElapsed = elapsedSeconds;
+    let finalElapsed = officialElapsedSeconds;
     let isAlreadySubmitted = false;
 
     await db.runTransaction(async (transaction) => {
@@ -986,7 +1075,7 @@ exports.submitGroupChallenge = onCall(callableOptions, async (request) => {
       if (previous.exists) {
         // Idempotent: return existing stored result
         finalScore = previous.get('score') || score;
-        finalElapsed = previous.get('elapsedSeconds') || elapsedSeconds;
+        finalElapsed = previous.get('elapsedSeconds') || officialElapsedSeconds;
         isAlreadySubmitted = true;
         return;
       }
@@ -995,7 +1084,8 @@ exports.submitGroupChallenge = onCall(callableOptions, async (request) => {
         score,
         total: questions.length,
         correct: score === questions.length,
-        elapsedSeconds,
+        elapsedSeconds: officialElapsedSeconds,
+        clientReportedElapsedSeconds: Number.isInteger(clientElapsedSeconds) ? clientElapsedSeconds : null,
         verified: true,
         updatedAt: FieldValue.serverTimestamp(),
       }, { merge: true });
