@@ -449,6 +449,8 @@ exports.createGroup = onCall(callableOptions, async (request) => {
           groupId: group.id,
           name,
           ownerUid: uid,
+          maximumParticipants,
+          participantCount: 1,
           createdAt,
           expiresAt: expiresAtTimestamp,
           durationMinutes: minutes,
