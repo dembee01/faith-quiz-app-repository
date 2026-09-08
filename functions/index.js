@@ -286,10 +286,109 @@ function challengeHasParticipant(challengeSnapshot, uid) {
 // invitation defaults to (and may not exceed) ten minutes; an owner can
 // explicitly extend an active group later through extendGroup.
 const DEFAULT_GROUP_JOIN_WINDOW_MINUTES = 10;
+const MIN_GROUP_PARTICIPANTS = 2;
+const MAX_GROUP_PARTICIPANTS = 10;
+
+function validateMaximumParticipants(value, { required = false } = {}) {
+  if (value === undefined && !required) return MAX_GROUP_PARTICIPANTS;
+  if (!Number.isInteger(value) || value < MIN_GROUP_PARTICIPANTS || value > MAX_GROUP_PARTICIPANTS) {
+    throw new HttpsError(
+      'invalid-argument',
+      `Maximum participants must be an integer between ${MIN_GROUP_PARTICIPANTS} and ${MAX_GROUP_PARTICIPANTS}.`,
+    );
+  }
+  return value;
+}
+
+function validateGroupChallengeMode(value) {
+  if (value !== 'competitive' && value !== 'fellowship') {
+    throw new HttpsError('invalid-argument', 'Mode must be either "competitive" or "fellowship".');
+  }
+  return value;
+}
+
+function validateGroupQuestionCount(value) {
+  if (![10, 20, 30].includes(value)) {
+    throw new HttpsError('invalid-argument', 'Question count must be exactly 10, 20, or 30.');
+  }
+  return value;
+}
+
+/**
+ * Selects and shapes the public questions for a group challenge. The answer
+ * key is never included here; it remains in contentPrivate for callable-only
+ * grading. This helper is shared by the legacy createGroupChallenge callable
+ * and the atomic createGroupChallengeRoom flow.
+ */
+async function selectGroupChallengeQuestions(catalogue, questionCount) {
+  const catalogueMeta = await db.doc(`content/${catalogue}`).get();
+  let totalQuestions = 500;
+  if (catalogueMeta.exists) {
+    const metaCount = catalogueMeta.get('questionCount');
+    if (metaCount !== undefined) {
+      if (!Number.isInteger(metaCount) || metaCount <= 0) {
+        throw new HttpsError('internal', 'Catalogue metadata questionCount must be a positive integer.');
+      }
+      totalQuestions = metaCount;
+    }
+  }
+  if (totalQuestions < questionCount) {
+    throw new HttpsError(
+      'failed-precondition',
+      `Catalogue contains fewer questions (${totalQuestions}) than requested (${questionCount}).`,
+    );
+  }
+
+  function gcd(a, b) { while (b) { [a, b] = [b, a % b]; } return a; }
+  const stride = gcd(263, totalQuestions) === 1 ? 263 : 1;
+  const seed = Math.floor(Math.random() * totalQuestions);
+  const targetIndices = [];
+  for (let i = 0; i < questionCount; i++) {
+    targetIndices.push((seed + i * stride) % totalQuestions);
+  }
+
+  const querySnapshot = await db
+    .collection(`content/${catalogue}/questions`)
+    .where('dailyIndex', 'in', targetIndices)
+    .get();
+  if (querySnapshot.empty) {
+    throw new HttpsError('not-found', 'No questions available in the cloud catalogue.');
+  }
+
+  const docMap = new Map();
+  querySnapshot.docs.forEach((doc) => {
+    const dailyIndex = doc.get('dailyIndex');
+    if (dailyIndex !== undefined) docMap.set(dailyIndex, doc);
+  });
+  const questions = [];
+  for (const idx of targetIndices) {
+    const doc = docMap.get(idx);
+    if (doc) {
+      questions.push({
+        id: doc.id,
+        question: doc.get('question') || '',
+        options: doc.get('options') || [],
+        scriptureReference: doc.get('scriptureReference') || '',
+        testament: doc.get('testament') || '',
+        propheticFocus: doc.get('propheticFocus') || '',
+      });
+    }
+  }
+  if (questions.length !== questionCount) {
+    throw new HttpsError(
+      'internal',
+      `Incomplete catalogue questions: expected ${questionCount} questions for challenge, but only ${questions.length} were found in the database.`,
+    );
+  }
+  return { questions, seed };
+}
 
 exports.createGroup = onCall(callableOptions, async (request) => {
   const uid = requireUser(request);
   const name = requireText(request.data.name, 'group name', 40);
+  const maximumParticipants = validateMaximumParticipants(
+    request.data.maximumParticipants,
+  );
   const hasDuration = Object.prototype.hasOwnProperty.call(
     request.data || {},
     'durationMinutes',
@@ -339,6 +438,8 @@ exports.createGroup = onCall(callableOptions, async (request) => {
         transaction.set(group, {
           name,
           ownerUid: uid,
+          maximumParticipants,
+          participantCount: 1,
           createdAt,
           joinCode: candidateCode,
           expiresAt: expiresAtTimestamp,
@@ -360,6 +461,8 @@ exports.createGroup = onCall(callableOptions, async (request) => {
         transaction.set(db.doc(`users/${uid}/groups/${group.id}`), {
           name,
           role: 'owner',
+          maximumParticipants,
+          participantCount: 1,
           joinedAt: createdAt,
           joinCode: candidateCode,
           expiresAt: expiresAtTimestamp,
@@ -386,6 +489,8 @@ exports.createGroup = onCall(callableOptions, async (request) => {
     joinCode: allocatedJoinCode,
     expiresAt: expiresAt ? expiresAt.toISOString() : null,
     durationMinutes: minutes,
+    maximumParticipants,
+    participantCount: 1,
   };
 });
 
@@ -412,6 +517,8 @@ exports.joinGroup = onCall(callableOptions, async (request) => {
   let groupJoinCode = null;
   let groupExpiresAt = null;
   let groupDurationMinutes = null;
+  let groupMaximumParticipants = MAX_GROUP_PARTICIPANTS;
+  let groupParticipantCount = 1;
   let memberRole = 'member';
   let alreadyMember = false;
   let ownerMessage = null;
@@ -444,6 +551,20 @@ exports.joinGroup = onCall(callableOptions, async (request) => {
     groupJoinCode = snapshot.get('joinCode') || null;
     groupExpiresAt = snapshot.get('expiresAt') || null;
     groupDurationMinutes = snapshot.get('durationMinutes') || null;
+    groupMaximumParticipants = validateMaximumParticipants(
+      snapshot.get('maximumParticipants'),
+    );
+
+    // A redesigned room is closed to new memberships as soon as its
+    // challenge starts. Legacy groups intentionally omit roomChallengeId and
+    // retain their historical ability to accept members for later challenges.
+    const roomChallengeId = snapshot.get('roomChallengeId');
+    let roomChallengeSnapshot = null;
+    if (typeof roomChallengeId === 'string' && roomChallengeId.trim()) {
+      roomChallengeSnapshot = await transaction.get(
+        group.collection('challenges').doc(roomChallengeId),
+      );
+    }
 
     const canonicalOwnerUid = snapshot.get('ownerUid') || snapshot.get('ownerId');
     const existingRole = memberSnapshot.exists ? memberSnapshot.get('role') : null;
@@ -452,9 +573,29 @@ exports.joinGroup = onCall(callableOptions, async (request) => {
     // member role back to owner without changing the original joinedAt.
     memberRole = canonicalOwnerUid === uid || existingRole === 'owner' ? 'owner' : 'member';
     alreadyMember = memberSnapshot.exists;
+    if (!alreadyMember && roomChallengeSnapshot?.exists &&
+        roomChallengeSnapshot.get('status') !== 'lobby') {
+      throw new HttpsError(
+        'failed-precondition',
+        'This challenge has already started.',
+      );
+    }
     if (memberRole === 'owner' && canonicalOwnerUid === uid) {
       ownerMessage = 'You already own this group.';
     }
+
+    // The group document is the serialized capacity counter. Reading it and
+    // writing its next value in this transaction makes simultaneous final-slot
+    // joins serialize even when the members query has not observed the other
+    // transaction's newly-created document yet.
+    const membersSnapshot = await transaction.get(group.collection('members'));
+    const actualParticipantCount = membersSnapshot.size;
+    if (!alreadyMember && actualParticipantCount >= groupMaximumParticipants) {
+      throw new HttpsError('resource-exhausted', 'This group is full.');
+    }
+    groupParticipantCount = alreadyMember
+      ? actualParticipantCount
+      : actualParticipantCount + 1;
 
     const existingJoinedAt = memberSnapshot.exists
       ? memberSnapshot.get('joinedAt')
@@ -478,6 +619,12 @@ exports.joinGroup = onCall(callableOptions, async (request) => {
       joinCode: groupJoinCode,
       expiresAt: groupExpiresAt,
       durationMinutes: groupDurationMinutes,
+      maximumParticipants: groupMaximumParticipants,
+      participantCount: groupParticipantCount,
+    }, { merge: true });
+    transaction.set(group, {
+      maximumParticipants: groupMaximumParticipants,
+      participantCount: groupParticipantCount,
     }, { merge: true });
   });
 
@@ -487,6 +634,8 @@ exports.joinGroup = onCall(callableOptions, async (request) => {
     joinCode: groupJoinCode,
     role: memberRole,
     alreadyMember,
+    maximumParticipants: groupMaximumParticipants,
+    participantCount: groupParticipantCount,
     message: ownerMessage,
   };
 });
@@ -603,95 +752,19 @@ exports.createGroupChallenge = onCall(callableOptions, async (request) => {
     throw new HttpsError('failed-precondition', 'This group session has expired. Please extend the session to create a new challenge.');
   }
 
-  // Enforce mode: only 'competitive' or 'fellowship' accepted; reject all others
-  const rawMode = request.data.mode;
-  if (rawMode !== undefined && rawMode !== 'competitive' && rawMode !== 'fellowship') {
-    throw new HttpsError('invalid-argument', 'Mode must be either "competitive" or "fellowship".');
-  }
-  const mode = rawMode === 'fellowship' ? 'fellowship' : 'competitive';
-
-  // Strict Question Count Validation: MUST be exactly 10, 20, or 30
-  const requestedCount = request.data.questionCount;
-  if (![10, 20, 30].includes(requestedCount)) {
-    throw new HttpsError('invalid-argument', 'Question count must be exactly 10, 20, or 30.');
-  }
-  const questionCount = requestedCount;
-
-  // Read authoritative catalogue metadata for question count.
-  // Falls back to 500 for backward compatibility with faith-quiz-global-v1.
-  const catalogueMeta = await db.doc(`content/${catalogue}`).get();
-  let totalQuestions = 500;
-  if (catalogueMeta.exists) {
-    const metaCount = catalogueMeta.get('questionCount');
-    if (metaCount !== undefined) {
-      if (!Number.isInteger(metaCount) || metaCount <= 0) {
-        throw new HttpsError('internal', 'Catalogue metadata questionCount must be a positive integer.');
-      }
-      totalQuestions = metaCount;
-    }
-  }
-
-  if (totalQuestions < requestedCount) {
-    throw new HttpsError(
-      'failed-precondition',
-      `Catalogue contains fewer questions (${totalQuestions}) than requested (${requestedCount}).`
-    );
-  }
-
-  // Verify the coprime stride 263 is actually coprime with the catalogue size.
-  // GCD must be 1 for a full permutation cycle.
-  function gcd(a, b) { while (b) { [a, b] = [b, a % b]; } return a; }
-  const stride = gcd(263, totalQuestions) === 1 ? 263 : 1; // fallback to sequential if not coprime
-
-  // Server-controlled randomized seed (client seed disallowed to prevent manipulation)
-  const seed = Math.floor(Math.random() * totalQuestions);
-
-  // Multi-question rotated cloud challenge: select questionCount distinct indices
-  // using coprime stride to interleave Old Testament and New Testament questions.
-  const targetIndices = [];
-  for (let i = 0; i < questionCount; i++) {
-    targetIndices.push((seed + i * stride) % totalQuestions);
-  }
-
-  // Firestore allows `in` queries with up to 30 elements in a single read query
-  const querySnapshot = await db
-    .collection(`content/${catalogue}/questions`)
-    .where('dailyIndex', 'in', targetIndices)
-    .get();
-
-  if (querySnapshot.empty) {
-    throw new HttpsError('not-found', 'No questions available in the cloud catalogue.');
-  }
-
-  const docMap = new Map();
-  querySnapshot.docs.forEach((doc) => {
-    const dailyIndex = doc.get('dailyIndex');
-    if (dailyIndex !== undefined) {
-      docMap.set(dailyIndex, doc);
-    }
-  });
-
-  const selectedQuestions = [];
-  for (const idx of targetIndices) {
-    const doc = docMap.get(idx);
-    if (doc) {
-      selectedQuestions.push({
-        id: doc.id,
-        question: doc.get('question') || '',
-        options: doc.get('options') || [],
-        scriptureReference: doc.get('scriptureReference') || '',
-        testament: doc.get('testament') || '',
-        propheticFocus: doc.get('propheticFocus') || '',
-      });
-    }
-  }
-
-  if (selectedQuestions.length !== requestedCount) {
-    throw new HttpsError(
-      'internal',
-      `Incomplete catalogue questions: expected ${requestedCount} questions for challenge, but only ${selectedQuestions.length} were found in the database.`
-    );
-  }
+  // Legacy callers may omit mode, which retains the original competitive
+  // default. New room creation requires an explicit mode below.
+  const mode = request.data.mode === undefined
+    ? 'competitive'
+    : validateGroupChallengeMode(request.data.mode);
+  const questionCount = validateGroupQuestionCount(request.data.questionCount);
+  const maximumParticipants = validateMaximumParticipants(
+    groupSnapshot.get('maximumParticipants'),
+  );
+  const { questions: selectedQuestions, seed } = await selectGroupChallengeQuestions(
+    catalogue,
+    questionCount,
+  );
 
   const defaultTitle = mode === 'fellowship'
     ? `Bible Fellowship (${selectedQuestions.length} Questions)`
@@ -701,7 +774,7 @@ exports.createGroupChallenge = onCall(callableOptions, async (request) => {
     : defaultTitle;
 
   const challenge = group.collection('challenges').doc();
-  await challenge.set({
+  const challengeData = {
     catalogue,
     title,
     mode,
@@ -714,13 +787,154 @@ exports.createGroupChallenge = onCall(callableOptions, async (request) => {
     active: true,
     currentQuestionIndex: 0,
     answeredUids: [],
+    maximumParticipants,
     createdAt: FieldValue.serverTimestamp(),
-  });
+  };
+  if (Number.isInteger(groupSnapshot.get('participantCount'))) {
+    challengeData.participantCount = groupSnapshot.get('participantCount');
+  }
+  await challenge.set(challengeData);
 
   return {
     challengeId: challenge.id,
     questionCount: selectedQuestions.length,
     mode,
+    status: 'lobby',
+  };
+});
+
+// Primary multiplayer onboarding flow. It creates the group, reserves the
+// six-digit invitation PIN, creates the configured challenge, and adds the
+// host in one transaction. Question selection happens before the transaction
+// and only includes public question fields; answer keys remain server-only.
+// The roomChallengeId marker tells joinGroup that this group is a single
+// challenge room, so a new player cannot enter after the host starts it.
+exports.createGroupChallengeRoom = onCall(callableOptions, async (request) => {
+  const uid = requireUser(request);
+  const name = requireText(request.data.name, 'group name', 40);
+  const mode = validateGroupChallengeMode(request.data.mode);
+  const questionCount = validateGroupQuestionCount(request.data.questionCount);
+  const maximumParticipants = validateMaximumParticipants(
+    request.data.maximumParticipants,
+    { required: true },
+  );
+  const catalogue = requireText(
+    request.data.catalogue || 'faith-quiz-global-v1',
+    'catalogue',
+  );
+  const { questions, seed } = await selectGroupChallengeQuestions(
+    catalogue,
+    questionCount,
+  );
+  const title = typeof request.data.title === 'string' && request.data.title.trim().length > 0
+    ? request.data.title.trim().slice(0, 80)
+    : name;
+
+  const now = Date.now();
+  const expiresAt = Timestamp.fromDate(
+    new Date(now + DEFAULT_GROUP_JOIN_WINDOW_MINUTES * 60 * 1000),
+  );
+  const createdAt = FieldValue.serverTimestamp();
+  const group = db.collection('groups').doc();
+  const challenge = group.collection('challenges').doc();
+  let allocatedJoinCode = null;
+
+  for (let attempt = 0; attempt < 10; attempt++) {
+    const candidateCode = generateJoinCode();
+    const joinCodeRef = db.collection('joinCodes').doc(candidateCode);
+    try {
+      await db.runTransaction(async (transaction) => {
+        const joinCodeDoc = await transaction.get(joinCodeRef);
+        if (joinCodeDoc.exists) {
+          const existingExpiry = joinCodeDoc.get('expiresAt');
+          if (!existingExpiry || existingExpiry.toDate() >= new Date()) {
+            throw new Error('JOIN_CODE_COLLISION');
+          }
+        }
+
+        transaction.set(group, {
+          name,
+          ownerUid: uid,
+          maximumParticipants,
+          participantCount: 1,
+          roomChallengeId: challenge.id,
+          roomMode: true,
+          createdAt,
+          joinCode: candidateCode,
+          expiresAt,
+          durationMinutes: DEFAULT_GROUP_JOIN_WINDOW_MINUTES,
+        });
+        transaction.set(joinCodeRef, {
+          groupId: group.id,
+          challengeId: challenge.id,
+          name,
+          ownerUid: uid,
+          maximumParticipants,
+          participantCount: 1,
+          createdAt,
+          expiresAt,
+          durationMinutes: DEFAULT_GROUP_JOIN_WINDOW_MINUTES,
+        });
+        transaction.set(group.collection('members').doc(uid), {
+          role: 'owner',
+          joinedAt: createdAt,
+          displayName: 'Host',
+        });
+        transaction.set(db.doc(`users/${uid}/groups/${group.id}`), {
+          name,
+          role: 'owner',
+          maximumParticipants,
+          participantCount: 1,
+          roomChallengeId: challenge.id,
+          joinCode: candidateCode,
+          joinedAt: createdAt,
+          expiresAt,
+          durationMinutes: DEFAULT_GROUP_JOIN_WINDOW_MINUTES,
+        });
+        transaction.set(challenge, {
+          catalogue,
+          title,
+          mode,
+          status: 'lobby',
+          questionCount: questions.length,
+          questions,
+          questionIds: questions.map((q) => q.id),
+          seed,
+          createdBy: uid,
+          active: true,
+          currentQuestionIndex: 0,
+          answeredUids: [],
+          maximumParticipants,
+          participantCount: 1,
+          roomMode: true,
+          createdAt,
+        });
+      });
+      allocatedJoinCode = candidateCode;
+      break;
+    } catch (err) {
+      if (err.message === 'JOIN_CODE_COLLISION') continue;
+      throw err;
+    }
+  }
+
+  if (!allocatedJoinCode) {
+    throw new HttpsError(
+      'resource-exhausted',
+      'Could not generate a unique join code. Please try again.',
+    );
+  }
+  return {
+    groupId: group.id,
+    challengeId: challenge.id,
+    joinCode: allocatedJoinCode,
+    name,
+    mode,
+    questionCount: questions.length,
+    maximumParticipants,
+    participantCount: 1,
+    expiresAt: expiresAt.toDate().toISOString(),
+    durationMinutes: DEFAULT_GROUP_JOIN_WINDOW_MINUTES,
     status: 'lobby',
   };
 });
@@ -766,22 +980,35 @@ exports.startGroupChallenge = onCall(callableOptions, async (request) => {
     }
 
     const mode = challengeSnap.get('mode') || 'competitive';
+    if (mode !== 'competitive' && mode !== 'fellowship') {
+      throw new HttpsError('failed-precondition', 'Invalid challenge mode.');
+    }
+    const membersSnapshot = await transaction.get(groupRef.collection('members'));
+    const participantUids = [...new Set(membersSnapshot.docs.map((doc) => doc.id))];
+    if (!participantUids.includes(uid)) participantUids.push(uid);
+    if (participantUids.length < MIN_GROUP_PARTICIPANTS) {
+      throw new HttpsError(
+        'failed-precondition',
+        'At least one other player must join before you can start a Group Challenge.',
+      );
+    }
+    const maximumParticipants = validateMaximumParticipants(
+      challengeSnap.get('maximumParticipants') ?? groupSnap.get('maximumParticipants'),
+    );
+    if (participantUids.length > maximumParticipants) {
+      throw new HttpsError('failed-precondition', 'This group has exceeded its participant capacity.');
+    }
     const now = FieldValue.serverTimestamp();
     const updates = {
       startedAt: now,
+      participantUids,
+      participantCount: participantUids.length,
+      maximumParticipants,
     };
 
-    // Freeze the lobby roster at the exact start transition.  The parent
-    // group may still accept members for a future challenge, but those late
-    // joiners must not appear in this challenge halfway through play.
-    if (!Array.isArray(challengeSnap.get('participantUids'))) {
-      const membersSnapshot = await transaction.get(groupRef.collection('members'));
-      const participantUids = membersSnapshot.docs.map((doc) => doc.id);
-      if (!participantUids.includes(uid)) participantUids.push(uid);
-      updates.participantUids = [...new Set(participantUids)];
-      updates.participantCount = updates.participantUids.length;
-    }
-
+    // Freeze the lobby roster at the exact start transition. For legacy
+    // challenges, this also backfills participantUids while retaining their
+    // existing document shape and grading compatibility.
     if (mode === 'fellowship') {
       updates.status = 'question_open';
       updates.currentQuestionIndex = 0;

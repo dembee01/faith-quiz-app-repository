@@ -207,6 +207,95 @@ async function runClientIntegrationTests() {
     assert.strictEqual(longWindowBlocked, true, 'Durations above ten minutes MUST be rejected');
     console.log('  PASSED: Deployed createGroup rejects a join window longer than ten minutes.');
 
+    // 1b. Primary room creation flow: one atomic callable owns the group,
+    // configured challenge, invitation code, and host membership.
+    console.log('\n[Test 1b] Atomic Group Challenge room creation and capacity enforcement');
+    const room = await callCallable('createGroupChallengeRoom', host.idToken, {
+      name: `${TEST_PREFIX} Room Challenge`,
+      mode: 'competitive',
+      questionCount: 10,
+      maximumParticipants: 3,
+    });
+    assert(room.groupId && room.challengeId, 'Room creation must return group and challenge IDs');
+    assert.match(room.joinCode, /^\d{6}$/, 'Room creation must return a six-digit PIN');
+    assert.strictEqual(room.mode, 'competitive');
+    assert.strictEqual(room.questionCount, 10);
+    assert.strictEqual(room.maximumParticipants, 3);
+    assert.strictEqual(room.participantCount, 1, 'Host counts as the first participant');
+    trackCleanup(`groups/${room.groupId}/challenges/${room.challengeId}`);
+    trackCleanup(`groups/${room.groupId}/members/${host.uid}`);
+    trackCleanup(`groups/${room.groupId}/members/${member1.uid}`);
+    trackCleanup(`groups/${room.groupId}`);
+    trackCleanup(`joinCodes/${room.joinCode}`);
+
+    const roomGroup = await adminDb.doc(`groups/${room.groupId}`).get();
+    const roomChallenge = await adminDb.doc(
+      `groups/${room.groupId}/challenges/${room.challengeId}`,
+    ).get();
+    assert.strictEqual(roomGroup.get('maximumParticipants'), 3);
+    assert.strictEqual(roomGroup.get('participantCount'), 1);
+    assert.strictEqual(roomChallenge.get('mode'), 'competitive');
+    assert.strictEqual(roomChallenge.get('questionCount'), 10);
+    assert.strictEqual(roomChallenge.get('maximumParticipants'), 3);
+    assert.strictEqual(roomChallenge.get('participantCount'), 1);
+    assert.strictEqual(roomChallenge.get('status'), 'lobby');
+    console.log('  PASSED: Group, challenge configuration, and host membership were created atomically.');
+
+    const roomJoin1 = await callCallable('joinGroup', member1.idToken, {
+      joinCode: room.joinCode,
+    });
+    assert.strictEqual(roomJoin1.participantCount, 2);
+    trackCleanup(`groups/${room.groupId}/members/${member1.uid}`);
+
+    // Two callers compete for the final slot. The group document's
+    // participantCount is read and incremented transactionally, so exactly
+    // one request can commit.
+    const roomFinalJoins = await Promise.allSettled([
+      callCallable('joinGroup', member2.idToken, { joinCode: room.joinCode }),
+      callCallable('joinGroup', nonMember.idToken, { joinCode: room.joinCode }),
+    ]);
+    const roomSuccessfulJoin = roomFinalJoins.find(
+      (result) => result.status === 'fulfilled',
+    );
+    const roomRejectedJoin = roomFinalJoins.find(
+      (result) => result.status === 'rejected',
+    );
+    assert(roomSuccessfulJoin, 'One final-slot join must succeed');
+    assert(roomRejectedJoin, 'The competing final-slot join must fail');
+    assert.match(roomRejectedJoin.reason.message, /full/i);
+    const roomFinalUid = roomFinalJoins[0].status === 'fulfilled'
+      ? member2.uid
+      : nonMember.uid;
+    const roomLateClient = roomFinalJoins[0].status === 'rejected'
+      ? member2
+      : nonMember;
+    trackCleanup(`groups/${room.groupId}/members/${roomFinalUid}`);
+    const roomAfterJoins = await adminDb.doc(`groups/${room.groupId}`).get();
+    assert.strictEqual(roomAfterJoins.get('participantCount'), 3);
+    console.log('  PASSED: Host-inclusive capacity held at 3; concurrent final-slot join was serialized.');
+
+    // A joined member may reconnect in a lobby/active room, but a new user
+    // must be rejected once the room challenge has started.
+    const roomStart = await callCallable('startGroupChallenge', host.idToken, {
+      groupId: room.groupId,
+      challengeId: room.challengeId,
+    });
+    assert.strictEqual(roomStart.status, 'active');
+    const roomStarted = await adminDb.doc(
+      `groups/${room.groupId}/challenges/${room.challengeId}`,
+    ).get();
+    assert.strictEqual((roomStarted.get('participantUids') || []).length, 3);
+    assert.strictEqual(roomStarted.get('participantCount'), 3);
+    const reconnect = await callCallable('joinGroup', member1.idToken, {
+      joinCode: room.joinCode,
+    });
+    assert.strictEqual(reconnect.alreadyMember, true);
+    await assert.rejects(
+      callCallable('joinGroup', roomLateClient.idToken, { joinCode: room.joinCode }),
+      (error) => error.code === 'FAILED_PRECONDITION' && /already started/i.test(error.message),
+    );
+    console.log('  PASSED: Room roster froze at start; member reconnect remained idempotent and late PIN entry was rejected.');
+
     console.log('  Checking strict, concurrent invitation extensions...');
     for (const additionalMinutes of [30, 60, 500, '100', '10', 5.5, -10, 0, null]) {
       await assert.rejects(
