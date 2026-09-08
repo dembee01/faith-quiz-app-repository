@@ -551,6 +551,34 @@ async function runClientIntegrationTests() {
     assert.strictEqual(otherAnsRead.status, 403, 'Member cannot read another member\'s private answer');
     console.log('  PASSED: Member reading another member\'s private fellowship answer denied (403 Forbidden).');
 
+    // F. Host-only challenge revocation recursively removes entries/answers
+    console.log('\n[Test 7] Host challenge deletion and database cleanup');
+    let nonOwnerDeleteBlocked = false;
+    try {
+      await callCallable('deleteGroupChallenge', member1.idToken, {
+        groupId,
+        challengeId: compId,
+      });
+    } catch (error) {
+      nonOwnerDeleteBlocked = error.code === 'PERMISSION_DENIED';
+    }
+    assert.strictEqual(nonOwnerDeleteBlocked, true, 'Non-owners must not delete challenges');
+    const deleted = await callCallable('deleteGroupChallenge', host.idToken, {
+      groupId,
+      challengeId: compId,
+    });
+    assert.strictEqual(deleted.status, 'deleted');
+    const deletedRead = await firestoreGet(
+      `groups/${groupId}/challenges/${compId}`,
+      member1.idToken,
+    );
+    assert.strictEqual(deletedRead.status, 404, 'Deleted challenge must be absent from Firestore');
+    const deletedEntries = await adminDb.collection(
+      `groups/${groupId}/challenges/${compId}/entries`,
+    ).get();
+    assert.strictEqual(deletedEntries.size, 0, 'Challenge entries must be recursively deleted');
+    console.log('  PASSED: Non-owner deletion blocked; host deletion removed the challenge subtree.');
+
     console.log('\n=== ALL REAL CLIENT-PATH INTEGRATION & SECURITY RULES TESTS PASSED! ===');
     console.log('Evidence:');
     console.log('  1. 4 real authenticated users created & signed in via Google Identity Toolkit');
@@ -560,6 +588,7 @@ async function runClientIntegrationTests() {
     console.log('  5. Fellowship answers immutable; late submission post-reveal strictly rejected');
     console.log('  6. Fellowship completed all 10 questions; 0/10 participant included; finalization retry idempotent');
     console.log('  7. Security Rules verified: contentPrivate, leaderboard, challenges, and peer answers 403 blocked');
+    console.log('  8. Host-only challenge deletion recursively removed Firestore entries and answers');
 
   } catch (error) {
     console.error('\n!!! TEST FAILURE !!!');

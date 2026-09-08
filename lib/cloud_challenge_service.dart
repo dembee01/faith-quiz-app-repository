@@ -106,8 +106,7 @@ class QuestionReview {
       scriptureReference: data['scriptureReference'] as String? ?? '',
       question: data['question'] as String? ?? '',
       options:
-          (data['options'] as List?)?.whereType<String>().toList() ??
-          const [],
+          (data['options'] as List?)?.whereType<String>().toList() ?? const [],
     );
   }
 }
@@ -141,6 +140,10 @@ abstract interface class CloudGroupGateway {
   Future<String> createGroup(String name, {int durationMinutes = 10});
   Future<void> joinGroup(String groupId);
   Future<void> extendGroup(String groupId, {int additionalMinutes = 10});
+  Future<void> deleteGroupChallenge({
+    required String groupId,
+    required String challengeId,
+  });
   Future<String> createGroupChallenge({
     required String groupId,
     required CloudChallenge challenge,
@@ -253,8 +256,7 @@ class QuizGroup {
   final int? durationMinutes;
 
   bool get isOwner => role == 'owner';
-  bool get isExpired =>
-      expiresAt != null && DateTime.now().isAfter(expiresAt!);
+  bool get isExpired => expiresAt != null && DateTime.now().isAfter(expiresAt!);
 
   Duration? get remainingTime {
     if (expiresAt == null) return null;
@@ -366,7 +368,8 @@ class GroupChallenge {
   final String scriptureReference;
   final List<GroupChallengeItem> items;
   final String mode; // 'competitive' or 'fellowship'
-  final String status; // 'lobby', 'active', 'question_open', 'question_revealed', 'finalizing', 'completed'
+  final String
+  status; // 'lobby', 'active', 'question_open', 'question_revealed', 'finalizing', 'completed'
   final int currentQuestionIndex;
   final DateTime? startedAt;
   final DateTime? currentQuestionOpenedAt;
@@ -400,9 +403,11 @@ class GroupChallenge {
     final rawQuestions = data['questions'] as List?;
     final items = rawQuestions != null
         ? rawQuestions
-            .whereType<Map>()
-            .map((m) => GroupChallengeItem.fromMap(Map<String, dynamic>.from(m)))
-            .toList()
+              .whereType<Map>()
+              .map(
+                (m) => GroupChallengeItem.fromMap(Map<String, dynamic>.from(m)),
+              )
+              .toList()
         : const <GroupChallengeItem>[];
 
     DateTime? parseTimestamp(dynamic val) {
@@ -419,20 +424,24 @@ class GroupChallenge {
     return GroupChallenge(
       id: id,
       title: data['title'] as String? ?? 'Bible Challenge',
-      questionCount: (data['questionCount'] as num?)?.toInt() ??
+      questionCount:
+          (data['questionCount'] as num?)?.toInt() ??
           (items.isNotEmpty ? items.length : 1),
-      question: data['question'] as String? ??
+      question:
+          data['question'] as String? ??
           (items.isNotEmpty ? items.first.question : ''),
       options:
           (data['options'] as List?)?.whereType<String>().toList() ??
-              (items.isNotEmpty ? items.first.options : const []),
+          (items.isNotEmpty ? items.first.options : const []),
       explanation: data['explanation'] as String? ?? '',
-      scriptureReference: data['scriptureReference'] as String? ??
+      scriptureReference:
+          data['scriptureReference'] as String? ??
           (items.isNotEmpty ? items.first.scriptureReference : ''),
       items: items,
       mode: data['mode'] as String? ?? 'competitive',
       status: data['status'] as String? ?? 'active',
-      currentQuestionIndex: (data['currentQuestionIndex'] as num?)?.toInt() ?? 0,
+      currentQuestionIndex:
+          (data['currentQuestionIndex'] as num?)?.toInt() ?? 0,
       startedAt: parseTimestamp(data['startedAt']),
       currentQuestionOpenedAt: parseTimestamp(data['currentQuestionOpenedAt']),
       revealedAt: parseTimestamp(data['revealedAt']),
@@ -440,7 +449,8 @@ class GroupChallenge {
       revealedExplanation: data['revealedExplanation'] as String?,
       revealedScriptureReference: data['revealedScriptureReference'] as String?,
       answeredUids: answeredUids,
-      ownerId: data['createdBy'] as String? ??
+      ownerId:
+          data['createdBy'] as String? ??
           data['ownerUid'] as String? ??
           data['ownerId'] as String?,
     );
@@ -455,8 +465,8 @@ class CloudChallengeService
     FirebaseFunctions? functions,
   }) : _firestore = firestore ?? FirebaseFirestore.instance,
        _auth = auth ?? FirebaseAuth.instance,
-       _functions = functions ??
-           FirebaseFunctions.instanceFor(region: 'us-central1');
+       _functions =
+           functions ?? FirebaseFunctions.instanceFor(region: 'us-central1');
 
   Future<void> warmUp() async {
     try {
@@ -470,7 +480,8 @@ class CloudChallengeService
 
   static CloudChallenge? _cachedTodayChallenge;
   static int? _cachedTodayEpoch;
-  static final Map<int, CloudChallenge> _questionCache = <int, CloudChallenge>{};
+  static final Map<int, CloudChallenge> _questionCache =
+      <int, CloudChallenge>{};
 
   @override
   Future<bool> get isAvailable async {
@@ -491,6 +502,17 @@ class CloudChallengeService
     // questions evenly interleave Old Testament and New Testament books
     // instead of clustering 25 questions from the same book in sequence.
     return ((epochDay + step) * 263).abs() % 500;
+  }
+
+  @override
+  Future<void> deleteGroupChallenge({
+    required String groupId,
+    required String challengeId,
+  }) async {
+    await _user();
+    await _functions.httpsCallable('deleteGroupChallenge').call(
+      <String, Object>{'groupId': groupId, 'challengeId': challengeId},
+    );
   }
 
   @override
@@ -619,7 +641,9 @@ class CloudChallengeService
           if (byAccuracy != 0) return byAccuracy;
 
           // 3. Tertiary: average first-attempt response time ASC
-          final bySpeed = left.avgElapsedSeconds.compareTo(right.avgElapsedSeconds);
+          final bySpeed = left.avgElapsedSeconds.compareTo(
+            right.avgElapsedSeconds,
+          );
           if (bySpeed != 0) return bySpeed;
 
           // 4. Stable deterministic tie-breaker
@@ -632,10 +656,7 @@ class CloudChallengeService
   Future<String> createGroup(String name, {int durationMinutes = 10}) async {
     await _user();
     final result = await _functions.httpsCallable('createGroup').call(
-      <String, Object>{
-        'name': name.trim(),
-        'durationMinutes': durationMinutes,
-      },
+      <String, Object>{'name': name.trim(), 'durationMinutes': durationMinutes},
     );
     final data = Map<String, dynamic>.from(result.data as Map);
     return (data['joinCode'] as String?) ?? (data['groupId'] as String);
@@ -879,16 +900,18 @@ class CloudChallengeService
     String? username,
   }) async {
     await _user();
-    await _functions.httpsCallable('submitFellowshipAnswer').call(<String, Object>{
-      'groupId': groupId,
-      'challengeId': challengeId,
-      'questionIndex': questionIndex,
-      'questionId': questionId,
-      'answerIndex': selectedOptionIndex,
-      'selectedOptionIndex': selectedOptionIndex,
-      'responseLatencyMs': responseLatencyMs,
-      'username': ?username,
-    });
+    await _functions
+        .httpsCallable('submitFellowshipAnswer')
+        .call(<String, Object>{
+          'groupId': groupId,
+          'challengeId': challengeId,
+          'questionIndex': questionIndex,
+          'questionId': questionId,
+          'answerIndex': selectedOptionIndex,
+          'selectedOptionIndex': selectedOptionIndex,
+          'responseLatencyMs': responseLatencyMs,
+          'username': ?username,
+        });
   }
 
   @override
@@ -897,10 +920,9 @@ class CloudChallengeService
     required String challengeId,
   }) async {
     await _user();
-    await _functions.httpsCallable('revealFellowshipAnswer').call(<String, Object>{
-      'groupId': groupId,
-      'challengeId': challengeId,
-    });
+    await _functions.httpsCallable('revealFellowshipAnswer').call(
+      <String, Object>{'groupId': groupId, 'challengeId': challengeId},
+    );
   }
 
   @override
@@ -909,10 +931,9 @@ class CloudChallengeService
     required String challengeId,
   }) async {
     await _user();
-    await _functions.httpsCallable('advanceFellowshipQuestion').call(<String, Object>{
-      'groupId': groupId,
-      'challengeId': challengeId,
-    });
+    await _functions.httpsCallable('advanceFellowshipQuestion').call(
+      <String, Object>{'groupId': groupId, 'challengeId': challengeId},
+    );
   }
 
   @override

@@ -500,6 +500,36 @@ exports.extendGroup = onCall(callableOptions, async (request) => {
   };
 });
 
+// Group owners may revoke a challenge at any point in its lifecycle. This is
+// a hard delete of the challenge subtree so stale entries and private
+// Fellowship answers cannot remain readable or be mistaken for a live
+// challenge. Parent group membership is deliberately left intact.
+exports.deleteGroupChallenge = onCall(callableOptions, async (request) => {
+  const uid = requireUser(request);
+  const groupId = requireText(request.data.groupId, 'group ID');
+  const challengeId = requireText(request.data.challengeId, 'challenge ID');
+
+  const groupRef = db.doc(`groups/${groupId}`);
+  const memberRef = db.doc(`groups/${groupId}/members/${uid}`);
+  const challengeRef = db.doc(`groups/${groupId}/challenges/${challengeId}`);
+  const [groupSnap, memberSnap] = await Promise.all([
+    groupRef.get(),
+    memberRef.get(),
+  ]);
+  if (!groupSnap.exists || !memberSnap.exists) {
+    throw new HttpsError('not-found', 'Group not found.');
+  }
+  const canonicalOwnerUid = groupSnap.get('ownerUid') || groupSnap.get('ownerId');
+  if (memberSnap.get('role') !== 'owner' || canonicalOwnerUid !== uid) {
+    throw new HttpsError('permission-denied', 'Only the group owner can delete challenges.');
+  }
+
+  // recursiveDelete also removes entries and fellowshipAnswers beneath the
+  // challenge document. Repeating the call is safe and idempotent.
+  await db.recursiveDelete(challengeRef);
+  return { status: 'deleted', groupId, challengeId };
+});
+
 // Group hosts select from the same curated public catalogue. Members can
 // view the question, but only a callable function can read the hidden answer
 // key and write a verified group score.

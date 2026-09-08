@@ -412,7 +412,7 @@ Important identity compatibility rules:
 
 ## 9. Cloud Functions inventory
 
-The actual export inventory in `functions/index.js` currently contains 13
+The actual export inventory in `functions/index.js` currently contains 14
 exports. All except `sendDailyReminders` are v2 HTTPS callable Functions in
 `us-central1`. Callable App Check enforcement is disabled deliberately as
 described in the architecture section.
@@ -425,6 +425,7 @@ described in the architecture section.
 | `createGroup` | Authenticated user | Creates group, six-digit code reservation, owner membership, and private user index atomically. Defaults to a 10-minute expiry; retries active code collisions. |
 | `joinGroup` | Authenticated user | Resolves code or legacy group ID, checks group/code expiry, and writes membership/index data. Owner self-join is owner-preserving and idempotent, preserves the existing joined timestamp/display name, and returns an owner message. |
 | `extendGroup` | Authenticated group owner | Adds minutes to the group expiry and synchronizes join code and owner index. |
+| `deleteGroupChallenge` | Authenticated group owner | Recursively deletes a challenge and its entries/private Fellowship answers; idempotent and parent-group preserving. |
 | `createGroupChallenge` | Authenticated group owner | Validates membership, owner role, expiry, mode, count, catalogue metadata, and question availability; stores a server-seeded public question set in `lobby`. |
 | `startGroupChallenge` | Authenticated group owner | Transactionally validates group/challenge/role/expiry, freezes `participantUids`/`participantCount`, establishes `startedAt` once, and enters Competitive `active` or Fellowship `question_open`. |
 | `submitFellowshipAnswer` | Authenticated group member | Validates current open question and index, rejects members outside the frozen roster for new challenges, then immutably records one answer and updates answered UID state. |
@@ -601,8 +602,9 @@ flutter test
 
 The widget suite covers splash/menu navigation, answer confirmation and
 feedback, timers, Group Challenge mode/count UI, owner/challenge model parsing,
-Competitive timeout behavior, authoritative mode routing, and the Fellowship
-finalizing presentation. The current run passes 36 Flutter tests, and
+Competitive timeout behavior, authoritative mode routing, host challenge
+deletion, and the Fellowship finalizing presentation. The current run passes
+37 Flutter tests, and
 `flutter analyze` reports no issues.
 
 ### Cloud Function contract tests
@@ -715,6 +717,8 @@ substantial code or product-flow work.
 * Group challenge mode/count validation, server question selection, lobby,
   mode-specific routing, server-authorized host operations, and Fellowship
   reveal/advance/finalization state handling are present.
+* Hosts can delete/revoke challenges through a callable that recursively
+  removes the challenge subtree from Firestore; members cannot invoke it.
 * Firestore rules deny client writes to groups, challenges, answers, and
   leaderboards; the preceding real client integration run verified the main
   403 boundaries.

@@ -3655,6 +3655,51 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
     }
   }
 
+  Future<void> _deleteChallenge(GroupChallenge challenge) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: _slateSurface,
+        title: const Text('DELETE GROUP CHALLENGE?'),
+        content: Text(
+          'This will permanently remove “${challenge.title}”, its answers, and its leaderboard entries for every member.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('CANCEL'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: _wrong),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('DELETE'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    try {
+      await _service.deleteGroupChallenge(
+        groupId: widget.group.id,
+        challengeId: challenge.id,
+      );
+      if (mounted) {
+        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+          const SnackBar(content: Text('Group challenge deleted.')),
+        );
+      }
+    } catch (error) {
+      if (!mounted) return;
+      final message =
+          error is FirebaseFunctionsException && error.message != null
+          ? error.message!
+          : 'The group challenge could not be deleted.';
+      ScaffoldMessenger.maybeOf(
+        context,
+      )?.showSnackBar(SnackBar(content: Text(message)));
+    }
+  }
+
   void _showCreateQuizDialog() {
     String selectedMode = 'competitive';
     int selectedCount = 10;
@@ -4114,6 +4159,18 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
                             icon: challenge.isFellowship
                                 ? Icons.groups_outlined
                                 : Icons.speed,
+                            trailing: _currentGroup.isOwner
+                                ? IconButton(
+                                    tooltip: 'Delete challenge',
+                                    icon: const Icon(
+                                      Icons.delete_outline,
+                                      color: _wrong,
+                                      size: 20,
+                                    ),
+                                    onPressed: () =>
+                                        _deleteChallenge(challenge),
+                                  )
+                                : null,
                             onTap: () {
                               if (challenge.isLobby) {
                                 Navigator.of(context).push(
@@ -6694,6 +6751,7 @@ class SlateSettingCard extends StatelessWidget {
     required this.subtitle,
     required this.icon,
     this.onTap,
+    this.trailing,
     this.iconColor = _gold,
   });
   final String title;
@@ -6701,6 +6759,7 @@ class SlateSettingCard extends StatelessWidget {
   final IconData icon;
   final Color iconColor;
   final VoidCallback? onTap;
+  final Widget? trailing;
   @override
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.symmetric(vertical: 4),
@@ -6737,7 +6796,9 @@ class SlateSettingCard extends StatelessWidget {
                   ],
                 ),
               ),
-              if (onTap != null)
+              if (trailing != null)
+                trailing!
+              else if (onTap != null)
                 const Icon(Icons.chevron_right, color: _slateTextMuted),
             ],
           ),

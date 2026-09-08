@@ -71,6 +71,8 @@ class _FakeGroupGateway implements CloudGroupGateway {
   bool submitFellowshipAnswerCalled = false;
   bool revealFellowshipAnswerCalled = false;
   bool advanceFellowshipQuestionCalled = false;
+  bool deleteGroupChallengeCalled = false;
+  String? deletedChallengeId;
   int? lastAnsweredOption;
   String? lastCreatedMode;
   int? lastCreatedQuestionCount;
@@ -123,6 +125,15 @@ class _FakeGroupGateway implements CloudGroupGateway {
     String groupId, {
     int additionalMinutes = 10,
   }) async {}
+
+  @override
+  Future<void> deleteGroupChallenge({
+    required String groupId,
+    required String challengeId,
+  }) async {
+    deleteGroupChallengeCalled = true;
+    deletedChallengeId = challengeId;
+  }
 
   @override
   Future<String> createGroupChallenge({
@@ -1470,6 +1481,50 @@ void main() {
       expect(find.byType(GroupQuestionScreen), findsOneWidget);
       expect(find.text('GROUP CHALLENGE'), findsOneWidget);
       expect(find.byType(FellowshipQuestionScreen), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'GroupDetailScreen lets the host delete a challenge after confirmation',
+    (tester) async {
+      const group = QuizGroup(
+        id: 'group-delete',
+        name: 'Delete Test Group',
+        role: 'owner',
+        joinCode: '112233',
+      );
+      const challenge = GroupChallenge(
+        id: 'challenge-delete',
+        title: 'Challenge to Delete',
+        mode: 'competitive',
+        status: 'lobby',
+        questionCount: 10,
+        question: 'Question',
+        options: ['A', 'B'],
+        explanation: '',
+        scriptureReference: '',
+      );
+      final service = _FakeGroupGateway(
+        groups: [group],
+        challenges: [challenge],
+      );
+      await tester.pumpWidget(
+        MaterialApp(
+          home: GroupDetailScreen(store: ProgressStore(), group: group, service: service),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      await tester.tap(find.byTooltip('Delete challenge'));
+      await tester.pump();
+      expect(find.text('DELETE GROUP CHALLENGE?'), findsOneWidget);
+      await tester.tap(find.text('DELETE'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(service.deleteGroupChallengeCalled, isTrue);
+      expect(service.deletedChallengeId, challenge.id);
     },
   );
 
