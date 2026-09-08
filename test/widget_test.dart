@@ -1353,6 +1353,50 @@ void main() {
   );
 
   testWidgets(
+    'GroupDetailScreen lists each challenge mode and question count',
+    (tester) async {
+      const group = QuizGroup(
+        id: 'group-list-labels',
+        name: 'Label Test Group',
+        role: 'member',
+        joinCode: '445566',
+      );
+      const fellowship = GroupChallenge(
+        id: 'fellowship-list-label',
+        title: 'Bible Study Night',
+        mode: 'fellowship',
+        status: 'lobby',
+        questionCount: 20,
+        question: 'Question',
+        options: ['A', 'B'],
+        explanation: '',
+        scriptureReference: '',
+      );
+      final service = _FakeGroupGateway(
+        groups: [group],
+        challenges: [fellowship],
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: GroupDetailScreen(
+            store: ProgressStore(),
+            group: group,
+            service: service,
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('Bible Study Night'), findsOneWidget);
+      expect(
+        find.text('Fellowship • 20 Questions • Waiting for host to start'),
+        findsOneWidget,
+      );
+    },
+  );
+
+  testWidgets(
     'reopening a completed competitive challenge shows rankings instead of question one',
     (tester) async {
       final store = ProgressStore();
@@ -1510,7 +1554,11 @@ void main() {
       );
       await tester.pumpWidget(
         MaterialApp(
-          home: GroupDetailScreen(store: ProgressStore(), group: group, service: service),
+          home: GroupDetailScreen(
+            store: ProgressStore(),
+            group: group,
+            service: service,
+          ),
         ),
       );
       await tester.pump();

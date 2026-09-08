@@ -604,7 +604,7 @@ The widget suite covers splash/menu navigation, answer confirmation and
 feedback, timers, Group Challenge mode/count UI, owner/challenge model parsing,
 Competitive timeout behavior, authoritative mode routing, host challenge
 deletion, and the Fellowship finalizing presentation. The current run passes
-37 Flutter tests, and
+38 Flutter tests, and
 `flutter analyze` reports no issues.
 
 ### Cloud Function contract tests
