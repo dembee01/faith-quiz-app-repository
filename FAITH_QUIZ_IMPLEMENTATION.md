@@ -7,10 +7,12 @@ It is intentionally based on the source currently in this repository rather
 than on an old function count, an old screen name, or a historical design
 document.
 
-> Status snapshot: 2026-09-08, `master` at `e754ade` plus the uncommitted
-> Group Challenge stabilization changes that were present when this document
-> was written. Re-check the source and update the status section after each
-> architecture or product-flow change.
+> Status snapshot: 2026-09-08, `master` at `f1661e8` (which includes the
+> Group Challenge stabilization commit `c362437`) plus uncommitted changes in
+> `lib/app.dart` and `test/widget_test.dart`. The working tree currently adds
+> two lint-only brace fixes and additional modal/route coverage. Re-check the
+> source and update this status section after each architecture or
+> product-flow change.
 
 ## 1. Product overview
 
@@ -204,11 +206,12 @@ member reads, and entry reads are allowed only to authenticated group members.
 ### Join window / session expiry
 
 `expiresAt` is the group invitation/session expiry, not a quiz-completion
-timer. The normal default is 10 minutes. The current Flutter create dialog
-also exposes 30 minutes, one hour, and no-expiry; the Function accepts an
-integer duration and treats values less than or equal to zero as no expiry.
-The owner may extend an existing group by 10 minutes. The extension updates
-the group, join-code reservation, and owner's index.
+timer. The normal default and the current Flutter create-dialog choice are
+10 minutes. The Function still accepts an integer duration for compatibility
+and treats values less than or equal to zero as no expiry; the UI no longer
+offers 30 minutes, one hour, or no-expiry. The owner may extend an existing
+group by 10 minutes. The extension updates the group, join-code reservation,
+and owner's index.
 
 The Function rejects joins after `expiresAt` and rejects challenge creation or
 start after expiry. There is currently no scheduled cleanup requirement; an
@@ -233,14 +236,14 @@ On start, the host-only callable atomically writes `startedAt` and transitions
 the status to `active` (Competitive) or `question_open` (Fellowship). Repeated
 starts are idempotent and do not reset `startedAt`.
 
-The current schema does not yet store a dedicated `participantUids` snapshot
-when the host starts. Membership is checked at call time, and Fellowship
-finalization currently enumerates group members. This means the server must be
-updated before promising that late parent-group joins are excluded from an
-already-started challenge. The desired contract is to freeze the participant
-set at lobby-to-active transition and use that set for submissions and final
-entries.
-
+At the lobby-to-start transition, `startGroupChallenge` now freezes the
+participant set in `participantUids` and `participantCount` while it writes
+`startedAt` and the active/question-open status. New Competitive and
+Fellowship submissions reject authenticated group members who were not in that
+snapshot. Fellowship finalization grades the frozen roster and writes a zero
+entry for a roster member who submitted no answer. Legacy challenges without
+`participantUids` retain their historical current-member behavior so old data
+remains usable.
 ### Mode-specific routing
 
 `GroupDetailScreen` opens `GroupLobbyScreen` for `status == lobby`. Once a
@@ -259,10 +262,11 @@ Flutter lobby shows host-only start controls and the Fellowship screen shows
 host-only reveal/next/complete controls. The server independently checks the
 membership role for every host operation.
 
-The current lobby does not yet render a full member list with a `HOST` badge;
-its host identity is communicated through the host-only copy and controls. A
-future member-list UI must label the owner distinctly, for example
-`Abraham • HOST`, without treating role presentation as authorization.
+The current lobby does not render a full member list, but it does show the
+host/member state explicitly: the host sees `YOU • HOST` and a member sees
+`MEMBER • HOST-LED LOBBY`. Group cards also label the caller `HOST` or
+`MEMBER`. These labels are presentation only; Functions independently check
+the canonical owner and membership role for every host operation.
 
 ### Reconnect
 
@@ -270,11 +274,14 @@ Firestore snapshots are authoritative for group/challenge state, so reopening
 a group can discover a lobby, active challenge, Fellowship question index,
 reveal state, finalizing state, or completed state. The current Flutter
 screens do not persist a complete local Group Challenge navigation/session
-object. Competitive answer selections and Fellowship's local answer map are
-in-memory. A backgrounded or closed app therefore requires the player to open
-the group/challenge again; it must never create a second challenge or trust a
-locally cached answer as an official result. Automatic resume into the exact
-screen/question remains a device-validation and follow-up item.
+object. Competitive answer selections, per-question timer bookkeeping, and
+Fellowship's local answer map are in-memory. Reopening a completed
+Competitive challenge shows read-only results/leaderboard rather than
+starting Question 1 again. A backgrounded or closed app otherwise requires
+the player to open the group/challenge again; it must never create a second
+challenge or trust locally cached answers as official results. Automatic
+resume into the exact active screen/question remains a device-validation and
+follow-up item.
 
 ## 6. Competitive mode
 
@@ -316,14 +323,20 @@ deny `contentPrivate` completely.
 ### 30-second question timer decision
 
 The product decision is **30 seconds per Competitive question**, separate from
-the group join window. At the time of this audit, the Flutter Competitive
-screen's timer is an elapsed display and the server's official timer is a
-challenge-level `startedAt` duration; neither enforces a 30-second per-question
-deadline or auto-records a timeout as unanswered. This is an explicit
-implementation gap, not a reason to reuse the 10-minute group expiry. A future
-implementation should derive a visible local countdown from an authoritative
-start/deadline model, avoid per-second Firestore writes, and have the server
-reject late/extra time or normalize timed-out answers.
+the group join window. The Flutter Competitive screen now displays a local
+30-second countdown for each question, auto-advances after expiry (except on
+the last question), and submits an unanswered/timeout value when the player
+does not answer. The session clock is anchored to the authoritative
+challenge `startedAt`; the client does not write per-second timer updates to
+Firestore.
+
+The remaining caveat is server enforcement: the challenge schema does not
+store a per-player `questionStartedAt`, so the Function verifies only the
+challenge-level elapsed time from `startedAt` to server now. A modified client
+could therefore submit an answer array with different per-question timing;
+the server still owns correctness, official elapsed ranking time, and entry
+idempotency. A future hardening pass should add an authoritative per-question
+deadline or server-normalize timed-out positions.
 
 ## 7. Fellowship mode
 
@@ -376,7 +389,7 @@ unless explicitly noted by the rules.
 | `groups/{groupId}/members/{uid}` | `role` (`owner`/`member`), `joinedAt`, display name. The owner UID is authoritative even if an old role literal is stale. |
 | `users/{uid}/groups/{groupId}` | Private group index used by `myGroups()`: name, role, join code, expiry, duration. |
 | `joinCodes/{code}` | Server-reserved six-digit code mapping to group and expiry. Not a public client collection. |
-| `groups/{groupId}/challenges/{challengeId}` | `catalogue`, `title`, `mode`, `status`, `questionCount`, public `questions`, `questionIds`, server seed, `createdBy`, `startedAt`, current/reveal fields, `answeredUids`. |
+| `groups/{groupId}/challenges/{challengeId}` | `catalogue`, `title`, `mode`, `status`, `questionCount`, public `questions`, `questionIds`, server seed, `createdBy`, `startedAt`, current/reveal fields, `answeredUids`, and (for new starts) frozen `participantUids` plus `participantCount`. |
 | `.../fellowshipAnswers/{questionIndex_uid}` | One immutable answer per member/question: UID, index, answer option, server timestamp, response seconds. |
 | `.../entries/{uid}` | Server-written verified group result: display name, score, total, correct, elapsed seconds, timestamps. |
 | `leaderboards/global_challenge/entries/{uid}` | Cumulative server-verified score, totals, accuracy, average response time, level, username/display name. |
@@ -412,14 +425,14 @@ described in the architecture section.
 | `checkUsernameAvailable` | Any caller; validation applies | Validates username format and reports whether it is free or already owned by the caller. |
 | `submitCloudChallenge` | Authenticated user | Reads the private answer, grades one online question, updates private history and cumulative/per-question verified entries transactionally, and is idempotent per user/question. |
 | `createGroup` | Authenticated user | Creates group, six-digit code reservation, owner membership, and private user index atomically. Defaults to a 10-minute expiry; retries active code collisions. |
-| `joinGroup` | Authenticated user | Resolves code or legacy group ID, checks group/code expiry, and writes membership/index data. The owner-self-join branch must be owner-preserving and idempotent; see the ownership caveat in Current Status. |
+| `joinGroup` | Authenticated user | Resolves code or legacy group ID, checks group/code expiry, and writes membership/index data. Owner self-join is owner-preserving and idempotent, preserves the existing joined timestamp/display name, and returns an owner message. |
 | `extendGroup` | Authenticated group owner | Adds minutes to the group expiry and synchronizes join code and owner index. |
 | `createGroupChallenge` | Authenticated group owner | Validates membership, owner role, expiry, mode, count, catalogue metadata, and question availability; stores a server-seeded public question set in `lobby`. |
-| `startGroupChallenge` | Authenticated group owner | Transactionally validates group/challenge/role/expiry, establishes `startedAt` once, and enters Competitive `active` or Fellowship `question_open`. |
-| `submitFellowshipAnswer` | Authenticated group member | Validates current open question and index, then immutably records one answer and updates answered UID state. |
+| `startGroupChallenge` | Authenticated group owner | Transactionally validates group/challenge/role/expiry, freezes `participantUids`/`participantCount`, establishes `startedAt` once, and enters Competitive `active` or Fellowship `question_open`. |
+| `submitFellowshipAnswer` | Authenticated group member | Validates current open question and index, rejects members outside the frozen roster for new challenges, then immutably records one answer and updates answered UID state. |
 | `revealFellowshipAnswer` | Authenticated group owner | Reads the private answer in a transaction and moves open to revealed with answer/explanation/Scripture; repeat reveal is idempotent. |
 | `advanceFellowshipQuestion` | Authenticated group owner | Moves revealed to next open question or finalizing, grades all answers, writes verified entries, and completes with retry/idempotency behavior. |
-| `submitGroupChallenge` | Authenticated group member | Grades modern Competitive answer arrays server-side with private keys and authoritative elapsed time. Also retains a single-question legacy path. Rejects Fellowship use and pre-start submissions. |
+| `submitGroupChallenge` | Authenticated group member | Grades modern Competitive answer arrays server-side with private keys and authoritative elapsed time, rejecting members outside a new challenge's frozen roster. Also retains a single-question legacy path. Rejects Fellowship use and pre-start submissions. |
 | `sendDailyReminders` | Cloud Scheduler | Runs at 18:00 Africa/Accra, reads opt-in FCM tokens, and sends the Daily Challenge notification in batches. Requires a billing plan supporting Scheduler. |
 
 The old `CloudGroupGateway.createGroupChallenge` Dart method and the
@@ -470,23 +483,21 @@ do not currently accept a client idempotency key; retain Flutter in-flight
 guards and add server idempotency before treating arbitrary double taps as
 safe.
 
-### Ownership hazard to preserve/fix
+### Ownership invariant (implemented; keep covered by regression tests)
 
-At the pre-audit baseline, `joinGroup` called `transaction.set` with
-`role: member` and `{ merge: true }` for every UID. Merge prevents deletion of
-unmentioned fields but does **not** protect a field explicitly included in the
-write. Consequently, an owner entering their own code could overwrite
-`role: owner` in both the group membership and the user's group index and reset
-`joinedAt`. The required invariant is:
+The historical `joinGroup` hazard was an unconditional merged write with
+`role: member`, which could downgrade an owner entering their own code and
+reset `joinedAt`. The current transaction resolves the canonical owner
+(`ownerUid`, with legacy fallback), preserves an existing owner role and
+timestamp/display name, and returns the idempotent owner result:
 
 > If the resolved caller UID equals the group's canonical owner UID (or a
 > supported legacy owner identity), return an idempotent “You already own this
 > group” result or navigate to the group without writing a member role.
 
-This must be enforced in the callable, not only by hiding the Join button.
-Regression tests must cover owner creation, owner self-join, stable owner role,
-stable joined timestamp, and two ordinary members joining via the six-digit
-code.
+This is enforced in the callable, not only by hiding the Join button.
+Regression tests cover owner creation, owner self-join, stable owner role and
+timestamp, and ordinary members joining via the six-digit code.
 
 ## 11. Data compatibility
 
@@ -551,18 +562,20 @@ Do not conflate these clocks:
 
 The normal default is 10 minutes from group creation. It controls code/group
 availability for joining and owner ability to create/start a challenge. The
-current UI offers 10 minutes, 30 minutes, 1 hour, and no expiry; an expired
-code is rejected by the Function. This duration is not the time allowed to
-finish a quiz.
+current UI offers only 10 minutes; the backend retains integer-duration and
+no-expiry compatibility behavior. An expired code is rejected by the
+Function. This duration is not the time allowed to finish a quiz.
 
 ### Competitive question timer
 
-Product decision: 30 seconds per question. It is not implemented as a
-server-enforced per-question deadline in the audited baseline. The current
-Competitive screen displays locally accumulated per-question/total elapsed
-time, while the server ranks using `startedAt` to server-now elapsed time.
-Implement the 30-second countdown/deadline with authoritative timestamps and
-no per-second writes before calling this complete.
+Product decision: 30 seconds per question. The current Competitive screen
+implements a local countdown anchored to the challenge's `startedAt`,
+auto-advances on expiry, and leaves timed-out positions unanswered. Timer
+bookkeeping is in memory and does not write once per second. The server ranks
+using `startedAt` to server-now elapsed time, but does not yet enforce a
+separate per-question deadline because it stores no per-player
+`questionStartedAt`; server-side deadline/normalization remains future
+hardening.
 
 ### Fellowship pacing
 
@@ -590,9 +603,11 @@ flutter test
 
 The widget suite covers splash/menu navigation, answer confirmation and
 feedback, timers, Group Challenge mode/count UI, owner/challenge model parsing,
-and the Fellowship finalizing presentation. The preceding stabilization run
-reported `flutter analyze` with zero issues and 32 Flutter tests passing; rerun
-after any current Group Challenge change.
+and the Fellowship finalizing presentation. The current run passes 34 Flutter
+tests. `flutter analyze` currently exits non-zero only because of two
+`curly_braces_in_flow_control_structures` info diagnostics in `lib/app.dart`
+(lines 1348 and 3180); the uncommitted working-tree change adds braces for
+those diagnostics.
 
 ### Cloud Function contract tests
 
@@ -602,9 +617,10 @@ node functions/test_rules.js
 node functions/test_data_model.js
 ```
 
-`test_functions.js` is a pure Node contract/logic suite; its last recorded
-result is 18 tests, including mode/count validation, code generation,
-accuracy-first ranking, catalogue permutation, and server-time logic.
+`test_functions.js` is a pure Node contract/logic suite; its current result is
+20 tests, including owner self-join stability, frozen participant-roster
+validation, mode/count validation, code generation, accuracy-first ranking,
+catalogue permutation, and server-time logic.
 `test_rules.js` parses the rules and checks 10 deny/read invariants. It is a
 structural test, not a replacement for the Firestore Rules emulator.
 `test_data_model.js` uses Admin SDK data patterns and reports 7 integration

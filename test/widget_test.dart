@@ -769,6 +769,11 @@ void main() {
 
       expect(find.text('GROUP CHALLENGES'), findsOneWidget);
       expect(find.text('Grace Church'), findsOneWidget);
+      expect(
+        find.text('HOST • Invite code unavailable • Open session'),
+        findsOneWidget,
+      );
+      expect(find.text('grp-test-456'), findsNothing);
     },
   );
 
@@ -1381,6 +1386,147 @@ void main() {
       expect(find.text('Who built the ark?'), findsNothing);
       expect(find.text('Noah'), findsOneWidget);
       expect(find.text('SUBMIT GROUP QUIZ'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'GroupDetailScreen routes an authoritative fellowship challenge to fellowship gameplay',
+    (tester) async {
+      final store = ProgressStore();
+      const group = QuizGroup(
+        id: 'group-route',
+        name: 'Route Test Group',
+        role: 'owner',
+        joinCode: '123456',
+      );
+      const challenge = GroupChallenge(
+        id: 'fellowship-route',
+        title: 'Fellowship Route Challenge',
+        mode: 'fellowship',
+        status: 'question_open',
+        questionCount: 1,
+        question: 'What is the first book of the Bible?',
+        options: ['Genesis', 'Exodus', 'Matthew', 'Psalms'],
+        explanation: '',
+        scriptureReference: 'Genesis 1:1',
+      );
+      final service = _FakeGroupGateway(
+        groups: [group],
+        challenges: [challenge],
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: GroupDetailScreen(store: store, group: group, service: service),
+        ),
+      );
+      await tester.pump();
+      await tester.tap(find.text('Fellowship Route Challenge'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
+
+      expect(find.byType(FellowshipQuestionScreen), findsOneWidget);
+      expect(find.text('FELLOWSHIP STUDY'), findsOneWidget);
+      expect(find.byType(GroupQuestionScreen), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'GroupDetailScreen routes an authoritative competitive challenge to competitive gameplay',
+    (tester) async {
+      final store = ProgressStore();
+      const group = QuizGroup(
+        id: 'group-route-competitive',
+        name: 'Route Test Group',
+        role: 'member',
+        joinCode: '654321',
+      );
+      const challenge = GroupChallenge(
+        id: 'competitive-route',
+        title: 'Competitive Route Challenge',
+        mode: 'competitive',
+        status: 'active',
+        questionCount: 1,
+        question: 'Who built the ark?',
+        options: ['Noah', 'Moses', 'David', 'Solomon'],
+        explanation: '',
+        scriptureReference: 'Genesis 6:14',
+      );
+      final service = _FakeGroupGateway(
+        groups: [group],
+        challenges: [challenge],
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: GroupDetailScreen(store: store, group: group, service: service),
+        ),
+      );
+      await tester.pump();
+      await tester.tap(find.text('Competitive Route Challenge'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
+
+      expect(find.byType(GroupQuestionScreen), findsOneWidget);
+      expect(find.text('GROUP CHALLENGE'), findsOneWidget);
+      expect(find.byType(FellowshipQuestionScreen), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'Competitive mode expires each question after 30 seconds and unlocks submission',
+    (tester) async {
+      const challenge = GroupChallenge(
+        id: 'competitive-timer',
+        title: 'Timed Challenge',
+        mode: 'competitive',
+        status: 'active',
+        questionCount: 2,
+        question: 'First question',
+        options: ['A', 'B'],
+        explanation: '',
+        scriptureReference: '',
+        items: [
+          GroupChallengeItem(
+            id: 'q1',
+            question: 'First question',
+            options: ['A', 'B'],
+            scriptureReference: '',
+            testament: '',
+            propheticFocus: '',
+          ),
+          GroupChallengeItem(
+            id: 'q2',
+            question: 'Second question',
+            options: ['A', 'B'],
+            scriptureReference: '',
+            testament: '',
+            propheticFocus: '',
+          ),
+        ],
+      );
+      await tester.pumpWidget(
+        MaterialApp(
+          home: GroupQuestionScreen(
+            store: ProgressStore(),
+            groupId: 'timer-group',
+            challenge: challenge,
+            service: _FakeGroupGateway(),
+          ),
+        ),
+      );
+      await tester.pump();
+      for (var i = 0; i < 30; i++) {
+        await tester.pump(const Duration(seconds: 1));
+      }
+      await tester.pump(const Duration(milliseconds: 500));
+
+      expect(find.text('Second question'), findsOneWidget);
+      for (var i = 0; i < 30; i++) {
+        await tester.pump(const Duration(seconds: 1));
+      }
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.text('SUBMIT GROUP QUIZ (2/2)'), findsOneWidget);
     },
   );
 }

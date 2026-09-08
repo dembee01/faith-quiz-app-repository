@@ -1344,8 +1344,9 @@ class _CloudChallengeScreenState extends State<CloudChallengeScreen> {
               correct: _feedback && (correctIndex == index),
               feedback: _feedback,
               onTap: () {
-                if (!_feedback && !_submitting)
+                if (!_feedback && !_submitting) {
                   setState(() => _selected = index);
+                }
               },
             ),
           ),
@@ -3176,8 +3177,9 @@ class _GroupsScreenState extends State<GroupsScreen> {
                         fontWeight: FontWeight.bold,
                       ),
                       onSelected: (selected) {
-                        if (selected)
+                        if (selected) {
                           setDialogState(() => selectedDuration = 10);
+                        }
                       },
                     ),
                   ],
@@ -5183,7 +5185,7 @@ class _GroupQuestionScreenState extends State<GroupQuestionScreen> {
   late final List<GroupChallengeItem> _questions;
   late final List<int> _answers;
   late final DateTime _sessionStartedAt;
-  final Map<int, DateTime> _questionStartedAt = <int, DateTime>{};
+  final Map<int, int> _questionElapsed = <int, int>{};
   final Set<int> _expiredQuestions = <int>{};
   int _currentIndex = 0;
   Timer? _timer;
@@ -5224,16 +5226,18 @@ class _GroupQuestionScreenState extends State<GroupQuestionScreen> {
     // reconnect. Per-question countdowns are local because competitive
     // challenges do not persist a question-open timestamp for each player.
     _sessionStartedAt = widget.challenge.startedAt ?? DateTime.now();
-    _questionStartedAt[0] = DateTime.now();
+    _totalSeconds = max(
+      0,
+      DateTime.now().difference(_sessionStartedAt).inSeconds,
+    );
+    _questionElapsed[0] = 0;
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted && _result == null) {
-        final now = DateTime.now();
-        final questionStart = _questionStartedAt[_currentIndex] ??= now;
-        final elapsed = now.difference(questionStart).inSeconds;
-        final totalElapsed = max(
-          0,
-          now.difference(_sessionStartedAt).inSeconds,
-        );
+        // Tick counters keep the countdown deterministic even when the app
+        // is rebuilt/offline. On a reconnect, _totalSeconds starts from the
+        // server's startedAt timestamp above.
+        final elapsed = (_questionElapsed[_currentIndex] ?? 0) + 1;
+        _questionElapsed[_currentIndex] = elapsed;
         final reachedLimit = elapsed >= _questionLimitSeconds;
         final shouldAdvance =
             reachedLimit &&
@@ -5242,7 +5246,7 @@ class _GroupQuestionScreenState extends State<GroupQuestionScreen> {
         final expiredIndex = _currentIndex;
         setState(() {
           _questionSeconds = min(_questionLimitSeconds, max(0, elapsed));
-          _totalSeconds = totalElapsed;
+          _totalSeconds++;
           if (reachedLimit) _expiredQuestions.add(_currentIndex);
         });
         if (shouldAdvance) {
@@ -5254,8 +5258,7 @@ class _GroupQuestionScreenState extends State<GroupQuestionScreen> {
             }
             setState(() {
               _currentIndex++;
-              _questionSeconds = 0;
-              _questionStartedAt.putIfAbsent(_currentIndex, DateTime.now);
+              _questionSeconds = _questionElapsed[_currentIndex] ?? 0;
             });
           });
         }
@@ -5455,7 +5458,7 @@ class _GroupQuestionScreenState extends State<GroupQuestionScreen> {
                   onPressed: () {
                     setState(() {
                       _currentIndex--;
-                      _questionSeconds = 0;
+                      _questionSeconds = _questionElapsed[_currentIndex] ?? 0;
                     });
                   },
                 ),
@@ -5470,11 +5473,8 @@ class _GroupQuestionScreenState extends State<GroupQuestionScreen> {
                       ? () {
                           setState(() {
                             _currentIndex++;
-                            _questionSeconds = 0;
-                            _questionStartedAt.putIfAbsent(
-                              _currentIndex,
-                              DateTime.now,
-                            );
+                            _questionSeconds =
+                                _questionElapsed[_currentIndex] ?? 0;
                           });
                         }
                       : null,
