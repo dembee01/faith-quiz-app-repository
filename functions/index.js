@@ -1105,54 +1105,54 @@ exports.advanceFellowshipQuestion = onCall(callableOptions, async (request) => {
       }));
     }
     await db.runTransaction(async (batch) => {
-    const latest = await batch.get(challengeRef);
-    if (!latest.exists || latest.get('status') === 'deleting') {
-      throw new HttpsError('not-found', 'This challenge was deleted by its host.');
-    }
-    if (latest.get('status') === 'completed') return;
-    if (latest.get('status') !== 'finalizing') {
-      throw new HttpsError('failed-precondition', 'Challenge is not finalizing.');
-    }
-
-    for (const memberRecord of memberRecords) {
-      const memberUid = memberRecord.uid;
-      const memberDoc = memberRecord.snapshot;
-      const memberName = memberDoc && memberDoc.exists
-        ? (memberDoc.get('displayName') || 'Faith learner')
-        : 'Faith learner';
-      const answersMap = userAnswers.get(memberUid) || new Map();
-
-      let score = 0;
-      let totalResponseTime = 0;
-      for (let i = 0; i < questions.length; i++) {
-        const q = questions[i];
-        const correctAns = correctMap.get(q.id);
-        const userAns = answersMap.get(i);
-        if (userAns && userAns.answerIndex === correctAns) {
-          score++;
-        }
-        if (userAns) {
-          totalResponseTime += userAns.responseTime;
-        }
+      const latest = await batch.get(challengeRef);
+      if (!latest.exists || latest.get('status') === 'deleting') {
+        throw new HttpsError('not-found', 'This challenge was deleted by its host.');
+      }
+      if (latest.get('status') === 'completed') return;
+      if (latest.get('status') !== 'finalizing') {
+        throw new HttpsError('failed-precondition', 'Challenge is not finalizing.');
       }
 
-      const entryRef = challengeRef.collection('entries').doc(memberUid);
-      batch.set(entryRef, {
-        displayName: memberName,
-        score,
-        total: questions.length,
-        correct: score === questions.length && questions.length > 0,
-        elapsedSeconds: totalResponseTime,
-        verified: true,
-        updatedAt: FieldValue.serverTimestamp(),
-      }, { merge: true });
-    }
+      for (const memberRecord of memberRecords) {
+        const memberUid = memberRecord.uid;
+        const memberDoc = memberRecord.snapshot;
+        const memberName = memberDoc && memberDoc.exists
+          ? (memberDoc.get('displayName') || 'Faith learner')
+          : 'Faith learner';
+        const answersMap = userAnswers.get(memberUid) || new Map();
 
-    // Transition challenge to 'completed' ONLY AFTER all entries are written
-    batch.update(challengeRef, {
-      status: 'completed',
-      completedAt: FieldValue.serverTimestamp(),
-    });
+        let score = 0;
+        let totalResponseTime = 0;
+        for (let i = 0; i < questions.length; i++) {
+          const q = questions[i];
+          const correctAns = correctMap.get(q.id);
+          const userAns = answersMap.get(i);
+          if (userAns && userAns.answerIndex === correctAns) {
+            score++;
+          }
+          if (userAns) {
+            totalResponseTime += userAns.responseTime;
+          }
+        }
+
+        const entryRef = challengeRef.collection('entries').doc(memberUid);
+        batch.set(entryRef, {
+          displayName: memberName,
+          score,
+          total: questions.length,
+          correct: score === questions.length && questions.length > 0,
+          elapsedSeconds: totalResponseTime,
+          verified: true,
+          updatedAt: FieldValue.serverTimestamp(),
+        }, { merge: true });
+      }
+
+      // Transition challenge to 'completed' ONLY AFTER all entries are written
+      batch.update(challengeRef, {
+        status: 'completed',
+        completedAt: FieldValue.serverTimestamp(),
+      });
 
     });
     advanceResult = { status: 'completed' };

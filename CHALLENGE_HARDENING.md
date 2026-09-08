@@ -38,6 +38,16 @@ introduce cancellation/archive semantics.
 
 ## Verification
 
+Verified locally: 41 Flutter tests, clean Flutter analysis, eight actual-handler
+regression tests, 20 backend logic contracts, and 10 rule contracts. Nine changed
+callables were deployed successfully to faith-quiz-app-119653. The expanded live
+authenticated integration suite then passed, including full Fellowship completion
+and security rules. The ARM release APK was rebuilt successfully:
+`build/app/outputs/flutter-apk/app-release.apk` (SHA-256
+`15C738B346A9F633E47AA78609831898CAD48189956049B4FE2DA8E12297E07C`).
+No phone or emulator was connected at the final device check; this pass's member
+deletion UI evidence comes from widget tests, not a new device installation.
+
 - `node --test functions/test_hardening.js` executes the actual exported handlers
   using an optimistic transactional store, including concurrent extensions,
   stale owner roles, invitation-code reuse, immutable scores, missing keys, and
@@ -62,6 +72,11 @@ checks on pushes and pull requests, without production credentials.
 `node tool/check_github_quality.js --protect` requires the two checks only after
 they have passed on master; it enforces checks for administrators too and blocks
 force pushes/deletion. Existing branch protection is retained if already present.
+
+GitHub attempted both replacement jobs on commit 1f7cbab, but neither started:
+the account is locked due to a billing issue. Required-check protection was not
+enabled while those checks cannot run. Resolve the GitHub account billing issue,
+rerun the quality workflow, then run the protection command above.
 
 ## Limits of this audit
 

@@ -30,6 +30,14 @@ async function main() {
     checks: checks.check_runs.map(({ name, status, conclusion, html_url }) => ({ name, status, conclusion, html_url })),
     runs: runs.workflow_runs.map(({ id, name, status, conclusion, html_url }) => ({ id, name, status, conclusion, html_url })),
   }, null, 2));
+  if (process.argv.includes('--details')) {
+    for (const check of checks.check_runs) {
+      console.log(JSON.stringify({
+        check: check.name, output: check.output,
+        annotations: await api('/check-runs/' + check.id + '/annotations'),
+      }, null, 2));
+    }
+  }
   if (process.argv.includes('--protect')) {
     if (branch.protected) {
       console.log('Existing protection retained:');

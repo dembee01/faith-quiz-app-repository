@@ -12,6 +12,11 @@ document.
 > source and update this status section after each architecture or product-
 > flow change.
 
+The subsequent [challenge hardening audit](CHALLENGE_HARDENING.md) records
+transactional ten-minute extensions, canonical owner authorization, immutable
+ranked attempts, deletion race protection, member-screen deletion handling, and
+the GitHub Actions billing blocker.
+
 ## 1. Product overview
 
 Faith Quiz is an offline-first Bible quiz for Android and iOS. The Flutter
@@ -424,7 +429,7 @@ described in the architecture section.
 | `submitCloudChallenge` | Authenticated user | Reads the private answer, grades one online question, updates private history and cumulative/per-question verified entries transactionally, and is idempotent per user/question. |
 | `createGroup` | Authenticated user | Creates group, six-digit code reservation, owner membership, and private user index atomically. Defaults to a 10-minute expiry; retries active code collisions. |
 | `joinGroup` | Authenticated user | Resolves code or legacy group ID, checks group/code expiry, and writes membership/index data. Owner self-join is owner-preserving and idempotent, preserves the existing joined timestamp/display name, and returns an owner message. |
-| `extendGroup` | Authenticated group owner | Adds minutes to the group expiry and synchronizes join code and owner index. |
+| `extendGroup` | Authenticated canonical group owner | Transactionally adds exactly 10 minutes, synchronizes the code/owner index, and rotates a code reassigned to another group. |
 | `deleteGroupChallenge` | Authenticated group owner | Recursively deletes a challenge and its entries/private Fellowship answers; idempotent and parent-group preserving. |
 | `createGroupChallenge` | Authenticated group owner | Validates membership, owner role, expiry, mode, count, catalogue metadata, and question availability; stores a server-seeded public question set in `lobby`. |
 | `startGroupChallenge` | Authenticated group owner | Transactionally validates group/challenge/role/expiry, freezes `participantUids`/`participantCount`, establishes `startedAt` once, and enters Competitive `active` or Fellowship `question_open`. |
@@ -604,7 +609,7 @@ The widget suite covers splash/menu navigation, answer confirmation and
 feedback, timers, Group Challenge mode/count UI, owner/challenge model parsing,
 Competitive timeout behavior, authoritative mode routing, host challenge
 deletion, and the Fellowship finalizing presentation. The current run passes
-38 Flutter tests, and
+41 Flutter tests (including three open-member-screen deletion cases), and
 `flutter analyze` reports no issues.
 
 ### Cloud Function contract tests
