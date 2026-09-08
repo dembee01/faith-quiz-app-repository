@@ -36,5 +36,6 @@ jobs:
           node-version: '22'
       - run: node --check functions/index.js
       - run: node --test functions/test_hardening.js
+      - run: node --test functions/test_group_challenge_edges.js
       - run: node functions/test_functions.js
       - run: node functions/test_rules.js
