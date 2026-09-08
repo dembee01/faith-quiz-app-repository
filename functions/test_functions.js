@@ -540,5 +540,94 @@ console.log('[Test 18] Online Challenge 4-Tier Deterministic Ranking');
 }
 console.log('  PASSED: 4-tier ranking: Score DESC -> Accuracy DESC -> AvgSpeed ASC -> UID ASC verified.');
 
-console.log('\n--- ALL 18 BACKEND UNIT & LOGIC CONTRACT TESTS PASSED SUCCESSFULLY! ---');
+// 19. Idempotent self-join and owner-role preservation (Issues 1/2/12)
+console.log('[Test 19] Idempotent self-join and owner-role preservation');
+{
+  const originalJoinedAt = new Date('2026-01-01T12:00:00Z');
 
+  function simulateJoin(group, member, userGroup, uid, memberDisplayName = 'Member') {
+    const canonicalOwnerUid = group.ownerUid || group.ownerId;
+    const existingRole = member ? member.role : null;
+    const role = canonicalOwnerUid === uid || existingRole === 'owner' ? 'owner' : 'member';
+    const joinedAt = (member && member.joinedAt) || (userGroup && userGroup.joinedAt) || new Date();
+    return {
+      member: {
+        ...(member || {}),
+        role,
+        joinedAt,
+        displayName: (member && member.displayName) || memberDisplayName,
+      },
+      userGroup: {
+        ...(userGroup || {}),
+        role,
+        joinedAt,
+      },
+      role,
+      alreadyMember: Boolean(member),
+    };
+  }
+
+  const owner = simulateJoin(
+    { ownerUid: 'host-a' },
+    { role: 'owner', joinedAt: originalJoinedAt, displayName: 'Host' },
+    { role: 'owner', joinedAt: originalJoinedAt },
+    'host-a',
+  );
+  assert.strictEqual(owner.role, 'owner');
+  assert.strictEqual(owner.alreadyMember, true);
+  assert.strictEqual(owner.member.role, 'owner');
+  assert.strictEqual(owner.userGroup.role, 'owner');
+  assert.strictEqual(owner.member.joinedAt, originalJoinedAt, 'Repeat self-join must preserve joinedAt');
+
+  // A legacy/stale owner membership that was previously downgraded is
+  // repaired from canonical ownerUid without resetting its timestamp.
+  const repaired = simulateJoin(
+    { ownerUid: 'host-a' },
+    { role: 'member', joinedAt: originalJoinedAt, displayName: 'Host' },
+    { role: 'member', joinedAt: originalJoinedAt },
+    'host-a',
+  );
+  assert.strictEqual(repaired.role, 'owner');
+  assert.strictEqual(repaired.member.role, 'owner');
+  assert.strictEqual(repaired.userGroup.role, 'owner');
+  assert.strictEqual(repaired.member.joinedAt, originalJoinedAt);
+
+  // Rejoining as a normal member remains idempotent and cannot overwrite a
+  // pre-existing owner role.
+  const member = simulateJoin(
+    { ownerUid: 'host-a' },
+    { role: 'member', joinedAt: originalJoinedAt, displayName: 'Member' },
+    { role: 'member', joinedAt: originalJoinedAt },
+    'member-b',
+  );
+  assert.strictEqual(member.role, 'member');
+  assert.strictEqual(member.member.joinedAt, originalJoinedAt);
+}
+console.log('  PASSED: Self-join is idempotent, owner role is preserved/repaired, and joinedAt is stable.');
+
+// 20. Start-time participant freeze and late-join exclusion (Issues 8/12)
+console.log('[Test 20] Start-time participant freeze and late-join exclusion');
+{
+  function freezeParticipants(memberUids, callerUid) {
+    const participants = [...new Set(memberUids)];
+    if (!participants.includes(callerUid)) participants.push(callerUid);
+    return participants;
+  }
+
+  function canParticipate(challenge, uid) {
+    // Missing participantUids denotes a legacy challenge; new challenges
+    // always carry the frozen array after startGroupChallenge.
+    return !Array.isArray(challenge.participantUids) || challenge.participantUids.includes(uid);
+  }
+
+  const frozen = freezeParticipants(['host-a', 'member-b', 'member-c'], 'host-a');
+  assert.deepStrictEqual(frozen, ['host-a', 'member-b', 'member-c']);
+  const lateJoiner = 'member-d';
+  assert.strictEqual(canParticipate({ participantUids: frozen }, lateJoiner), false);
+  assert.strictEqual(canParticipate({ participantUids: frozen }, 'member-b'), true);
+  assert.strictEqual(canParticipate({ participantUids: frozen }, 'host-a'), true);
+  assert.strictEqual(canParticipate({ status: 'active' }, lateJoiner), true, 'Legacy challenges remain compatible');
+}
+console.log('  PASSED: New challenges freeze the start-time roster and exclude late joiners; legacy data remains readable.');
+
+console.log('\n--- ALL 20 BACKEND UNIT & LOGIC CONTRACT TESTS PASSED SUCCESSFULLY! ---');

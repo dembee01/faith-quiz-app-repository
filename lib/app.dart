@@ -4,7 +4,8 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:cloud_functions/cloud_functions.dart' show FirebaseFunctionsException;
+import 'package:cloud_functions/cloud_functions.dart'
+    show FirebaseFunctionsException;
 
 import 'answer_feedback.dart';
 import 'cloud_challenge_service.dart';
@@ -91,7 +92,8 @@ class FaithQuizApp extends StatelessWidget {
     builder: (context, child) => ListenableBuilder(
       listenable: store,
       builder: (context, _) {
-        final media = MediaQuery.maybeOf(context) ??
+        final media =
+            MediaQuery.maybeOf(context) ??
             MediaQueryData.fromView(View.of(context));
         return MediaQuery(
           data: media.copyWith(
@@ -1061,8 +1063,9 @@ class _CloudChallengeScreenState extends State<CloudChallengeScreen> {
     if (challenge == null || _selected < 0 || _submitting || _feedback) return;
     setState(() => _submitting = true);
     try {
-      final elapsed =
-          _questionSeconds > 0 ? _questionSeconds : _stopwatch.elapsed.inSeconds;
+      final elapsed = _questionSeconds > 0
+          ? _questionSeconds
+          : _stopwatch.elapsed.inSeconds;
       final result = await _service.submit(
         challenge: challenge,
         answerIndex: _selected,
@@ -1212,10 +1215,7 @@ class _CloudChallengeScreenState extends State<CloudChallengeScreen> {
         : (isOldTestament ? 'Prophetic Scripture' : 'Prophetic Witness');
   }
 
-  Widget _challengeBody(
-    BuildContext context,
-    CloudChallenge challenge,
-  ) {
+  Widget _challengeBody(BuildContext context, CloudChallenge challenge) {
     final correctIndex = _resolvedCorrectAnswerIndex(challenge);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1253,11 +1253,16 @@ class _CloudChallengeScreenState extends State<CloudChallengeScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: _slateSurface,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.white.withValues(alpha: .12)),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: .12),
+                    ),
                   ),
                   child: Text(
                     'SCORE: $_sessionScore${_sessionStreak > 1 ? '  🔥 $_sessionStreak' : ''}',
@@ -1272,7 +1277,11 @@ class _CloudChallengeScreenState extends State<CloudChallengeScreen> {
                 const SizedBox(width: 4),
                 IconButton(
                   tooltip: 'Leaderboard',
-                  icon: const Icon(Icons.leaderboard_outlined, color: _gold, size: 22),
+                  icon: const Icon(
+                    Icons.leaderboard_outlined,
+                    color: _gold,
+                    size: 22,
+                  ),
                   onPressed: () => Navigator.of(context).push(
                     MaterialPageRoute(
                       builder: (_) => LeaderboardScreen(
@@ -1335,94 +1344,98 @@ class _CloudChallengeScreenState extends State<CloudChallengeScreen> {
               correct: _feedback && (correctIndex == index),
               feedback: _feedback,
               onTap: () {
-                if (!_feedback && !_submitting) setState(() => _selected = index);
+                if (!_feedback && !_submitting)
+                  setState(() => _selected = index);
               },
             ),
           ),
-      if (_feedback) ...[
-        const SizedBox(height: 6),
-        SlateCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                _wasCorrect
-                    ? (_alreadySubmitted
-                        ? 'VERIFIED CORRECT (ALREADY RECORDED)'
-                        : 'VERIFIED CORRECT')
-                    : (_alreadySubmitted
-                        ? 'ANSWER RECORDED (PREVIOUSLY ATTEMPTED)'
-                        : 'INCORRECT'),
-                style: TextStyle(
-                  color: _wasCorrect ? _correct : _wrong,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(challenge.explanation, style: const TextStyle(height: 1.35)),
-              const SizedBox(height: 8),
-              Text(
-                'SCRIPTURE: ${challenge.scriptureReference}',
-                style: const TextStyle(
-                  color: _slateTextSecondary,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 12,
-                ),
-              ),
-              if (challenge.propheticFocus.isNotEmpty &&
-                  challenge.propheticFocus.trim().toLowerCase() !=
-                      challenge.testament.trim().toLowerCase()) ...[
-                const SizedBox(height: 6),
+        if (_feedback) ...[
+          const SizedBox(height: 6),
+          SlateCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
                 Text(
-                  'FOCUS: ${challenge.propheticFocus}',
+                  _wasCorrect
+                      ? (_alreadySubmitted
+                            ? 'VERIFIED CORRECT (ALREADY RECORDED)'
+                            : 'VERIFIED CORRECT')
+                      : (_alreadySubmitted
+                            ? 'ANSWER RECORDED (PREVIOUSLY ATTEMPTED)'
+                            : 'INCORRECT'),
+                  style: TextStyle(
+                    color: _wasCorrect ? _correct : _wrong,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  challenge.explanation,
+                  style: const TextStyle(height: 1.35),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'SCRIPTURE: ${challenge.scriptureReference}',
                   style: const TextStyle(
-                    color: _gold,
+                    color: _slateTextSecondary,
                     fontWeight: FontWeight.bold,
                     fontSize: 12,
                   ),
                 ),
+                if (challenge.propheticFocus.isNotEmpty &&
+                    challenge.propheticFocus.trim().toLowerCase() !=
+                        challenge.testament.trim().toLowerCase()) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    'FOCUS: ${challenge.propheticFocus}',
+                    style: const TextStyle(
+                      color: _gold,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
-        ),
-      ],
-      const SizedBox(height: 14),
-      if (_feedback) ...[
-        SlatePillButton(
-          label: 'NEXT QUESTION',
-          icon: Icons.arrow_forward,
-          onPressed: _nextQuestion,
-        ),
-        const SizedBox(height: 8),
-        Center(
-          child: TextButton.icon(
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => LeaderboardScreen(
-                  store: widget.store,
-                  challengeId: _challengeId,
+        ],
+        const SizedBox(height: 14),
+        if (_feedback) ...[
+          SlatePillButton(
+            label: 'NEXT QUESTION',
+            icon: Icons.arrow_forward,
+            onPressed: _nextQuestion,
+          ),
+          const SizedBox(height: 8),
+          Center(
+            child: TextButton.icon(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => LeaderboardScreen(
+                    store: widget.store,
+                    challengeId: _challengeId,
+                  ),
                 ),
               ),
-            ),
-            icon: const Icon(
-              Icons.leaderboard_outlined,
-              size: 16,
-              color: _slateTextSecondary,
-            ),
-            label: const Text(
-              'View today\'s leaderboard',
-              style: TextStyle(color: _slateTextSecondary, fontSize: 13),
+              icon: const Icon(
+                Icons.leaderboard_outlined,
+                size: 16,
+                color: _slateTextSecondary,
+              ),
+              label: const Text(
+                'View today\'s leaderboard',
+                style: TextStyle(color: _slateTextSecondary, fontSize: 13),
+              ),
             ),
           ),
-        ),
-      ] else ...[
-        SlatePillButton(
-          label: _submitting ? 'VERIFYING ANSWER…' : 'LOCK IN ANSWER',
-          loading: _submitting,
-          onPressed: _selected >= 0 && !_submitting ? _submit : null,
-        ),
-      ],
+        ] else ...[
+          SlatePillButton(
+            label: _submitting ? 'VERIFYING ANSWER…' : 'LOCK IN ANSWER',
+            loading: _submitting,
+            onPressed: _selected >= 0 && !_submitting ? _submit : null,
+          ),
+        ],
       ],
     );
   }
@@ -2886,9 +2899,9 @@ class ReviewScreen extends StatelessWidget {
                   padding: const EdgeInsets.fromLTRB(34, 6, 22, 16),
                   child: Text(
                     'Reflect on your journey and strengthen your Bible knowledge.',
-                    style: Theme.of(
-                      context,
-                    ).textTheme.bodyMedium?.copyWith(color: _slateTextSecondary),
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: _slateTextSecondary,
+                    ),
                   ),
                 ),
                 if (store.dueReviewCount > 0)
@@ -2912,7 +2925,9 @@ class ReviewScreen extends StatelessWidget {
                                 const SizedBox(height: 4),
                                 Text(
                                   '${store.dueReviewCount} questions need review today',
-                                  style: const TextStyle(fontWeight: FontWeight.bold),
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ],
                             ),
@@ -2952,7 +2967,8 @@ class ReviewScreen extends StatelessWidget {
                       : ListView.separated(
                           padding: const EdgeInsets.fromLTRB(22, 0, 22, 32),
                           itemCount: store.detailedMistakes.length,
-                          separatorBuilder: (_, _) => const SizedBox(height: 14),
+                          separatorBuilder: (_, _) =>
+                              const SizedBox(height: 14),
                           itemBuilder: (context, index) => SlateReviewCard(
                             entry: store.detailedMistakes[index],
                           ),
@@ -3113,18 +3129,19 @@ class _GroupsScreenState extends State<GroupsScreen> {
             children: [
               TextField(
                 controller: controller,
-                maxLength: join ? 80 : 40,
+                maxLength: join ? 6 : 40,
+                keyboardType: join ? TextInputType.number : TextInputType.text,
                 autofocus: true,
                 decoration: InputDecoration(
                   hintText: join
-                      ? '6-digit code or group ID'
+                      ? 'Enter the 6-digit join code'
                       : 'e.g. Grace Fellowship',
                 ),
               ),
               if (!join) ...[
                 const SizedBox(height: 8),
                 const Text(
-                  'Session duration:',
+                  'JOIN WINDOW',
                   style: TextStyle(
                     color: _slateTextSecondary,
                     fontSize: 12,
@@ -3132,32 +3149,37 @@ class _GroupsScreenState extends State<GroupsScreen> {
                   ),
                 ),
                 const SizedBox(height: 8),
+                const Text(
+                  'People can join this group for 10 minutes. Extend the window later if needed; this does not limit challenge time.',
+                  style: TextStyle(
+                    color: _slateTextSecondary,
+                    fontSize: 12,
+                    height: 1.3,
+                  ),
+                ),
+                const SizedBox(height: 8),
                 Wrap(
                   spacing: 6,
                   runSpacing: 6,
                   children: [
-                    for (final item in const [
-                      (10, '10 min'),
-                      (30, '30 min'),
-                      (60, '1 hour'),
-                      (0, 'No expiry'),
-                    ])
-                      ChoiceChip(
-                        label: Text(item.$2, style: const TextStyle(fontSize: 11)),
-                        selected: selectedDuration == item.$1,
-                        selectedColor: _gold,
-                        labelStyle: TextStyle(
-                          color: selectedDuration == item.$1
-                              ? _slateButtonText
-                              : _slateTextPrimary,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        onSelected: (selected) {
-                          if (selected) {
-                            setDialogState(() => selectedDuration = item.$1);
-                          }
-                        },
+                    ChoiceChip(
+                      label: const Text(
+                        '10 min',
+                        style: TextStyle(fontSize: 11),
                       ),
+                      selected: selectedDuration == 10,
+                      selectedColor: _gold,
+                      labelStyle: TextStyle(
+                        color: selectedDuration == 10
+                            ? _slateButtonText
+                            : _slateTextPrimary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      onSelected: (selected) {
+                        if (selected)
+                          setDialogState(() => selectedDuration = 10);
+                      },
+                    ),
                   ],
                 ),
               ],
@@ -3179,6 +3201,10 @@ class _GroupsScreenState extends State<GroupsScreen> {
     final text = controller.text.trim();
     controller.dispose();
     if (result != true || text.isEmpty || !mounted) return;
+    if (join && !RegExp(r'^\d{6}$').hasMatch(text)) {
+      _notice('Enter the 6-digit join code shared by the host.');
+      return;
+    }
     try {
       if (join) {
         await _service.joinGroup(text);
@@ -3202,9 +3228,9 @@ class _GroupsScreenState extends State<GroupsScreen> {
 
   void _notice(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    ScaffoldMessenger.maybeOf(
+      context,
+    )?.showSnackBar(SnackBar(content: Text(message)));
   }
 
   Future<void> _signInWithGoogle() async {
@@ -3217,16 +3243,16 @@ class _GroupsScreenState extends State<GroupsScreen> {
             await showDialog<bool>(
               context: context,
               barrierDismissible: false,
-              builder: (dContext) => _ClaimUsernameDialog(
-                service: _service,
-                store: widget.store,
-              ),
+              builder: (dContext) =>
+                  _ClaimUsernameDialog(service: _service, store: widget.store),
             );
           }
         }
         if (mounted) {
           setState(() {});
-          _notice('Signed in as ${user.displayName ?? user.email ?? 'learner'}');
+          _notice(
+            'Signed in as ${user.displayName ?? user.email ?? 'learner'}',
+          );
         }
       }
     } catch (_) {
@@ -3296,7 +3322,10 @@ class _GroupsScreenState extends State<GroupsScreen> {
                     visualDensity: VisualDensity.compact,
                     padding: EdgeInsets.zero,
                   ),
-                  child: const Text('Sign out', style: TextStyle(color: _slateTextSecondary, fontSize: 11)),
+                  child: const Text(
+                    'Sign out',
+                    style: TextStyle(color: _slateTextSecondary, fontSize: 11),
+                  ),
                 ),
               ],
             ),
@@ -3341,7 +3370,14 @@ class _GroupsScreenState extends State<GroupsScreen> {
               visualDensity: VisualDensity.compact,
               backgroundColor: _slateSurfaceVariant,
             ),
-            child: const Text('SIGN IN', style: TextStyle(color: _gold, fontSize: 11, fontWeight: FontWeight.bold)),
+            child: const Text(
+              'SIGN IN',
+              style: TextStyle(
+                color: _gold,
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ],
       ),
@@ -3440,9 +3476,12 @@ class _GroupsScreenState extends State<GroupsScreen> {
                           itemBuilder: (context, index) {
                             final group = groups[index];
                             final isExpired = group.isExpired;
-                            final codeDisplay = group.joinCode != null
-                                ? 'Code: ${group.joinCode}'
-                                : group.id;
+                            final codeDisplay =
+                                !isExpired && group.joinCode != null
+                                ? 'Join code: ${group.joinCode}'
+                                : isExpired
+                                ? 'Join window closed'
+                                : 'Invite code unavailable';
                             final String timeStatus;
                             if (group.expiresAt == null) {
                               timeStatus = 'Open session';
@@ -3455,8 +3494,8 @@ class _GroupsScreenState extends State<GroupsScreen> {
                                   : '<1m left';
                             }
                             final roleDisplay = group.role == 'owner'
-                                ? 'Owner'
-                                : 'Member';
+                                ? 'HOST'
+                                : 'MEMBER';
                             return SlateSettingCard(
                               title: group.name,
                               subtitle:
@@ -3564,9 +3603,9 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
         final message = e is FirebaseFunctionsException && e.message != null
             ? e.message!
             : 'Could not extend session. Please try again.';
-        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-          SnackBar(content: Text(message)),
-        );
+        ScaffoldMessenger.maybeOf(
+          context,
+        )?.showSnackBar(SnackBar(content: Text(message)));
       }
     } finally {
       if (mounted) setState(() => _extending = false);
@@ -3575,9 +3614,9 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
 
   void _copyCode(String code) {
     Clipboard.setData(ClipboardData(text: code));
-    ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-      SnackBar(content: Text('Copied "$code" to clipboard!')),
-    );
+    ScaffoldMessenger.maybeOf(
+      context,
+    )?.showSnackBar(SnackBar(content: Text('Copied "$code" to clipboard!')));
   }
 
   Future<void> _createQuiz(int count, String mode) async {
@@ -3605,9 +3644,9 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
         final message = e is FirebaseFunctionsException && e.message != null
             ? e.message!
             : 'The group challenge could not be published.';
-        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-          SnackBar(content: Text(message)),
-        );
+        ScaffoldMessenger.maybeOf(
+          context,
+        )?.showSnackBar(SnackBar(content: Text(message)));
       }
     } finally {
       if (mounted) setState(() => _publishing = false);
@@ -3657,17 +3696,23 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
                   children: [
                     Expanded(
                       child: InkWell(
-                        onTap: () => setSheetState(() => selectedMode = 'competitive'),
+                        onTap: () =>
+                            setSheetState(() => selectedMode = 'competitive'),
                         borderRadius: BorderRadius.circular(12),
                         child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 12,
+                            horizontal: 8,
+                          ),
                           decoration: BoxDecoration(
                             color: selectedMode == 'competitive'
                                 ? _gold.withValues(alpha: .18)
                                 : _slateSurfaceVariant,
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: selectedMode == 'competitive' ? _gold : Colors.white12,
+                              color: selectedMode == 'competitive'
+                                  ? _gold
+                                  : Colors.white12,
                               width: selectedMode == 'competitive' ? 1.5 : 1.0,
                             ),
                           ),
@@ -3675,25 +3720,30 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
                             children: [
                               Icon(
                                 Icons.speed,
-                                color: selectedMode == 'competitive' ? _gold : _slateTextSecondary,
+                                color: selectedMode == 'competitive'
+                                    ? _gold
+                                    : _slateTextSecondary,
                                 size: 24,
                               ),
                               const SizedBox(height: 6),
                               Text(
                                 'COMPETITIVE',
                                 style: TextStyle(
-                                  color: selectedMode == 'competitive' ? _gold : _slateTextPrimary,
+                                  color: selectedMode == 'competitive'
+                                      ? _gold
+                                      : _slateTextPrimary,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 12,
                                 ),
                               ),
                               const SizedBox(height: 2),
                               const Text(
-                                'Self-paced\nTie-break by time',
+                                'Race through the same Bible questions. Accuracy wins; speed breaks ties.',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                   color: _slateTextSecondary,
                                   fontSize: 10,
+                                  height: 1.25,
                                 ),
                               ),
                             ],
@@ -3704,17 +3754,23 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
                     const SizedBox(width: 10),
                     Expanded(
                       child: InkWell(
-                        onTap: () => setSheetState(() => selectedMode = 'fellowship'),
+                        onTap: () =>
+                            setSheetState(() => selectedMode = 'fellowship'),
                         borderRadius: BorderRadius.circular(12),
                         child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 12,
+                            horizontal: 8,
+                          ),
                           decoration: BoxDecoration(
                             color: selectedMode == 'fellowship'
                                 ? _gold.withValues(alpha: .18)
                                 : _slateSurfaceVariant,
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: selectedMode == 'fellowship' ? _gold : Colors.white12,
+                              color: selectedMode == 'fellowship'
+                                  ? _gold
+                                  : Colors.white12,
                               width: selectedMode == 'fellowship' ? 1.5 : 1.0,
                             ),
                           ),
@@ -3722,25 +3778,30 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
                             children: [
                               Icon(
                                 Icons.groups_outlined,
-                                color: selectedMode == 'fellowship' ? _gold : _slateTextSecondary,
+                                color: selectedMode == 'fellowship'
+                                    ? _gold
+                                    : _slateTextSecondary,
                                 size: 24,
                               ),
                               const SizedBox(height: 6),
                               Text(
                                 'FELLOWSHIP',
                                 style: TextStyle(
-                                  color: selectedMode == 'fellowship' ? _gold : _slateTextPrimary,
+                                  color: selectedMode == 'fellowship'
+                                      ? _gold
+                                      : _slateTextPrimary,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 12,
                                 ),
                               ),
                               const SizedBox(height: 2),
                               const Text(
-                                'Host-led study\nReveal & discuss',
+                                'Answer together, reveal Scripture, discuss, then let the host move everyone forward.',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                   color: _slateTextSecondary,
                                   fontSize: 10,
+                                  height: 1.25,
                                 ),
                               ),
                             ],
@@ -3767,14 +3828,19 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
                     borderRadius: BorderRadius.circular(12),
                     child: Container(
                       margin: const EdgeInsets.only(bottom: 8),
-                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 12,
+                        horizontal: 16,
+                      ),
                       decoration: BoxDecoration(
                         color: selectedCount == count
                             ? _gold.withValues(alpha: .15)
                             : _slateSurfaceVariant,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: selectedCount == count ? _gold : Colors.white10,
+                          color: selectedCount == count
+                              ? _gold
+                              : Colors.white10,
                           width: selectedCount == count ? 1.5 : 1.0,
                         ),
                       ),
@@ -3784,14 +3850,18 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
                             selectedCount == count
                                 ? Icons.radio_button_checked
                                 : Icons.radio_button_off,
-                            color: selectedCount == count ? _gold : _slateTextSecondary,
+                            color: selectedCount == count
+                                ? _gold
+                                : _slateTextSecondary,
                             size: 18,
                           ),
                           const SizedBox(width: 12),
                           Text(
                             '$count QUESTIONS',
                             style: TextStyle(
-                              color: selectedCount == count ? _gold : _slateTextPrimary,
+                              color: selectedCount == count
+                                  ? _gold
+                                  : _slateTextPrimary,
                               fontWeight: FontWeight.bold,
                               fontSize: 14,
                             ),
@@ -3801,8 +3871,8 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
                             count == 10
                                 ? 'Quick'
                                 : count == 20
-                                    ? 'Standard'
-                                    : 'Deep Study',
+                                ? 'Standard'
+                                : 'Deep Study',
                             style: const TextStyle(
                               color: _slateTextSecondary,
                               fontSize: 12,
@@ -3832,6 +3902,7 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final isExpired = _expiresAt != null && DateTime.now().isAfter(_expiresAt!);
+    final joinCode = isExpired ? null : _currentGroup.joinCode;
     return Scaffold(
       body: DivineBackground(
         reduceMotion: widget.store.reduceMotion,
@@ -3863,50 +3934,52 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                _currentGroup.joinCode != null
+                                joinCode != null
                                     ? 'JOIN CODE'
-                                    : 'GROUP ID',
+                                    : 'JOIN CODE UNAVAILABLE',
                                 style: const TextStyle(
                                   color: _slateTextSecondary,
                                   fontSize: 10,
                                   letterSpacing: 1.2,
                                   fontWeight: FontWeight.bold,
-                                  ),
+                                ),
                               ),
                               const SizedBox(height: 2),
                               SelectableText(
-                                _currentGroup.joinCode ?? _currentGroup.id,
-                                style: const TextStyle(
-                                  color: _gold,
-                                  fontSize: 20,
+                                joinCode ??
+                                    'Ask the host to share the 6-digit code',
+                                style: TextStyle(
+                                  color: joinCode == null
+                                      ? _slateTextSecondary
+                                      : _gold,
+                                  fontSize: joinCode == null ? 13 : 20,
                                   fontWeight: FontWeight.w900,
-                                  letterSpacing: 3.0,
+                                  letterSpacing: joinCode == null ? 0 : 3.0,
                                 ),
                               ),
                             ],
                           ),
-                          FilledButton.tonalIcon(
-                            onPressed: () => _copyCode(
-                              _currentGroup.joinCode ?? _currentGroup.id,
-                            ),
-                            icon: const Icon(
-                              Icons.copy,
-                              size: 16,
-                              color: _gold,
-                            ),
-                            label: const Text(
-                              'COPY',
-                              style: TextStyle(
+                          if (joinCode != null)
+                            FilledButton.tonalIcon(
+                              onPressed: () => _copyCode(joinCode),
+                              icon: const Icon(
+                                Icons.copy,
+                                size: 16,
                                 color: _gold,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 12,
+                              ),
+                              label: const Text(
+                                'COPY',
+                                style: TextStyle(
+                                  color: _gold,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12,
+                                ),
+                              ),
+                              style: FilledButton.styleFrom(
+                                visualDensity: VisualDensity.compact,
+                                backgroundColor: _slateSurfaceVariant,
                               ),
                             ),
-                            style: FilledButton.styleFrom(
-                              visualDensity: VisualDensity.compact,
-                              backgroundColor: _slateSurfaceVariant,
-                            ),
-                          ),
                         ],
                       ),
                       if (_expiresAt != null) ...[
@@ -3915,8 +3988,8 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
                           builder: (context) {
                             final diff = _expiresAt!.difference(DateTime.now());
                             final remainingStr = isExpired
-                                ? 'Session Expired'
-                                : '${diff.inMinutes}:${(diff.inSeconds % 60).toString().padLeft(2, '0')} remaining';
+                                ? 'JOIN WINDOW CLOSED'
+                                : 'JOIN WINDOW • ${diff.inMinutes}:${(diff.inSeconds % 60).toString().padLeft(2, '0')} remaining';
                             return Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
@@ -3951,7 +4024,9 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
                                       color: _gold,
                                     ),
                                     label: Text(
-                                      _extending ? 'EXTENDING…' : '+10 MIN',
+                                      _extending
+                                          ? 'EXTENDING…'
+                                          : '+10 MIN WINDOW',
                                       style: const TextStyle(
                                         color: _gold,
                                         fontSize: 12,
@@ -3979,8 +4054,8 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
                     label: _publishing
                         ? 'PUBLISHING QUIZ…'
                         : isExpired
-                            ? 'SESSION EXPIRED (EXTEND TO HOST)'
-                            : 'CREATE GROUP QUIZ (10 - 30 Qs)',
+                        ? 'JOIN WINDOW CLOSED (EXTEND TO HOST)'
+                        : 'CREATE GROUP CHALLENGE',
                     loading: _publishing,
                     onPressed: _publishing || isExpired
                         ? null
@@ -4018,22 +4093,22 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
                         itemBuilder: (context, index) {
                           final challenge = challenges[index];
                           final count = challenge.questionCount;
-                          final countLabel =
-                              count > 1 ? '$count Questions' : '1 Question';
+                          final countLabel = count > 1
+                              ? '$count Questions'
+                              : '1 Question';
                           final modeLabel = challenge.isFellowship
                               ? 'Fellowship'
                               : 'Competitive';
                           final statusLabel = challenge.isLobby
-                              ? 'Lobby (Tap to enter)'
+                              ? 'Waiting for host to start'
                               : challenge.isCompleted
-                                  ? 'Completed'
-                                  : 'In Progress';
+                              ? 'Challenge complete'
+                              : 'Active • Resume';
                           return SlateSettingCard(
                             title: challenge.title.isNotEmpty
                                 ? challenge.title
                                 : '$modeLabel Bible Challenge',
-                            subtitle:
-                                '$modeLabel • $countLabel • $statusLabel',
+                            subtitle: '$modeLabel • $countLabel • $statusLabel',
                             icon: challenge.isFellowship
                                 ? Icons.groups_outlined
                                 : Icons.speed,
@@ -4119,7 +4194,10 @@ class _GroupLobbyScreenState extends State<GroupLobbyScreen> {
   void initState() {
     super.initState();
     _service = widget.service ?? CloudChallengeService();
-    _challengeStream = _service.streamChallenge(widget.groupId, widget.challenge.id);
+    _challengeStream = _service.streamChallenge(
+      widget.groupId,
+      widget.challenge.id,
+    );
     _groupStream = _service.streamGroup(widget.groupId);
   }
 
@@ -4136,9 +4214,9 @@ class _GroupLobbyScreenState extends State<GroupLobbyScreen> {
         final message = e is FirebaseFunctionsException && e.message != null
             ? e.message!
             : 'Could not start challenge. Please try again.';
-        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-          SnackBar(content: Text(message)),
-        );
+        ScaffoldMessenger.maybeOf(
+          context,
+        )?.showSnackBar(SnackBar(content: Text(message)));
       }
     } finally {
       if (mounted) setState(() => _starting = false);
@@ -4147,9 +4225,9 @@ class _GroupLobbyScreenState extends State<GroupLobbyScreen> {
 
   void _copyCode(String code) {
     Clipboard.setData(ClipboardData(text: code));
-    ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-      SnackBar(content: Text('Copied "$code" to clipboard!')),
-    );
+    ScaffoldMessenger.maybeOf(
+      context,
+    )?.showSnackBar(SnackBar(content: Text('Copied "$code" to clipboard!')));
   }
 
   @override
@@ -4193,19 +4271,19 @@ class _GroupLobbyScreenState extends State<GroupLobbyScreen> {
                 });
               }
 
-              final isHost = widget.group.isOwner ||
-                  (challenge.ownerId != null &&
-                      challenge.ownerId == _service.currentUser?.uid);
-
               return StreamBuilder<QuizGroup>(
                 stream: _groupStream,
                 initialData: widget.group,
                 builder: (context, groupSnap) {
                   final group = groupSnap.data ?? widget.group;
+                  final isHost =
+                      group.isOwner ||
+                      (challenge.ownerId != null &&
+                          challenge.ownerId == _service.currentUser?.uid);
                   final remaining = group.remainingTime;
                   final remainingStr = remaining != null
-                      ? '${remaining.inMinutes}:${(remaining.inSeconds % 60).toString().padLeft(2, '0')} remaining'
-                      : 'Active Session';
+                      ? 'JOIN WINDOW • ${remaining.inMinutes}:${(remaining.inSeconds % 60).toString().padLeft(2, '0')} remaining'
+                      : 'JOIN WINDOW ACTIVE';
 
                   return Padding(
                     padding: const EdgeInsets.fromLTRB(22, 16, 22, 40),
@@ -4250,10 +4328,39 @@ class _GroupLobbyScreenState extends State<GroupLobbyScreen> {
                                             fontWeight: FontWeight.w600,
                                           ),
                                         ),
+                                        const SizedBox(height: 8),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 3,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: isHost
+                                                ? _gold.withValues(alpha: .18)
+                                                : _slateSurfaceVariant,
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            isHost
+                                                ? 'YOU • HOST'
+                                                : 'MEMBER • HOST-LED LOBBY',
+                                            style: TextStyle(
+                                              color: isHost
+                                                  ? _gold
+                                                  : _slateTextSecondary,
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.bold,
+                                              letterSpacing: .5,
+                                            ),
+                                          ),
+                                        ),
                                       ],
                                     ),
                                   ),
-                                  if (group.joinCode != null)
+                                  if (group.joinCode != null &&
+                                      !group.isExpired)
                                     FilledButton.tonalIcon(
                                       onPressed: () =>
                                           _copyCode(group.joinCode!),
@@ -4371,9 +4478,21 @@ class _GroupLobbyScreenState extends State<GroupLobbyScreen> {
                         const Spacer(),
                         if (isHost) ...[
                           const Text(
-                            'You are the Host. When all group members have joined, press start.',
+                            'Waiting for players',
                             textAlign: TextAlign.center,
                             style: TextStyle(
+                              color: _gold,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            group.joinCode != null
+                                ? 'Share code ${group.joinCode} with your players, then start when ready.'
+                                : 'Invite players, then start when ready.',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
                               color: _slateTextSecondary,
                               fontSize: 12,
                             ),
@@ -4383,8 +4502,8 @@ class _GroupLobbyScreenState extends State<GroupLobbyScreen> {
                             label: _starting
                                 ? 'STARTING…'
                                 : challenge.isFellowship
-                                    ? 'START FELLOWSHIP'
-                                    : 'START CHALLENGE',
+                                ? 'START FELLOWSHIP'
+                                : 'START CHALLENGE',
                             loading: _starting,
                             onPressed: _starting ? null : _startChallenge,
                           ),
@@ -4395,7 +4514,7 @@ class _GroupLobbyScreenState extends State<GroupLobbyScreen> {
                                 CircularProgressIndicator(color: _gold),
                                 SizedBox(height: 16),
                                 Text(
-                                  'Waiting for host to start…',
+                                  'Waiting for the host to start',
                                   style: TextStyle(
                                     color: _gold,
                                     fontWeight: FontWeight.bold,
@@ -4404,7 +4523,7 @@ class _GroupLobbyScreenState extends State<GroupLobbyScreen> {
                                 ),
                                 SizedBox(height: 6),
                                 Text(
-                                  'The challenge will start for everyone simultaneously.',
+                                  'The host controls when this lobby opens for everyone.',
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
                                     color: _slateTextSecondary,
@@ -4461,8 +4580,10 @@ class _FellowshipQuestionScreenState extends State<FellowshipQuestionScreen> {
   void initState() {
     super.initState();
     _service = widget.service ?? CloudChallengeService();
-    _challengeStream =
-        _service.streamChallenge(widget.groupId, widget.challenge.id);
+    _challengeStream = _service.streamChallenge(
+      widget.groupId,
+      widget.challenge.id,
+    );
     _questions = widget.challenge.items.isNotEmpty
         ? widget.challenge.items
         : [
@@ -4527,9 +4648,9 @@ class _FellowshipQuestionScreenState extends State<FellowshipQuestionScreen> {
         final msg = e is FirebaseFunctionsException && e.message != null
             ? e.message!
             : 'Could not reveal answer.';
-        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-          SnackBar(content: Text(msg)),
-        );
+        ScaffoldMessenger.maybeOf(
+          context,
+        )?.showSnackBar(SnackBar(content: Text(msg)));
       }
     } finally {
       if (mounted) setState(() => _revealing = false);
@@ -4549,9 +4670,9 @@ class _FellowshipQuestionScreenState extends State<FellowshipQuestionScreen> {
         final msg = e is FirebaseFunctionsException && e.message != null
             ? e.message!
             : 'Could not advance question.';
-        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-          SnackBar(content: Text(msg)),
-        );
+        ScaffoldMessenger.maybeOf(
+          context,
+        )?.showSnackBar(SnackBar(content: Text(msg)));
       }
     } finally {
       if (mounted) setState(() => _advancing = false);
@@ -4654,8 +4775,8 @@ class _FellowshipQuestionScreenState extends State<FellowshipQuestionScreen> {
                       color: isYou
                           ? _gold
                           : isTop3
-                              ? _gold.withValues(alpha: .4)
-                              : Colors.white.withValues(alpha: .08),
+                          ? _gold.withValues(alpha: .4)
+                          : Colors.white.withValues(alpha: .08),
                       width: isYou ? 1.5 : 1.0,
                     ),
                   ),
@@ -4676,9 +4797,7 @@ class _FellowshipQuestionScreenState extends State<FellowshipQuestionScreen> {
                               child: Text(
                                 entry.displayName,
                                 style: TextStyle(
-                                  color: isYou
-                                      ? _gold
-                                      : _slateTextPrimary,
+                                  color: isYou ? _gold : _slateTextPrimary,
                                   fontWeight: isYou
                                       ? FontWeight.bold
                                       : FontWeight.w600,
@@ -4740,11 +4859,13 @@ class _FellowshipQuestionScreenState extends State<FellowshipQuestionScreen> {
       _questions.length - 1,
     );
     final currentQ = _questions[currentIndex];
-    final isHost = challenge.ownerId != null &&
+    final isHost =
+        challenge.ownerId != null &&
         challenge.ownerId == _service.currentUser?.uid;
     final isRevealed = challenge.isQuestionRevealed;
     final mySelection = _myAnswers[currentIndex];
-    final hasAnswered = mySelection != null ||
+    final hasAnswered =
+        mySelection != null ||
         challenge.answeredUids.contains(_service.currentUser?.uid);
     final isLast = currentIndex == _questions.length - 1;
     final correctAnswer = challenge.revealedAnswer ?? 0;
@@ -4815,9 +4936,9 @@ class _FellowshipQuestionScreenState extends State<FellowshipQuestionScreen> {
             currentQ.question,
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  height: 1.25,
-                ),
+              fontWeight: FontWeight.bold,
+              height: 1.25,
+            ),
           ),
         ),
         const SizedBox(height: 18),
@@ -4869,8 +4990,8 @@ class _FellowshipQuestionScreenState extends State<FellowshipQuestionScreen> {
                       challenge.revealedScriptureReference?.isNotEmpty == true
                           ? challenge.revealedScriptureReference!
                           : (currentQ.scriptureReference.isNotEmpty
-                              ? currentQ.scriptureReference
-                              : 'Scripture Insight'),
+                                ? currentQ.scriptureReference
+                                : 'Scripture Insight'),
                       style: const TextStyle(
                         color: _gold,
                         fontWeight: FontWeight.bold,
@@ -4906,9 +5027,7 @@ class _FellowshipQuestionScreenState extends State<FellowshipQuestionScreen> {
             SlatePillButton(
               label: _advancing
                   ? 'ADVANCING…'
-                  : (isLast
-                      ? 'COMPLETE FELLOWSHIP'
-                      : 'NEXT QUESTION'),
+                  : (isLast ? 'COMPLETE FELLOWSHIP' : 'NEXT QUESTION'),
               loading: _advancing,
               onPressed: _advancing ? null : _advanceQuestion,
             ),
@@ -4923,7 +5042,11 @@ class _FellowshipQuestionScreenState extends State<FellowshipQuestionScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 if (!isRevealed && hasAnswered) ...[
-                  const Icon(Icons.check_circle_outline, color: _gold, size: 18),
+                  const Icon(
+                    Icons.check_circle_outline,
+                    color: _gold,
+                    size: 18,
+                  ),
                   const SizedBox(width: 8),
                   const Text(
                     'Answer locked. Waiting for host to reveal…',
@@ -4938,10 +5061,7 @@ class _FellowshipQuestionScreenState extends State<FellowshipQuestionScreen> {
                   const SizedBox(width: 8),
                   const Text(
                     'Select your answer before host reveals!',
-                    style: TextStyle(
-                      color: _slateTextSecondary,
-                      fontSize: 13,
-                    ),
+                    style: TextStyle(color: _slateTextSecondary, fontSize: 13),
                   ),
                 ] else ...[
                   const Icon(Icons.forum_outlined, color: _gold, size: 18),
@@ -4963,6 +5083,57 @@ class _FellowshipQuestionScreenState extends State<FellowshipQuestionScreen> {
     );
   }
 
+  Widget _buildFinalizingView(GroupChallenge challenge) {
+    final isHost =
+        challenge.ownerId != null &&
+        challenge.ownerId == _service.currentUser?.uid;
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(22, 16, 22, 40),
+      children: [
+        const SlatePageHeader(title: 'FELLOWSHIP STUDY'),
+        const SizedBox(height: 24),
+        SlateCard(
+          child: Column(
+            children: [
+              const Icon(Icons.hourglass_top, color: _gold, size: 48),
+              const SizedBox(height: 12),
+              const Text(
+                'FINALIZING RESULTS…',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: _gold,
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                isHost
+                    ? 'The server is preparing the fellowship leaderboard. You can retry if this remains stuck.'
+                    : 'The host is finishing the fellowship results. Please wait…',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: _slateTextSecondary,
+                  fontSize: 13,
+                  height: 1.4,
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (isHost) ...[
+          const SizedBox(height: 20),
+          SlatePillButton(
+            label: _advancing ? 'RETRYING…' : 'RETRY FINALIZATION',
+            loading: _advancing,
+            onPressed: _advancing ? null : _advanceQuestion,
+          ),
+        ],
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -4976,6 +5147,9 @@ class _FellowshipQuestionScreenState extends State<FellowshipQuestionScreen> {
               final challenge = snapshot.data ?? widget.challenge;
               if (challenge.isCompleted) {
                 return _buildResultsView();
+              }
+              if (challenge.isFinalizing) {
+                return _buildFinalizingView(challenge);
               }
               return _buildActiveQuestionView(challenge);
             },
@@ -5004,9 +5178,13 @@ class GroupQuestionScreen extends StatefulWidget {
 }
 
 class _GroupQuestionScreenState extends State<GroupQuestionScreen> {
+  static const _questionLimitSeconds = 30;
   late final CloudGroupGateway _service;
   late final List<GroupChallengeItem> _questions;
   late final List<int> _answers;
+  late final DateTime _sessionStartedAt;
+  final Map<int, DateTime> _questionStartedAt = <int, DateTime>{};
+  final Set<int> _expiredQuestions = <int>{};
   int _currentIndex = 0;
   Timer? _timer;
   int _questionSeconds = 0;
@@ -5031,12 +5209,56 @@ class _GroupQuestionScreenState extends State<GroupQuestionScreen> {
             ),
           ];
     _answers = List.filled(_questions.length, -1);
+    // Reopening a completed challenge is read-only: show its leaderboard
+    // instead of starting question one again.
+    if (widget.challenge.isCompleted) {
+      _result = GroupQuizResult(
+        challengeId: widget.challenge.id,
+        score: 0,
+        total: _questions.length,
+        elapsedSeconds: 0,
+        breakdown: const [],
+      );
+    }
+    // The challenge's server timestamp anchors the total duration after a
+    // reconnect. Per-question countdowns are local because competitive
+    // challenges do not persist a question-open timestamp for each player.
+    _sessionStartedAt = widget.challenge.startedAt ?? DateTime.now();
+    _questionStartedAt[0] = DateTime.now();
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted && _result == null) {
+        final now = DateTime.now();
+        final questionStart = _questionStartedAt[_currentIndex] ??= now;
+        final elapsed = now.difference(questionStart).inSeconds;
+        final totalElapsed = max(
+          0,
+          now.difference(_sessionStartedAt).inSeconds,
+        );
+        final reachedLimit = elapsed >= _questionLimitSeconds;
+        final shouldAdvance =
+            reachedLimit &&
+            !_expiredQuestions.contains(_currentIndex) &&
+            _currentIndex < _questions.length - 1;
+        final expiredIndex = _currentIndex;
         setState(() {
-          _questionSeconds++;
-          _totalSeconds++;
+          _questionSeconds = min(_questionLimitSeconds, max(0, elapsed));
+          _totalSeconds = totalElapsed;
+          if (reachedLimit) _expiredQuestions.add(_currentIndex);
         });
+        if (shouldAdvance) {
+          // Give the player a brief visual indication that the question
+          // expired, then continue without allowing a late answer.
+          Future<void>.delayed(const Duration(milliseconds: 350), () {
+            if (!mounted || _result != null || _currentIndex != expiredIndex) {
+              return;
+            }
+            setState(() {
+              _currentIndex++;
+              _questionSeconds = 0;
+              _questionStartedAt.putIfAbsent(_currentIndex, DateTime.now);
+            });
+          });
+        }
       }
     });
   }
@@ -5057,6 +5279,10 @@ class _GroupQuestionScreenState extends State<GroupQuestionScreen> {
     if (_submitting || _result != null) return;
     setState(() => _submitting = true);
     _timer?.cancel();
+    _totalSeconds = max(
+      _totalSeconds,
+      DateTime.now().difference(_sessionStartedAt).inSeconds,
+    );
     try {
       final res = await _service.submitGroupQuiz(
         groupId: widget.groupId,
@@ -5116,8 +5342,15 @@ class _GroupQuestionScreenState extends State<GroupQuestionScreen> {
   Widget _buildQuizView() {
     final currentQ = _questions[_currentIndex];
     final hasAnswered = _answers[_currentIndex] >= 0;
+    final isExpired = _expiredQuestions.contains(_currentIndex);
     final isLast = _currentIndex == _questions.length - 1;
     final answeredCount = _answers.where((a) => a >= 0).length;
+    final completedCount = min(
+      _questions.length,
+      answeredCount +
+          _expiredQuestions.where((index) => _answers[index] < 0).length,
+    );
+    final remainingSeconds = max(0, _questionLimitSeconds - _questionSeconds);
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(22, 16, 22, 40),
@@ -5139,7 +5372,9 @@ class _GroupQuestionScreenState extends State<GroupQuestionScreen> {
                   const Icon(Icons.timer_outlined, color: _gold, size: 18),
                   const SizedBox(width: 6),
                   Text(
-                    'Q: ${_formatTime(_questionSeconds)} • Total: ${_formatTime(_totalSeconds)}',
+                    isExpired
+                        ? 'TIME EXPIRED • Total: ${_formatTime(_totalSeconds)}'
+                        : 'Q LEFT: ${_formatTime(remainingSeconds)} • Total: ${_formatTime(_totalSeconds)}',
                     style: const TextStyle(
                       color: _slateTextPrimary,
                       fontWeight: FontWeight.bold,
@@ -5201,7 +5436,7 @@ class _GroupQuestionScreenState extends State<GroupQuestionScreen> {
               correct: false,
               feedback: false,
               onTap: () {
-                if (!_submitting) {
+                if (!_submitting && !isExpired) {
                   setState(() {
                     _answers[_currentIndex] = i;
                   });
@@ -5231,11 +5466,15 @@ class _GroupQuestionScreenState extends State<GroupQuestionScreen> {
               Expanded(
                 child: SlatePillButton(
                   label: 'NEXT QUESTION',
-                  onPressed: hasAnswered
+                  onPressed: hasAnswered || isExpired
                       ? () {
                           setState(() {
                             _currentIndex++;
                             _questionSeconds = 0;
+                            _questionStartedAt.putIfAbsent(
+                              _currentIndex,
+                              DateTime.now,
+                            );
                           });
                         }
                       : null,
@@ -5246,9 +5485,9 @@ class _GroupQuestionScreenState extends State<GroupQuestionScreen> {
                 child: SlatePillButton(
                   label: _submitting
                       ? 'SUBMITTING…'
-                      : 'SUBMIT GROUP QUIZ ($answeredCount/${_questions.length})',
+                      : 'SUBMIT GROUP QUIZ ($completedCount/${_questions.length})',
                   loading: _submitting,
-                  onPressed: answeredCount == _questions.length && !_submitting
+                  onPressed: completedCount == _questions.length && !_submitting
                       ? _submitAll
                       : null,
                 ),
@@ -5437,16 +5676,14 @@ class _GroupQuestionScreenState extends State<GroupQuestionScreen> {
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 2,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
                   color: (isCorrect ? _correct : _wrong).withValues(alpha: .2),
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                    color:
-                        (isCorrect ? _correct : _wrong).withValues(alpha: .5),
+                    color: (isCorrect ? _correct : _wrong).withValues(
+                      alpha: .5,
+                    ),
                   ),
                 ),
                 child: Text(
@@ -5676,8 +5913,10 @@ class _ClaimUsernameDialogState extends State<_ClaimUsernameDialog> {
     final current = widget.store.leaderboardName;
     final initial = current != 'Faith learner' && current.isNotEmpty
         ? current.replaceAll(RegExp(r'[^a-zA-Z0-9_]'), '')
-        : (widget.service.currentUser?.displayName ?? '')
-            .replaceAll(RegExp(r'[^a-zA-Z0-9_]'), '');
+        : (widget.service.currentUser?.displayName ?? '').replaceAll(
+            RegExp(r'[^a-zA-Z0-9_]'),
+            '',
+          );
     _controller = TextEditingController(text: initial);
   }
 
@@ -5694,7 +5933,9 @@ class _ClaimUsernameDialogState extends State<_ClaimUsernameDialog> {
       return;
     }
     if (!RegExp(r'^[a-zA-Z0-9_]+$').hasMatch(raw)) {
-      setState(() => _error = 'Only letters, numbers, and underscores allowed.');
+      setState(
+        () => _error = 'Only letters, numbers, and underscores allowed.',
+      );
       return;
     }
 
@@ -5711,7 +5952,9 @@ class _ClaimUsernameDialogState extends State<_ClaimUsernameDialog> {
       if (mounted) {
         setState(() {
           _submitting = false;
-          _error = e.message ?? 'This username is already taken. Please choose another.';
+          _error =
+              e.message ??
+              'This username is already taken. Please choose another.';
         });
       }
     } catch (_) {
@@ -5736,7 +5979,10 @@ class _ClaimUsernameDialogState extends State<_ClaimUsernameDialog> {
         children: [
           Icon(Icons.badge_outlined, color: _gold, size: 24),
           SizedBox(width: 10),
-          Text('Choose Username', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          Text(
+            'Choose Username',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
         ],
       ),
       content: Column(
@@ -5745,16 +5991,26 @@ class _ClaimUsernameDialogState extends State<_ClaimUsernameDialog> {
         children: [
           const Text(
             'Your unique username will appear on the global leaderboard. No other player can use your username.',
-            style: TextStyle(color: _slateTextSecondary, fontSize: 13, height: 1.3),
+            style: TextStyle(
+              color: _slateTextSecondary,
+              fontSize: 13,
+              height: 1.3,
+            ),
           ),
           const SizedBox(height: 16),
           TextField(
             controller: _controller,
             maxLength: 20,
-            style: const TextStyle(color: _slateTextPrimary, fontWeight: FontWeight.bold),
+            style: const TextStyle(
+              color: _slateTextPrimary,
+              fontWeight: FontWeight.bold,
+            ),
             decoration: InputDecoration(
               prefixText: '@ ',
-              prefixStyle: const TextStyle(color: _gold, fontWeight: FontWeight.bold),
+              prefixStyle: const TextStyle(
+                color: _gold,
+                fontWeight: FontWeight.bold,
+              ),
               hintText: 'username',
               hintStyle: const TextStyle(color: _slateTextMuted),
               filled: true,
@@ -5762,7 +6018,9 @@ class _ClaimUsernameDialogState extends State<_ClaimUsernameDialog> {
               counterText: '',
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(16),
-                borderSide: BorderSide(color: Colors.white.withValues(alpha: .1)),
+                borderSide: BorderSide(
+                  color: Colors.white.withValues(alpha: .1),
+                ),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(16),
@@ -5772,32 +6030,42 @@ class _ClaimUsernameDialogState extends State<_ClaimUsernameDialog> {
           ),
           if (_error != null) ...[
             const SizedBox(height: 8),
-            Text(
-              _error!,
-              style: const TextStyle(color: _wrong, fontSize: 12),
-            ),
+            Text(_error!, style: const TextStyle(color: _wrong, fontSize: 12)),
           ],
         ],
       ),
       actions: [
         TextButton(
-          onPressed: _submitting ? null : () => Navigator.of(context).pop(false),
-          child: const Text('Cancel', style: TextStyle(color: _slateTextSecondary)),
+          onPressed: _submitting
+              ? null
+              : () => Navigator.of(context).pop(false),
+          child: const Text(
+            'Cancel',
+            style: TextStyle(color: _slateTextSecondary),
+          ),
         ),
         FilledButton(
           onPressed: _submitting ? null : _claim,
           style: FilledButton.styleFrom(
             backgroundColor: _gold,
             foregroundColor: _slateBottom,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
           ),
           child: _submitting
               ? const SizedBox(
                   width: 16,
                   height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: _slateBottom),
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: _slateBottom,
+                  ),
                 )
-              : const Text('CLAIM USERNAME', style: TextStyle(fontWeight: FontWeight.bold)),
+              : const Text(
+                  'CLAIM USERNAME',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
         ),
       ],
     );
@@ -5856,7 +6124,9 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                   decoration: BoxDecoration(
                     color: _slateSurface,
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.white.withValues(alpha: .08)),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: .08),
+                    ),
                   ),
                   child: Row(
                     children: [
@@ -5866,14 +6136,18 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                           child: Container(
                             padding: const EdgeInsets.symmetric(vertical: 10),
                             decoration: BoxDecoration(
-                              color: _activeTab == 0 ? _gold : Colors.transparent,
+                              color: _activeTab == 0
+                                  ? _gold
+                                  : Colors.transparent,
                               borderRadius: BorderRadius.circular(16),
                             ),
                             child: Text(
                               'GLOBAL CHALLENGE',
                               textAlign: TextAlign.center,
                               style: TextStyle(
-                                color: _activeTab == 0 ? _slateBottom : _slateTextSecondary,
+                                color: _activeTab == 0
+                                    ? _slateBottom
+                                    : _slateTextSecondary,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 12,
                                 letterSpacing: .8,
@@ -5888,14 +6162,18 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                           child: Container(
                             padding: const EdgeInsets.symmetric(vertical: 10),
                             decoration: BoxDecoration(
-                              color: _activeTab == 1 ? _gold : Colors.transparent,
+                              color: _activeTab == 1
+                                  ? _gold
+                                  : Colors.transparent,
                               borderRadius: BorderRadius.circular(16),
                             ),
                             child: Text(
                               'DAILY QUESTION',
                               textAlign: TextAlign.center,
                               style: TextStyle(
-                                color: _activeTab == 1 ? _slateBottom : _slateTextSecondary,
+                                color: _activeTab == 1
+                                    ? _slateBottom
+                                    : _slateTextSecondary,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 12,
                                 letterSpacing: .8,
@@ -5919,19 +6197,24 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                       if (snapshot.connectionState != ConnectionState.done) {
                         return const Padding(
                           padding: EdgeInsets.all(36),
-                          child: Center(child: CircularProgressIndicator(color: _gold)),
+                          child: Center(
+                            child: CircularProgressIndicator(color: _gold),
+                          ),
                         );
                       }
                       if (snapshot.hasError || snapshot.data == null) {
                         return _CloudMessageCard(
                           icon: Icons.leaderboard_outlined,
                           title: 'No question ranking yet',
-                          message: 'Once today’s question is answered, rankings will appear here.',
+                          message:
+                              'Once today’s question is answered, rankings will appear here.',
                           actionLabel: 'BACK TO MENU',
                           onPressed: () => Navigator.of(context).pop(),
                         );
                       }
-                      return _VerifiedLeaderboard(challengeId: snapshot.data!.challengeId);
+                      return _VerifiedLeaderboard(
+                        challengeId: snapshot.data!.challengeId,
+                      );
                     },
                   ),
               ],
@@ -5973,7 +6256,8 @@ class _GlobalLeaderboard extends StatelessWidget {
           return _CloudMessageCard(
             icon: Icons.emoji_events_outlined,
             title: 'Be the First Global Champion',
-            message: 'Play the Cloud Challenge online questions to claim the #1 spot on the global leaderboard!',
+            message:
+                'Play the Cloud Challenge online questions to claim the #1 spot on the global leaderboard!',
             actionLabel: 'CLOSE',
             onPressed: () => Navigator.of(context).pop(),
           );
@@ -6022,7 +6306,9 @@ class _GlobalLeaderboardRow extends StatelessWidget {
               border: Border.all(color: _gold.withValues(alpha: .3)),
             )
           : null,
-      margin: isCurrentUser ? const EdgeInsets.symmetric(horizontal: 6, vertical: 2) : EdgeInsets.zero,
+      margin: isCurrentUser
+          ? const EdgeInsets.symmetric(horizontal: 6, vertical: 2)
+          : EdgeInsets.zero,
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor: accent.withValues(alpha: .16),
@@ -6252,8 +6538,18 @@ class SettingsScreen extends StatelessWidget {
                 subtitle: store.textScale == 'large' ? 'Large text' : 'Normal',
                 icon: Icons.format_size,
                 onTap: () => _choose(context, 'Text Size', [
-                  _Choice('Normal', 'normal', store.textScale == 'normal', () => store.setTextScale('normal')),
-                  _Choice('Large text', 'large', store.textScale == 'large', () => store.setTextScale('large')),
+                  _Choice(
+                    'Normal',
+                    'normal',
+                    store.textScale == 'normal',
+                    () => store.setTextScale('normal'),
+                  ),
+                  _Choice(
+                    'Large text',
+                    'large',
+                    store.textScale == 'large',
+                    () => store.setTextScale('large'),
+                  ),
                 ]),
               ),
               SlateSwitchSettingCard(
@@ -6275,7 +6571,9 @@ class SettingsScreen extends StatelessWidget {
               ),
               SlateSettingCard(
                 title: 'Quiz Username',
-                subtitle: store.leaderboardName != 'Faith learner' && store.leaderboardName.isNotEmpty
+                subtitle:
+                    store.leaderboardName != 'Faith learner' &&
+                        store.leaderboardName.isNotEmpty
                     ? '@${store.leaderboardName}'
                     : 'Claim unique username',
                 icon: Icons.badge_outlined,
@@ -6310,7 +6608,9 @@ class SettingsScreen extends StatelessWidget {
                         ),
                         FilledButton(
                           onPressed: () => Navigator.pop(context, true),
-                          style: FilledButton.styleFrom(backgroundColor: _wrong),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: _wrong,
+                          ),
                           child: const Text('RESET'),
                         ),
                       ],

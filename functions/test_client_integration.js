@@ -190,6 +190,23 @@ async function runClientIntegrationTests() {
     trackCleanup(`joinCodes/${joinCode}`);
     console.log(`  PASSED: Group created (${groupId}) with 6-digit join code: ${joinCode}`);
 
+    // The creator is already the owner/member. Re-entering the same code must
+    // be idempotent and must not downgrade role or refresh joinedAt.
+    const ownerMembershipBefore = await adminDb.doc(`groups/${groupId}/members/${host.uid}`).get();
+    const ownerJoinedAtBefore = ownerMembershipBefore.get('joinedAt');
+    const ownerSelfJoin = await callCallable('joinGroup', host.idToken, { joinCode });
+    assert.strictEqual(ownerSelfJoin.groupId, groupId);
+    assert.strictEqual(ownerSelfJoin.role, 'owner');
+    assert.strictEqual(ownerSelfJoin.alreadyMember, true);
+    const ownerMembershipAfter = await adminDb.doc(`groups/${groupId}/members/${host.uid}`).get();
+    assert.strictEqual(ownerMembershipAfter.get('role'), 'owner');
+    assert.strictEqual(
+      ownerMembershipAfter.get('joinedAt').toMillis(),
+      ownerJoinedAtBefore.toMillis(),
+      'Self-join must not reset owner joinedAt',
+    );
+    console.log('  PASSED: Host self-join is idempotent; owner role and joinedAt remain unchanged.');
+
     // 3. Real joinGroup via callable
     console.log('\n[Test 2] Members join via deployed joinGroup function');
     const join1 = await callCallable('joinGroup', member1.idToken, { joinCode });
@@ -254,6 +271,42 @@ async function runClientIntegrationTests() {
     });
     assert.strictEqual(startRes.status, 'active');
 
+    const startedCompetitive = await adminDb.doc(`groups/${groupId}/challenges/${compId}`).get();
+    const frozenParticipants = startedCompetitive.get('participantUids') || [];
+    assert.strictEqual(frozenParticipants.length, 3, 'Start must freeze host + two lobby members');
+    assert(frozenParticipants.includes(host.uid));
+    assert(frozenParticipants.includes(member1.uid));
+    assert(frozenParticipants.includes(member2.uid));
+
+    // Joining the parent group after start may be useful for a future
+    // challenge, but the late joiner must not enter this active roster.
+    const lateJoin = await callCallable('joinGroup', nonMember.idToken, { joinCode });
+    assert.strictEqual(lateJoin.groupId, groupId);
+    assert.strictEqual(lateJoin.role, 'member');
+    trackCleanup(`groups/${groupId}/members/${nonMember.uid}`);
+    let lateSubmitBlocked = false;
+    try {
+      await callCallable('submitGroupChallenge', nonMember.idToken, {
+        groupId,
+        challengeId: compId,
+        answers: [0, 1, 2, 3, 0, 1, 2, 3, 0, 1],
+        elapsedSeconds: 5,
+      });
+    } catch (err) {
+      lateSubmitBlocked = true;
+      assert(
+        err.code.includes('PERMISSION') || err.message.includes('joined after'),
+        `Expected late participant rejection, got: ${err.message}`,
+      );
+    }
+    assert.strictEqual(lateSubmitBlocked, true, 'Late joiner must not submit to an active challenge');
+    console.log('  PASSED: Start-time participant roster is frozen; a late parent-group joiner cannot submit.');
+
+    // Remove the deliberately late parent-group member before creating the
+    // next challenge so that the Fellowship test starts with the original
+    // three-player roster.
+    await adminDb.doc(`groups/${groupId}/members/${nonMember.uid}`).delete();
+
     // Duplicate start returns established status idempotently:
     const dupStart = await callCallable('startGroupChallenge', host.idToken, {
       groupId,
@@ -264,6 +317,9 @@ async function runClientIntegrationTests() {
 
     // Member 1 attempts to forge low client time (elapsedSeconds = 1):
     console.log('  Member 1 submitting with forged elapsedSeconds = 1...');
+    // Give the server-authoritative clock enough separation from the forged
+    // value to make the assertion unambiguous without slowing the suite.
+    await new Promise((resolve) => setTimeout(resolve, 3000));
     trackCleanup(`groups/${groupId}/challenges/${compId}/entries/${member1.uid}`);
     const sub1 = await callCallable('submitGroupChallenge', member1.idToken, {
       groupId,
@@ -271,7 +327,7 @@ async function runClientIntegrationTests() {
       answers: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
       elapsedSeconds: 1, // Attempted cheat
     });
-    assert(sub1.elapsedSeconds >= 1, 'Server must return official elapsed seconds');
+    assert(sub1.elapsedSeconds > 1, 'Server must return elapsed time greater than the forged 1 second');
     console.log(`  Server recorded official elapsedSeconds: ${sub1.elapsedSeconds}s (client attempted 1s)`);
 
     // Member 2 submits
@@ -376,7 +432,87 @@ async function runClientIntegrationTests() {
     });
     assert.strictEqual(advRes.status, 'question_open');
     assert.strictEqual(advRes.currentQuestionIndex, 1);
-    console.log('  PASSED: Advanced to Question 1 successfully.');
+    console.log('  PASSED: Advanced to Question 1 successfully. Continuing through the full challenge...');
+
+    // Complete Questions 2-10. Member 1 answers each question; Member 2
+    // intentionally answers none so the final 0/N participant result is
+    // exercised by the server-side finalization pass.
+    for (let questionIndex = 1; questionIndex < 10; questionIndex++) {
+      trackCleanup(`groups/${groupId}/challenges/${fellId}/fellowshipAnswers/${questionIndex}_${member1.uid}`);
+      await callCallable('submitFellowshipAnswer', member1.idToken, {
+        groupId,
+        challengeId: fellId,
+        questionIndex,
+        answerIndex: questionIndex % 4,
+      });
+
+      const reveal = await callCallable('revealFellowshipAnswer', host.idToken, {
+        groupId,
+        challengeId: fellId,
+      });
+      assert.strictEqual(reveal.status, 'question_revealed');
+
+      const advance = await callCallable('advanceFellowshipQuestion', host.idToken, {
+        groupId,
+        challengeId: fellId,
+      });
+      if (questionIndex < 9) {
+        assert.strictEqual(advance.status, 'question_open');
+        assert.strictEqual(advance.currentQuestionIndex, questionIndex + 1);
+      } else {
+        assert.strictEqual(advance.status, 'completed');
+      }
+    }
+
+    const completedChallenge = await adminDb.doc(
+      `groups/${groupId}/challenges/${fellId}`,
+    ).get();
+    assert.strictEqual(completedChallenge.get('status'), 'completed');
+    const finalEntries = await adminDb.collection(
+      `groups/${groupId}/challenges/${fellId}/entries`,
+    ).get();
+    for (const entry of finalEntries.docs) {
+      trackCleanup(`groups/${groupId}/challenges/${fellId}/entries/${entry.id}`);
+    }
+    assert.strictEqual(finalEntries.size, 3, 'Every active member must receive a final entry');
+    const zeroAnswerEntry = finalEntries.docs.find((doc) => doc.id === member2.uid);
+    assert(zeroAnswerEntry, 'Zero-answer member must receive a final entry');
+    assert.strictEqual(zeroAnswerEntry.get('score'), 0);
+    assert.strictEqual(zeroAnswerEntry.get('total'), 10);
+    const clientEntries = await firestoreGet(
+      `groups/${groupId}/challenges/${fellId}/entries`,
+      member1.idToken,
+    );
+    assert.strictEqual(clientEntries.status, 200, 'Members must read final leaderboard entries');
+    assert.strictEqual(
+      clientEntries.data.documents?.length,
+      3,
+      'Client leaderboard read must include every active member',
+    );
+    console.log('  PASSED: Fellowship reached completed after all 10 questions; 3 entries exist including Member 2 at 0/10.');
+
+    // Reproduce an interrupted finalization and prove the deployed retry path
+    // is safe and idempotent. This Admin SDK state setup does not bypass the
+    // client-path call being tested; recovery itself is invoked with a real
+    // authenticated callable request.
+    await adminDb.doc(`groups/${groupId}/challenges/${fellId}`).update({
+      status: 'finalizing',
+    });
+    const retry = await callCallable('advanceFellowshipQuestion', host.idToken, {
+      groupId,
+      challengeId: fellId,
+    });
+    assert.strictEqual(retry.status, 'completed');
+    const retryAgain = await callCallable('advanceFellowshipQuestion', host.idToken, {
+      groupId,
+      challengeId: fellId,
+    });
+    assert.strictEqual(retryAgain.status, 'completed');
+    const retryEntries = await adminDb.collection(
+      `groups/${groupId}/challenges/${fellId}/entries`,
+    ).get();
+    assert.strictEqual(retryEntries.size, 3, 'Finalization retry must not duplicate entries');
+    console.log('  PASSED: Finalization retry completed safely and repeated completion remained idempotent.');
 
     // 7. Security Rules Verification via Real Client REST API
     console.log('\n[Test 6] Firestore Security Rules Enforcement (Real Client Auth)');
@@ -422,7 +558,8 @@ async function runClientIntegrationTests() {
     console.log('  3. Pre-start Competitive submission rejected with FAILED_PRECONDITION (0 answers leaked)');
     console.log('  4. Forged low client elapsed time overridden by server-authoritative time');
     console.log('  5. Fellowship answers immutable; late submission post-reveal strictly rejected');
-    console.log('  6. Security Rules verified: contentPrivate, leaderboard, challenges, and peer answers 403 blocked');
+    console.log('  6. Fellowship completed all 10 questions; 0/10 participant included; finalization retry idempotent');
+    console.log('  7. Security Rules verified: contentPrivate, leaderboard, challenges, and peer answers 403 blocked');
 
   } catch (error) {
     console.error('\n!!! TEST FAILURE !!!');

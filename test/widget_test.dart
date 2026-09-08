@@ -117,7 +117,10 @@ class _FakeGroupGateway implements CloudGroupGateway {
   Future<void> joinGroup(String groupId) async {}
 
   @override
-  Future<void> extendGroup(String groupId, {int additionalMinutes = 10}) async {}
+  Future<void> extendGroup(
+    String groupId, {
+    int additionalMinutes = 10,
+  }) async {}
 
   @override
   Future<String> createGroupChallenge({
@@ -212,9 +215,7 @@ class _FakeGroupGateway implements CloudGroupGateway {
     String groupId,
     String challengeId,
   ) => Stream.value(
-    groupLeaderboardEntries.isNotEmpty
-        ? groupLeaderboardEntries
-        : const [],
+    groupLeaderboardEntries.isNotEmpty ? groupLeaderboardEntries : const [],
   );
 
   @override
@@ -232,6 +233,76 @@ class _FakeGroupGateway implements CloudGroupGateway {
 }
 
 void main() {
+  test(
+    'parses canonical and legacy backend owner fields without demoting host',
+    () {
+      final canonicalGroup = QuizGroup.fromMap(
+        'group-canonical',
+        <String, dynamic>{
+          'name': 'Canonical Group',
+          'ownerUid': 'host-uid',
+          // A stale role must not override the canonical owner identity.
+          'role': 'member',
+        },
+        currentUid: 'host-uid',
+      );
+      expect(canonicalGroup.isOwner, isTrue);
+
+      final legacyGroup = QuizGroup.fromMap('group-legacy', <String, dynamic>{
+        'ownerId': 'host-uid',
+      }, currentUid: 'host-uid');
+      expect(legacyGroup.isOwner, isTrue);
+
+      final challenge = GroupChallenge.fromMap(
+        'challenge-canonical',
+        <String, dynamic>{'createdBy': 'host-uid', 'status': 'question_open'},
+      );
+      expect(challenge.ownerId, 'host-uid');
+      expect(challenge.isQuestionOpen, isTrue);
+
+      final futureOwnerChallenge = GroupChallenge.fromMap(
+        'challenge-owner-uid',
+        <String, dynamic>{'ownerUid': 'host-uid'},
+      );
+      expect(futureOwnerChallenge.ownerId, 'host-uid');
+    },
+  );
+
+  testWidgets('Fellowship finalizing state blocks gameplay and shows status', (
+    tester,
+  ) async {
+    final store = ProgressStore();
+    const challenge = GroupChallenge(
+      id: 'ch-finalizing',
+      title: 'Fellowship Bible Study',
+      mode: 'fellowship',
+      status: 'finalizing',
+      questionCount: 1,
+      question: 'Done',
+      options: ['A', 'B', 'C', 'D'],
+      explanation: '',
+      scriptureReference: '',
+      ownerId: 'host-uid',
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        home: FellowshipQuestionScreen(
+          store: store,
+          groupId: 'grp-finalizing',
+          challenge: challenge,
+          service: _FakeGroupGateway(),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('FINALIZING RESULTS…'), findsOneWidget);
+    expect(find.text('REVEAL ANSWER'), findsNothing);
+    expect(find.text('NEXT QUESTION'), findsNothing);
+    expect(find.text('COMPLETE FELLOWSHIP'), findsNothing);
+    expect(find.text('RETRY FINALIZATION'), findsNothing);
+  });
+
   testWidgets(
     'Faith Quiz starts with the original slate splash and opens the menu',
     (tester) async {
@@ -452,24 +523,24 @@ void main() {
 
   test('cloud submit failures map to actionable messages', () {
     expect(
-      cloudSubmitErrorMessage(FirebaseFunctionsException(
-        code: 'already-exists',
-        message: 'submitted',
-      )),
+      cloudSubmitErrorMessage(
+        FirebaseFunctionsException(
+          code: 'already-exists',
+          message: 'submitted',
+        ),
+      ),
       'You already locked in this answer.',
     );
     expect(
-      cloudSubmitErrorMessage(FirebaseFunctionsException(
-        code: 'not-found',
-        message: 'gone',
-      )),
+      cloudSubmitErrorMessage(
+        FirebaseFunctionsException(code: 'not-found', message: 'gone'),
+      ),
       'This challenge is no longer available.',
     );
     expect(
-      cloudSubmitErrorMessage(FirebaseFunctionsException(
-        code: 'unavailable',
-        message: 'offline',
-      )),
+      cloudSubmitErrorMessage(
+        FirebaseFunctionsException(code: 'unavailable', message: 'offline'),
+      ),
       contains('unreachable'),
     );
     expect(
@@ -540,9 +611,14 @@ void main() {
       await tester.pump();
 
       expect(find.text('FELLOWSHIP'), findsOneWidget);
-      expect(find.text('grp-test-123'), findsOneWidget);
-      expect(find.text('COPY'), findsOneWidget);
-      expect(find.text('CREATE GROUP QUIZ (10 - 30 Qs)'), findsOneWidget);
+      expect(find.text('JOIN CODE UNAVAILABLE'), findsOneWidget);
+      expect(
+        find.text('Ask the host to share the 6-digit code'),
+        findsOneWidget,
+      );
+      expect(find.text('grp-test-123'), findsNothing);
+      expect(find.text('COPY'), findsNothing);
+      expect(find.text('CREATE GROUP CHALLENGE'), findsOneWidget);
       expect(find.text('Bible Challenge'), findsOneWidget);
     },
   );
@@ -571,9 +647,9 @@ void main() {
       expect(find.text('654321'), findsOneWidget);
       expect(find.text('JOIN CODE'), findsOneWidget);
       expect(find.text('COPY'), findsOneWidget);
-      expect(find.text('+10 MIN'), findsOneWidget);
+      expect(find.text('+10 MIN WINDOW'), findsOneWidget);
 
-      await tester.tap(find.text('+10 MIN'));
+      await tester.tap(find.text('+10 MIN WINDOW'));
       await tester.pump();
     },
   );
@@ -626,7 +702,10 @@ void main() {
       // Verify timer hud and question 1
       expect(find.text('QUESTION 1 OF 2'), findsOneWidget);
       expect(find.text('Who led the Israelites out of Egypt?'), findsOneWidget);
-      expect(find.text('Exodus 3:10'), findsNothing); // No answer spoiler during quiz!
+      expect(
+        find.text('Exodus 3:10'),
+        findsNothing,
+      ); // No answer spoiler during quiz!
 
       // Select option A (Moses)
       await tester.tap(find.text('Moses'));
@@ -675,7 +754,9 @@ void main() {
       );
       final service = _FakeGroupGateway(groups: [group]);
       await tester.pumpWidget(
-        MaterialApp(home: GroupsScreen(store: store, service: service)),
+        MaterialApp(
+          home: GroupsScreen(store: store, service: service),
+        ),
       );
       await tester.pump();
       await tester.pump();
@@ -691,9 +772,11 @@ void main() {
       const question = CloudChallenge(
         id: 'prophets-jonah-1',
         challengeId: 'prophets-jonah-1',
-        question: 'Which prophet was swallowed by a great fish when fleeing God?',
+        question:
+            'Which prophet was swallowed by a great fish when fleeing God?',
         options: ['Jonah', 'Nahum', 'Micah', 'Amos'],
-        explanation: 'Jonah spent three days in the belly of the fish before repenting.',
+        explanation:
+            'Jonah spent three days in the belly of the fish before repenting.',
         scriptureReference: 'Jonah 1:17',
         testament: 'Old Testament',
         propheticFocus: 'Jonah',
@@ -707,10 +790,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
-          home: CloudChallengeScreen(
-            store: ProgressStore(),
-            service: gateway,
-          ),
+          home: CloudChallengeScreen(store: ProgressStore(), service: gateway),
         ),
       );
       await tester.pump();
@@ -731,7 +811,12 @@ void main() {
 
       // Correctness must be true, showing VERIFIED CORRECT (ALREADY RECORDED) and the explanation
       expect(find.text('VERIFIED CORRECT (ALREADY RECORDED)'), findsOneWidget);
-      expect(find.text('Jonah spent three days in the belly of the fish before repenting.'), findsOneWidget);
+      expect(
+        find.text(
+          'Jonah spent three days in the belly of the fish before repenting.',
+        ),
+        findsOneWidget,
+      );
       expect(find.text('INCORRECT'), findsNothing);
       expect(find.text('ANSWER RECORDED (PREVIOUSLY ATTEMPTED)'), findsNothing);
       expect(find.text('NEXT QUESTION'), findsOneWidget);
@@ -769,10 +854,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
-          home: CloudChallengeScreen(
-            store: ProgressStore(),
-            service: gateway,
-          ),
+          home: CloudChallengeScreen(store: ProgressStore(), service: gateway),
         ),
       );
       await tester.pump();
@@ -794,7 +876,9 @@ void main() {
       expect(find.text('VERIFIED CORRECT'), findsNothing);
 
       // Verify SlateAnswerTile widgets
-      final tiles = tester.widgetList<SlateAnswerTile>(find.byType(SlateAnswerTile)).toList();
+      final tiles = tester
+          .widgetList<SlateAnswerTile>(find.byType(SlateAnswerTile))
+          .toList();
       expect(tiles.length, 4);
 
       // Tile 0: Luke (index 0) - not selected, not correct
@@ -806,7 +890,11 @@ void main() {
       // Tile 1: John (index 1) - USER'S WRONG CHOICE! Must be selected=true, correct=false!
       expect(tiles[1].text, 'John');
       expect(tiles[1].selected, isTrue);
-      expect(tiles[1].correct, isFalse, reason: 'Wrong answer must NOT be marked correct!');
+      expect(
+        tiles[1].correct,
+        isFalse,
+        reason: 'Wrong answer must NOT be marked correct!',
+      );
       expect(tiles[1].feedback, isTrue);
 
       // Tile 2: Matthew (index 2) - not selected, not correct
@@ -818,7 +906,11 @@ void main() {
       // Tile 3: Mark (index 3) - TRUE ANSWER! Must be correct=true, selected=false!
       expect(tiles[3].text, 'Mark');
       expect(tiles[3].selected, isFalse);
-      expect(tiles[3].correct, isTrue, reason: 'Correct answer must be marked correct!');
+      expect(
+        tiles[3].correct,
+        isTrue,
+        reason: 'Correct answer must be marked correct!',
+      );
       expect(tiles[3].feedback, isTrue);
     },
   );
@@ -962,7 +1054,7 @@ void main() {
 
       expect(find.text('CHALLENGE LOBBY'), findsOneWidget);
       expect(find.text('FELLOWSHIP / HOST-LED MODE'), findsOneWidget);
-      expect(find.text('Waiting for host to start…'), findsOneWidget);
+      expect(find.text('Waiting for the host to start'), findsOneWidget);
       expect(find.text('START FELLOWSHIP'), findsNothing);
       expect(find.text('START CHALLENGE'), findsNothing);
     },
@@ -1005,9 +1097,7 @@ void main() {
         ownerId: 'host-uid-1',
       );
 
-      final service = _FakeGroupGateway(
-        challenges: [challengeOpen],
-      );
+      final service = _FakeGroupGateway(challenges: [challengeOpen]);
 
       await tester.pumpWidget(
         MaterialApp(
@@ -1023,9 +1113,14 @@ void main() {
 
       expect(find.text('FELLOWSHIP STUDY'), findsOneWidget);
       expect(find.text('QUESTION 1 OF 2'), findsOneWidget);
-      expect(find.text('In the beginning God created the heavens and the earth.'), findsOneWidget);
+      expect(
+        find.text('In the beginning God created the heavens and the earth.'),
+        findsOneWidget,
+      );
 
-      final answerTiles = tester.widgetList<SlateAnswerTile>(find.byType(SlateAnswerTile)).toList();
+      final answerTiles = tester
+          .widgetList<SlateAnswerTile>(find.byType(SlateAnswerTile))
+          .toList();
       expect(answerTiles.length, 4);
       for (final tile in answerTiles) {
         expect(tile.feedback, isFalse);
@@ -1038,7 +1133,9 @@ void main() {
       expect(service.submitFellowshipAnswerCalled, isTrue);
       expect(service.lastAnsweredOption, 0);
 
-      final updatedTiles = tester.widgetList<SlateAnswerTile>(find.byType(SlateAnswerTile)).toList();
+      final updatedTiles = tester
+          .widgetList<SlateAnswerTile>(find.byType(SlateAnswerTile))
+          .toList();
       expect(updatedTiles[0].selected, isTrue);
       expect(updatedTiles[0].feedback, isFalse);
     },
@@ -1074,14 +1171,13 @@ void main() {
         scriptureReference: 'Genesis 1:1',
         items: items,
         revealedAnswer: 0,
-        revealedExplanation: 'Genesis 1:1 describes the creation of everything.',
+        revealedExplanation:
+            'Genesis 1:1 describes the creation of everything.',
         revealedScriptureReference: 'Genesis 1:1',
         ownerId: 'host-uid-1',
       );
 
-      final service = _FakeGroupGateway(
-        challenges: [challengeRevealed],
-      );
+      final service = _FakeGroupGateway(challenges: [challengeRevealed]);
 
       await tester.pumpWidget(
         MaterialApp(
@@ -1095,13 +1191,21 @@ void main() {
       );
       await tester.pump();
 
-      final tiles = tester.widgetList<SlateAnswerTile>(find.byType(SlateAnswerTile)).toList();
+      final tiles = tester
+          .widgetList<SlateAnswerTile>(find.byType(SlateAnswerTile))
+          .toList();
       expect(tiles[0].feedback, isTrue);
       expect(tiles[0].correct, isTrue);
 
       expect(find.text('Genesis 1:1'), findsWidgets);
-      expect(find.text('Genesis 1:1 describes the creation of everything.'), findsOneWidget);
-      expect(find.text('Host discussing Scripture. Ready for next!'), findsOneWidget);
+      expect(
+        find.text('Genesis 1:1 describes the creation of everything.'),
+        findsOneWidget,
+      );
+      expect(
+        find.text('Host discussing Scripture. Ready for next!'),
+        findsOneWidget,
+      );
     },
   );
 
@@ -1185,8 +1289,8 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.text('CREATE GROUP QUIZ (10 - 30 Qs)'), findsOneWidget);
-      await tester.tap(find.text('CREATE GROUP QUIZ (10 - 30 Qs)'));
+      expect(find.text('CREATE GROUP CHALLENGE'), findsOneWidget);
+      await tester.tap(find.text('CREATE GROUP CHALLENGE'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 

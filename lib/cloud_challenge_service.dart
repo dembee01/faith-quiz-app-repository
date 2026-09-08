@@ -265,7 +265,19 @@ class QuizGroup {
   factory QuizGroup.fromDocument(
     DocumentSnapshot<Map<String, dynamic>> document,
   ) {
-    final data = document.data() ?? const <String, dynamic>{};
+    return QuizGroup.fromMap(
+      document.id,
+      document.data() ?? const <String, dynamic>{},
+    );
+  }
+
+  /// Parses the persisted group shape. `ownerUid` is canonical; `ownerId`
+  /// remains supported for groups written by older app versions.
+  factory QuizGroup.fromMap(
+    String id,
+    Map<String, dynamic> data, {
+    String? currentUid,
+  }) {
     DateTime? exp;
     final rawExp = data['expiresAt'];
     if (rawExp is Timestamp) {
@@ -273,12 +285,16 @@ class QuizGroup {
     } else if (rawExp is String) {
       exp = DateTime.tryParse(rawExp);
     }
-    final currentUid = FirebaseAuth.instance.currentUser?.uid;
-    final ownerId = data['ownerId'] as String?;
-    final role = data['role'] as String? ??
-        (ownerId != null && ownerId == currentUid ? 'owner' : 'member');
+    final resolvedUid = currentUid ?? FirebaseAuth.instance.currentUser?.uid;
+    final ownerUid = data['ownerUid'] as String? ?? data['ownerId'] as String?;
+    // Derive ownership from the canonical owner identity even if a stale
+    // literal role is present. This prevents a stream snapshot from demoting
+    // the signed-in host to a member.
+    final role = ownerUid != null && ownerUid == resolvedUid
+        ? 'owner'
+        : data['role'] as String? ?? 'member';
     return QuizGroup(
-      id: document.id,
+      id: id,
       name: data['name'] as String? ?? 'Faith Quiz group',
       role: role,
       joinCode: data['joinCode'] as String?,
@@ -350,7 +366,7 @@ class GroupChallenge {
   final String scriptureReference;
   final List<GroupChallengeItem> items;
   final String mode; // 'competitive' or 'fellowship'
-  final String status; // 'lobby', 'active', 'question_open', 'question_revealed', 'completed'
+  final String status; // 'lobby', 'active', 'question_open', 'question_revealed', 'finalizing', 'completed'
   final int currentQuestionIndex;
   final DateTime? startedAt;
   final DateTime? currentQuestionOpenedAt;
@@ -367,11 +383,20 @@ class GroupChallenge {
   bool get isCompleted => status == 'completed';
   bool get isQuestionOpen => status == 'question_open';
   bool get isQuestionRevealed => status == 'question_revealed';
+  bool get isFinalizing => status == 'finalizing';
 
   factory GroupChallenge.fromDocument(
     DocumentSnapshot<Map<String, dynamic>> document,
   ) {
-    final data = document.data() ?? const <String, dynamic>{};
+    return GroupChallenge.fromMap(
+      document.id,
+      document.data() ?? const <String, dynamic>{},
+    );
+  }
+
+  /// Parses the persisted challenge shape. New challenges use `createdBy`;
+  /// `ownerUid` and the legacy `ownerId` are accepted for compatibility.
+  factory GroupChallenge.fromMap(String id, Map<String, dynamic> data) {
     final rawQuestions = data['questions'] as List?;
     final items = rawQuestions != null
         ? rawQuestions
@@ -392,7 +417,7 @@ class GroupChallenge {
         : const <String>[];
 
     return GroupChallenge(
-      id: document.id,
+      id: id,
       title: data['title'] as String? ?? 'Bible Challenge',
       questionCount: (data['questionCount'] as num?)?.toInt() ??
           (items.isNotEmpty ? items.length : 1),
@@ -415,7 +440,9 @@ class GroupChallenge {
       revealedExplanation: data['revealedExplanation'] as String?,
       revealedScriptureReference: data['revealedScriptureReference'] as String?,
       answeredUids: answeredUids,
-      ownerId: data['ownerId'] as String?,
+      ownerId: data['createdBy'] as String? ??
+          data['ownerUid'] as String? ??
+          data['ownerId'] as String?,
     );
   }
 }

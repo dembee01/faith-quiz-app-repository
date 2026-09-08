@@ -259,12 +259,29 @@ function generateJoinCode() {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
+// Challenges created after participant freezing carry an explicit UID list.
+// Missing lists are treated as legacy challenges so deployed historical data
+// remains usable; all new starts write participantUids atomically.
+function challengeHasParticipant(challengeSnapshot, uid) {
+  const participantUids = challengeSnapshot.get('participantUids');
+  return !Array.isArray(participantUids) || participantUids.includes(uid);
+}
+
+// The join window is intentionally separate from challenge timing.  Ten
+// minutes is the normal default; an explicitly supplied duration remains
+// supported for existing clients and for the host's session controls.
+const DEFAULT_GROUP_JOIN_WINDOW_MINUTES = 10;
+
 exports.createGroup = onCall(callableOptions, async (request) => {
   const uid = requireUser(request);
   const name = requireText(request.data.name, 'group name', 40);
   const durationMinutes = Number(request.data.durationMinutes);
   // Default to 10 minutes if not specified or invalid. If durationMinutes <= 0, no expiry.
-  const minutes = Number.isInteger(durationMinutes) ? durationMinutes : 10;
+  // Keep the explicit no-expiry/extended-session options for compatibility;
+  // the ordinary create flow sends the ten-minute default.
+  const minutes = Number.isInteger(durationMinutes)
+    ? durationMinutes
+    : DEFAULT_GROUP_JOIN_WINDOW_MINUTES;
   const now = Date.now();
   const expiresAt = minutes > 0 ? new Date(now + minutes * 60 * 1000) : null;
   const expiresAtTimestamp = expiresAt ? Timestamp.fromDate(expiresAt) : null;
@@ -366,6 +383,9 @@ exports.joinGroup = onCall(callableOptions, async (request) => {
   let groupJoinCode = null;
   let groupExpiresAt = null;
   let groupDurationMinutes = null;
+  let memberRole = 'member';
+  let alreadyMember = false;
+  let ownerMessage = null;
 
   // Read user profile to get claimed username or displayName
   const userSnap = await db.doc(`users/${uid}`).get();
@@ -374,7 +394,16 @@ exports.joinGroup = onCall(callableOptions, async (request) => {
     : 'Member';
 
   await db.runTransaction(async (transaction) => {
-    const snapshot = await transaction.get(group);
+    // Read the existing membership and user index before writing either one.
+    // In particular, a host re-entering their own six-digit code must never
+    // turn role: owner into role: member or refresh joinedAt.
+    const memberRef = group.collection('members').doc(uid);
+    const userGroupRef = db.doc(`users/${uid}/groups/${targetGroupId}`);
+    const [snapshot, memberSnapshot, userGroupSnapshot] = await Promise.all([
+      transaction.get(group),
+      transaction.get(memberRef),
+      transaction.get(userGroupRef),
+    ]);
     if (!snapshot.exists) throw new HttpsError('not-found', 'Group not found. Please verify the code.');
 
     const exp = snapshot.get('expiresAt');
@@ -387,15 +416,35 @@ exports.joinGroup = onCall(callableOptions, async (request) => {
     groupExpiresAt = snapshot.get('expiresAt') || null;
     groupDurationMinutes = snapshot.get('durationMinutes') || null;
 
-    const joinedAt = FieldValue.serverTimestamp();
-    transaction.set(group.collection('members').doc(uid), {
-      role: 'member',
+    const canonicalOwnerUid = snapshot.get('ownerUid') || snapshot.get('ownerId');
+    const existingRole = memberSnapshot.exists ? memberSnapshot.get('role') : null;
+    // Preserve an existing owner role even for older groups whose canonical
+    // owner field was not migrated.  For canonical groups, repair a stale
+    // member role back to owner without changing the original joinedAt.
+    memberRole = canonicalOwnerUid === uid || existingRole === 'owner' ? 'owner' : 'member';
+    alreadyMember = memberSnapshot.exists;
+    if (memberRole === 'owner' && canonicalOwnerUid === uid) {
+      ownerMessage = 'You already own this group.';
+    }
+
+    const existingJoinedAt = memberSnapshot.exists
+      ? memberSnapshot.get('joinedAt')
+      : (userGroupSnapshot.exists ? userGroupSnapshot.get('joinedAt') : null);
+    const joinedAt = existingJoinedAt || FieldValue.serverTimestamp();
+    const existingDisplayName = memberSnapshot.exists
+      ? memberSnapshot.get('displayName')
+      : null;
+
+    // Keep the original membership timestamp and role stable on repeat joins.
+    // A write is still allowed here to repair legacy/stale owner metadata.
+    transaction.set(memberRef, {
+      role: memberRole,
       joinedAt,
-      displayName: memberDisplayName,
+      displayName: existingDisplayName || memberDisplayName,
     }, { merge: true });
-    transaction.set(db.doc(`users/${uid}/groups/${targetGroupId}`), {
+    transaction.set(userGroupRef, {
       name: groupName,
-      role: 'member',
+      role: memberRole,
       joinedAt,
       joinCode: groupJoinCode,
       expiresAt: groupExpiresAt,
@@ -407,6 +456,9 @@ exports.joinGroup = onCall(callableOptions, async (request) => {
     groupId: targetGroupId,
     name: groupName,
     joinCode: groupJoinCode,
+    role: memberRole,
+    alreadyMember,
+    message: ownerMessage,
   };
 });
 
@@ -638,6 +690,17 @@ exports.startGroupChallenge = onCall(callableOptions, async (request) => {
       startedAt: now,
     };
 
+    // Freeze the lobby roster at the exact start transition.  The parent
+    // group may still accept members for a future challenge, but those late
+    // joiners must not appear in this challenge halfway through play.
+    if (!Array.isArray(challengeSnap.get('participantUids'))) {
+      const membersSnapshot = await transaction.get(groupRef.collection('members'));
+      const participantUids = membersSnapshot.docs.map((doc) => doc.id);
+      if (!participantUids.includes(uid)) participantUids.push(uid);
+      updates.participantUids = [...new Set(participantUids)];
+      updates.participantCount = updates.participantUids.length;
+    }
+
     if (mode === 'fellowship') {
       updates.status = 'question_open';
       updates.currentQuestionIndex = 0;
@@ -693,6 +756,13 @@ exports.submitFellowshipAnswer = onCall(callableOptions, async (request) => {
 
     if (!challengeSnap.exists) {
       throw new HttpsError('not-found', 'Challenge not found.');
+    }
+
+    if (!challengeHasParticipant(challengeSnap, uid)) {
+      throw new HttpsError(
+        'permission-denied',
+        'You joined after this challenge started and cannot participate in it.'
+      );
     }
 
     // Validate challenge is in the correct state for answers
@@ -848,6 +918,9 @@ exports.advanceFellowshipQuestion = onCall(callableOptions, async (request) => {
         catalogue: challengeSnap.get('catalogue') || 'faith-quiz-global-v1',
         questions: challengeSnap.get('questions') || [],
         questionIds: challengeSnap.get('questionIds') || (challengeSnap.get('questions') || []).map((q) => q.id),
+        participantUids: Array.isArray(challengeSnap.get('participantUids'))
+          ? challengeSnap.get('participantUids')
+          : null,
       };
       return;
     }
@@ -885,6 +958,9 @@ exports.advanceFellowshipQuestion = onCall(callableOptions, async (request) => {
       catalogue: challengeSnap.get('catalogue') || 'faith-quiz-global-v1',
       questions,
       questionIds: challengeSnap.get('questionIds') || questions.map((q) => q.id),
+      participantUids: Array.isArray(challengeSnap.get('participantUids'))
+        ? challengeSnap.get('participantUids')
+        : null,
     };
 
     transaction.update(challengeRef, {
@@ -895,7 +971,7 @@ exports.advanceFellowshipQuestion = onCall(callableOptions, async (request) => {
 
   if (needsCompletion) {
     // Grade all members outside the transaction (subcollection reads)
-    const { catalogue, questions, questionIds } = completionData;
+    const { catalogue, questions, questionIds, participantUids } = completionData;
 
     // Fetch all answer docs from contentPrivate in batch
     const answerRefs = questionIds.map((qId) => db.doc(`contentPrivate/${catalogue}/answers/${qId}`));
@@ -917,13 +993,32 @@ exports.advanceFellowshipQuestion = onCall(callableOptions, async (request) => {
       });
     });
 
-    // Fetch ALL group members to ensure even participants with 0 answers get a 0/N entry
-    const membersSnap = await db.collection(`groups/${groupId}/members`).get();
+    // New challenges grade only the frozen start-time roster.  Legacy
+    // challenges without participantUids retain their historical behavior.
+    let memberRecords;
+    if (Array.isArray(participantUids)) {
+      const memberRefs = participantUids.map((participantUid) =>
+        db.doc(`groups/${groupId}/members/${participantUid}`));
+      const memberSnaps = memberRefs.length > 0 ? await db.getAll(...memberRefs) : [];
+      memberRecords = participantUids.map((participantUid, index) => ({
+        uid: participantUid,
+        snapshot: memberSnaps[index],
+      }));
+    } else {
+      const membersSnap = await db.collection(`groups/${groupId}/members`).get();
+      memberRecords = membersSnap.docs.map((snapshot) => ({
+        uid: snapshot.id,
+        snapshot,
+      }));
+    }
     const batch = db.batch();
 
-    for (const memberDoc of membersSnap.docs) {
-      const memberUid = memberDoc.id;
-      const memberName = memberDoc.get('displayName') || 'Faith learner';
+    for (const memberRecord of memberRecords) {
+      const memberUid = memberRecord.uid;
+      const memberDoc = memberRecord.snapshot;
+      const memberName = memberDoc && memberDoc.exists
+        ? (memberDoc.get('displayName') || 'Faith learner')
+        : 'Faith learner';
       const answersMap = userAnswers.get(memberUid) || new Map();
 
       let score = 0;
@@ -979,6 +1074,13 @@ exports.submitGroupChallenge = onCall(callableOptions, async (request) => {
   ]);
   if (!membershipSnapshot.exists || !challengeSnapshot.exists) {
     throw new HttpsError('not-found', 'Group challenge is unavailable.');
+  }
+
+  if (!challengeHasParticipant(challengeSnapshot, uid)) {
+    throw new HttpsError(
+      'permission-denied',
+      'You joined after this challenge started and cannot participate in it.'
+    );
   }
 
   const catalogue = challengeSnapshot.get('catalogue') || 'faith-quiz-global-v1';
