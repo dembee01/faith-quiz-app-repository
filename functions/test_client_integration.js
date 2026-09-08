@@ -178,17 +178,34 @@ async function runClientIntegrationTests() {
     const groupName = 'Live Client Test Group';
     const groupResult = await callCallable('createGroup', host.idToken, {
       name: groupName,
-      durationMinutes: 30,
+      durationMinutes: 10,
     });
     assert(groupResult, 'Must return result');
     const joinCode = groupResult.joinCode;
     const groupId = groupResult.groupId;
     assert(joinCode && joinCode.length === 6, `Must return 6-digit code, got ${joinCode}`);
     assert(groupId, 'Must return groupId');
+    assert.strictEqual(groupResult.durationMinutes, 10);
     trackCleanup(`groups/${groupId}/members/${host.uid}`);
     trackCleanup(`groups/${groupId}`);
     trackCleanup(`joinCodes/${joinCode}`);
     console.log(`  PASSED: Group created (${groupId}) with 6-digit join code: ${joinCode}`);
+
+    let longWindowBlocked = false;
+    try {
+      await callCallable('createGroup', host.idToken, {
+        name: 'Invalid Long Window Group',
+        durationMinutes: 30,
+      });
+    } catch (err) {
+      longWindowBlocked = true;
+      assert(
+        err.code.includes('INVALID_ARGUMENT') || err.message.includes('between 1 and 10'),
+        `Expected long-window rejection, got: ${err.message}`,
+      );
+    }
+    assert.strictEqual(longWindowBlocked, true, 'Durations above ten minutes MUST be rejected');
+    console.log('  PASSED: Deployed createGroup rejects a join window longer than ten minutes.');
 
     // The creator is already the owner/member. Re-entering the same code must
     // be idempotent and must not downgrade role or refresh joinedAt.

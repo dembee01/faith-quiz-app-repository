@@ -54,6 +54,23 @@ for (let i = 0; i < 1000; i++) {
 }
 console.log('  PASSED: 1000 candidate codes verified as strictly 6 numeric digits.');
 
+// 3b. Join Window Policy
+console.log('[Test 3b] Ten-minute join-window policy');
+function validateJoinWindow(value) {
+  if (value === undefined) return 10;
+  if (!Number.isInteger(value) || value < 1 || value > 10) {
+    throw new Error('invalid-argument: Group join window must be between 1 and 10 minutes.');
+  }
+  return value;
+}
+assert.strictEqual(validateJoinWindow(undefined), 10);
+assert.strictEqual(validateJoinWindow(10), 10);
+assert.strictEqual(validateJoinWindow(1), 1);
+for (const invalid of [0, -1, 11, 30, null, '10', NaN]) {
+  assert.throws(() => validateJoinWindow(invalid), /invalid-argument/);
+}
+console.log('  PASSED: New invitations cannot exceed the ten-minute join window.');
+
 // 4. Competitive Ranking Priority: Accuracy (Score) DESC, then Time ASC
 console.log('[Test 4] Deterministic Competitive Ranking Order');
 const players = [

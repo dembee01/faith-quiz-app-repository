@@ -267,19 +267,33 @@ function challengeHasParticipant(challengeSnapshot, uid) {
   return !Array.isArray(participantUids) || participantUids.includes(uid);
 }
 
-// The join window is intentionally separate from challenge timing.  Ten
-// minutes is the normal default; an explicitly supplied duration remains
-// supported for existing clients and for the host's session controls.
+// The join window is intentionally separate from challenge timing. Every new
+// invitation defaults to (and may not exceed) ten minutes; an owner can
+// explicitly extend an active group later through extendGroup.
 const DEFAULT_GROUP_JOIN_WINDOW_MINUTES = 10;
 
 exports.createGroup = onCall(callableOptions, async (request) => {
   const uid = requireUser(request);
   const name = requireText(request.data.name, 'group name', 40);
-  const durationMinutes = Number(request.data.durationMinutes);
-  // Default to 10 minutes if not specified or invalid. If durationMinutes <= 0, no expiry.
-  // Keep the explicit no-expiry/extended-session options for compatibility;
-  // the ordinary create flow sends the ten-minute default.
-  const minutes = Number.isInteger(durationMinutes)
+  const hasDuration = Object.prototype.hasOwnProperty.call(
+    request.data || {},
+    'durationMinutes',
+  );
+  const durationMinutes = request.data.durationMinutes;
+  // Every newly created invitation has a ten-minute join window. Longer or
+  // non-expiring windows are intentionally rejected; the host can explicitly
+  // extend an active group later with extendGroup.
+  if (hasDuration &&
+      (typeof durationMinutes !== 'number' ||
+       !Number.isInteger(durationMinutes) ||
+       durationMinutes < 1 ||
+       durationMinutes > DEFAULT_GROUP_JOIN_WINDOW_MINUTES)) {
+    throw new HttpsError(
+      'invalid-argument',
+      'Group join window must be between 1 and 10 minutes.'
+    );
+  }
+  const minutes = hasDuration
     ? durationMinutes
     : DEFAULT_GROUP_JOIN_WINDOW_MINUTES;
   const now = Date.now();

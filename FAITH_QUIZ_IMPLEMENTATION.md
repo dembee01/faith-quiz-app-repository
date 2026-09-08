@@ -7,10 +7,10 @@ It is intentionally based on the source currently in this repository rather
 than on an old function count, an old screen name, or a historical design
 document.
 
-> Status snapshot: 2026-09-08, `master` at `5f7278d` (which includes the
-> Group Challenge stabilization commit `c362437` and the implementation-guide
-> updates). Re-check the source and update this status section after each
-> architecture or product-flow change.
+> Status snapshot: 2026-09-08, current `master` includes the host challenge
+> deletion and strict ten-minute invitation-window changes. Re-check the
+> source and update this status section after each architecture or product-
+> flow change.
 
 ## 1. Product overview
 
@@ -205,17 +205,17 @@ member reads, and entry reads are allowed only to authenticated group members.
 
 `expiresAt` is the group invitation/session expiry, not a quiz-completion
 timer. The normal default and the current Flutter create-dialog choice are
-10 minutes. The Function still accepts an integer duration for compatibility
-and treats values less than or equal to zero as no expiry; the UI no longer
-offers 30 minutes, one hour, or no-expiry. The owner may extend an existing
-group by 10 minutes. The extension updates the group, join-code reservation,
-and owner's index.
+10 minutes. New invitations accept only an integer duration from 1 through 10
+minutes (omitting the field defaults to 10); zero, negative, non-integer, null,
+and longer values are rejected by the callable. The UI uses the ten-minute
+choice. The owner may extend an existing group by 10 minutes. The extension
+updates the group, join-code reservation, and owner's index.
 
 The Function rejects joins after `expiresAt` and rejects challenge creation or
 start after expiry. There is currently no scheduled cleanup requirement; an
 expired document may remain stored but cannot be used through the protected
-callables. If the product adopts a strict ten-minute maximum, enforce it in
-the Function as well as the UI—UI chips alone are not an authority.
+callables. The ten-minute maximum is enforced in the Function as well as the
+UI, so an older client cannot create a longer or non-expiring invitation.
 
 ### Lobby and challenge creation
 
@@ -633,12 +633,13 @@ node functions/test_client_integration.js
 
 This suite obtains real Firebase Auth ID tokens, calls deployed HTTPS
 callables, reads Firestore through the client REST boundary, and cleans up
-temporary users/documents. The previously recorded live run covered host plus
-two members, 6-digit joining, pre-start submission rejection, server-overridden
-elapsed time, Fellowship immutability/reveal/late-answer rejection, full
-10-question finalization including a 0/10 member, retry/idempotency, and 403
-checks for private answers, client leaderboard/challenge writes, direct
-Fellowship writes, and peer-answer reads.
+temporary users/documents. The latest live run covered the ten-minute default,
+rejection of a 30-minute create request, host plus two members, 6-digit
+joining, pre-start submission rejection, server-overridden elapsed time,
+Fellowship immutability/reveal/late-answer rejection, full 10-question
+finalization including a 0/10 member, retry/idempotency, host-only recursive
+challenge deletion, and 403 checks for private answers, client leaderboard/
+challenge writes, direct Fellowship writes, and peer-answer reads.
 
 The real suite requires an authenticated Firebase CLI environment and deployed
 Functions. Never commit its temporary credentials. If a test claims to use an
@@ -737,8 +738,8 @@ substantial code or product-flow work.
 
 ### Known gaps / planned future work
 
-* The backend still accepts longer explicit join-window values for old clients;
-  enforce a hard ten-minute maximum only when compatibility can be retired.
+* New group creation rejects join-window values outside 1–10 minutes; owners
+  can extend an active group explicitly through `extendGroup`.
 * The Competitive countdown is client-enforced today. Add a server-enforced
   per-player timing contract if tamper-proof per-question deadlines become a
   requirement.
