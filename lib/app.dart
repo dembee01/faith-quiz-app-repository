@@ -5520,7 +5520,7 @@ class _GroupQuestionScreenState extends State<GroupQuestionScreen> {
               const SizedBox(height: 8),
               Text(
                 res.breakdown.isEmpty
-                    ? 'CHALLENGE COMPLETED'
+                    ? 'CHALLENGE COMPLETE'
                     : '${res.score} / ${res.total} CORRECT',
                 style: const TextStyle(
                   color: _gold,
@@ -5532,7 +5532,7 @@ class _GroupQuestionScreenState extends State<GroupQuestionScreen> {
               const SizedBox(height: 4),
               Text(
                 res.breakdown.isEmpty
-                    ? 'Check your recorded standing on the group leaderboard below'
+                    ? 'Waiting for final rankings…'
                     : '$pct% Score • Total Time: ${_formatTime(res.elapsedSeconds)}',
                 style: const TextStyle(
                   color: _slateTextSecondary,

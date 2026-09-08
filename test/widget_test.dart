@@ -72,6 +72,8 @@ class _FakeGroupGateway implements CloudGroupGateway {
   bool revealFellowshipAnswerCalled = false;
   bool advanceFellowshipQuestionCalled = false;
   int? lastAnsweredOption;
+  String? lastCreatedMode;
+  int? lastCreatedQuestionCount;
 
   @override
   Future<bool> get isAvailable async => true;
@@ -134,7 +136,11 @@ class _FakeGroupGateway implements CloudGroupGateway {
     required int questionCount,
     String? title,
     String mode = 'competitive',
-  }) async => 'quiz-mock-123';
+  }) async {
+    lastCreatedMode = mode;
+    lastCreatedQuestionCount = questionCount;
+    return 'quiz-mock-123';
+  }
 
   @override
   Future<void> startGroupChallenge({
@@ -1298,6 +1304,18 @@ void main() {
       expect(find.text('SELECT CHALLENGE MODE'), findsOneWidget);
       expect(find.text('COMPETITIVE'), findsOneWidget);
       expect(find.text('FELLOWSHIP'), findsOneWidget);
+      expect(
+        find.text(
+          'Race through the same Bible questions. Accuracy wins; speed breaks ties.',
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.text(
+          'Answer together, reveal Scripture, discuss, then let the host move everyone forward.',
+        ),
+        findsOneWidget,
+      );
       expect(find.text('10 QUESTIONS'), findsOneWidget);
       expect(find.text('20 QUESTIONS'), findsOneWidget);
       expect(find.text('30 QUESTIONS'), findsOneWidget);
@@ -1312,6 +1330,57 @@ void main() {
       await tester.tap(find.text('CREATE CHALLENGE'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
+
+      expect(service.lastCreatedMode, 'fellowship');
+      expect(service.lastCreatedQuestionCount, 20);
+    },
+  );
+
+  testWidgets(
+    'reopening a completed competitive challenge shows rankings instead of question one',
+    (tester) async {
+      final store = ProgressStore();
+      const challenge = GroupChallenge(
+        id: 'ch-competitive-done',
+        title: 'Competitive Bible Challenge',
+        mode: 'competitive',
+        status: 'completed',
+        questionCount: 1,
+        question: 'Who built the ark?',
+        options: ['Noah', 'Moses', 'David', 'Solomon'],
+        explanation: '',
+        scriptureReference: 'Genesis 6:14',
+      );
+      final service = _FakeGroupGateway(
+        challenges: [challenge],
+        groupLeaderboardEntries: const [
+          LeaderboardEntry(
+            id: 'player-1',
+            displayName: 'Noah',
+            score: 1,
+            elapsedSeconds: 18,
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: GroupQuestionScreen(
+            store: store,
+            groupId: 'group-1',
+            challenge: challenge,
+            service: service,
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('CHALLENGE COMPLETE'), findsOneWidget);
+      expect(find.text('Waiting for final rankings…'), findsOneWidget);
+      expect(find.text('Who built the ark?'), findsNothing);
+      expect(find.text('Noah'), findsOneWidget);
+      expect(find.text('SUBMIT GROUP QUIZ'), findsNothing);
     },
   );
 }
