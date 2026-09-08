@@ -207,6 +207,23 @@ async function runClientIntegrationTests() {
     assert.strictEqual(longWindowBlocked, true, 'Durations above ten minutes MUST be rejected');
     console.log('  PASSED: Deployed createGroup rejects a join window longer than ten minutes.');
 
+    console.log('  Checking strict, concurrent invitation extensions...');
+    for (const additionalMinutes of [30, 60, 500, '100', '10', 5.5, -10, 0, null]) {
+      await assert.rejects(
+        callCallable('extendGroup', host.idToken, { groupId, additionalMinutes }),
+        (error) => error.code === 'INVALID_ARGUMENT',
+      );
+    }
+    const expiryBefore = (await adminDb.doc(`groups/${groupId}`).get()).get('expiresAt').toMillis();
+    await Promise.all([
+      callCallable('extendGroup', host.idToken, { groupId, additionalMinutes: 10 }),
+      callCallable('extendGroup', host.idToken, { groupId, additionalMinutes: 10 }),
+    ]);
+    for (const path of [`groups/${groupId}`, `joinCodes/${joinCode}`, `users/${host.uid}/groups/${groupId}`]) {
+      assert.equal((await adminDb.doc(path).get()).get('expiresAt').toMillis(), expiryBefore + 1200000);
+    }
+    console.log('  PASSED: Invalid extensions rejected; two simultaneous extensions added exactly 20 minutes.');
+
     // The creator is already the owner/member. Re-entering the same code must
     // be idempotent and must not downgrade role or refresh joinedAt.
     const ownerMembershipBefore = await adminDb.doc(`groups/${groupId}/members/${host.uid}`).get();
@@ -235,6 +252,20 @@ async function runClientIntegrationTests() {
     assert.strictEqual(join2.groupId, groupId);
     trackCleanup(`groups/${groupId}/members/${member2.uid}`);
     console.log(`  PASSED: Member 2 (${member2.displayName}) joined group.`);
+
+    // Simulate a stale server-side owner role. Restore the fixture afterward.
+    await adminDb.doc(`groups/${groupId}/members/${member1.uid}`).update({ role: 'owner' });
+    try {
+      for (const name of ['extendGroup', 'createGroupChallenge', 'deleteGroupChallenge',
+        'revealFellowshipAnswer', 'advanceFellowshipQuestion']) {
+        await assert.rejects(callCallable(name, member1.idToken, {
+          groupId, challengeId: 'ownership-probe', questionCount: 10,
+        }), (error) => error.code === 'PERMISSION_DENIED');
+      }
+    } finally {
+      await adminDb.doc(`groups/${groupId}/members/${member1.uid}`).update({ role: 'member' });
+    }
+    console.log('  PASSED: Stale owner membership cannot operate another owner\'s controls.');
 
     // 4. Authorized client read
     console.log('\n[Test 3] Authorized group read via Firestore REST API');
@@ -596,6 +627,26 @@ async function runClientIntegrationTests() {
     assert.strictEqual(deletedEntries.size, 0, 'Challenge entries must be recursively deleted');
     console.log('  PASSED: Non-owner deletion blocked; host deletion removed the challenge subtree.');
 
+    await assert.rejects(callCallable('submitGroupChallenge', member1.idToken, {
+      groupId, challengeId: compId, answers: Array(10).fill(0), elapsedSeconds: 10,
+    }), (error) => error.code === 'NOT_FOUND');
+    assert.equal((await adminDb.collection(`groups/${groupId}/challenges/${compId}/entries`).get()).size, 0);
+    console.log('  PASSED: A member submitting from a deleted challenge cannot recreate entries.');
+
+    const question = (await adminDb.collection('content/faith-quiz-global-v1/questions').limit(1).get()).docs[0];
+    const key = (await adminDb.doc(`contentPrivate/faith-quiz-global-v1/answers/${question.id}`).get()).get('correctAnswer');
+    const cloudInput = { catalogue: 'faith-quiz-global-v1', questionId: question.id,
+      answerIndex: (key + 1) % 4, elapsedSeconds: 5 };
+    const firstCloud = await callCallable('submitCloudChallenge', member2.idToken, cloudInput);
+    const retryCloud = await callCallable('submitCloudChallenge', member2.idToken, { ...cloudInput, answerIndex: key });
+    assert.equal(firstCloud.score, 0);
+    assert.equal(retryCloud.score, 0);
+    assert.equal(retryCloud.correct, false);
+    assert.equal(retryCloud.alreadySubmitted, true);
+    trackCleanup(`leaderboards/global_challenge/entries/${member2.uid}`);
+    trackCleanup(`leaderboards/${firstCloud.challengeId}/entries/${member2.uid}`);
+    console.log('  PASSED: Online ranked first attempt remains immutable after the answer is revealed.');
+
     console.log('\n=== ALL REAL CLIENT-PATH INTEGRATION & SECURITY RULES TESTS PASSED! ===');
     console.log('Evidence:');
     console.log('  1. 4 real authenticated users created & signed in via Google Identity Toolkit');
@@ -618,6 +669,7 @@ async function runClientIntegrationTests() {
       try { await adminDb.doc(p).delete(); } catch (e) {}
     }
     for (const uid of cleanupUids) {
+      try { await adminDb.recursiveDelete(adminDb.doc(`users/${uid}`)); } catch (e) {}
       try { await adminAuth.deleteUser(uid); } catch (e) {}
     }
     if (adcTempPath && fs.existsSync(adcTempPath)) {

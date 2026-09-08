@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_functions/cloud_functions.dart'
     show FirebaseFunctionsException;
 import 'package:faithquiz/app.dart';
@@ -61,12 +63,14 @@ class _FakeGroupGateway implements CloudGroupGateway {
     this.challenges = const [],
     this.leaderboardEntries = const [],
     this.groupLeaderboardEntries = const [],
+    this.challengeEvents,
   });
 
   final List<QuizGroup> groups;
   final List<GroupChallenge> challenges;
   final List<LeaderboardEntry> leaderboardEntries;
   final List<LeaderboardEntry> groupLeaderboardEntries;
+  final Stream<GroupChallenge>? challengeEvents;
   bool startChallengeCalled = false;
   bool submitFellowshipAnswerCalled = false;
   bool revealFellowshipAnswerCalled = false;
@@ -105,6 +109,7 @@ class _FakeGroupGateway implements CloudGroupGateway {
 
   @override
   Stream<GroupChallenge> streamChallenge(String groupId, String challengeId) {
+    if (challengeEvents != null) return challengeEvents!;
     final match = challenges.where((c) => c.id == challengeId);
     if (match.isNotEmpty) return Stream.value(match.first);
     return const Stream.empty();
@@ -250,6 +255,76 @@ class _FakeGroupGateway implements CloudGroupGateway {
 }
 
 void main() {
+  for (final screen in ['lobby', 'competitive', 'fellowship']) {
+    testWidgets('Open member $screen screen handles host deletion', (
+      tester,
+    ) async {
+      SharedPreferences.setMockInitialValues({});
+      final controller = StreamController<GroupChallenge>();
+      addTearDown(controller.close);
+      final store = ProgressStore();
+      const group = QuizGroup(id: 'g', name: 'Group', role: 'member');
+      final challenge = GroupChallenge(
+        id: 'ch',
+        title: 'Challenge',
+        mode: screen == 'fellowship' ? 'fellowship' : 'competitive',
+        status: screen == 'lobby'
+            ? 'lobby'
+            : screen == 'fellowship'
+            ? 'question_open'
+            : 'active',
+        questionCount: 1,
+        question: 'Who built the ark?',
+        options: const ['Noah', 'Moses', 'Abraham', 'David'],
+        explanation: '',
+        scriptureReference: 'Genesis 6',
+      );
+      final service = _FakeGroupGateway(
+        groups: [group],
+        challenges: [challenge],
+        challengeEvents: controller.stream,
+      );
+      final Widget page;
+      if (screen == 'lobby') {
+        page = GroupLobbyScreen(
+          store: store,
+          groupId: 'g',
+          group: group,
+          challenge: challenge,
+          service: service,
+        );
+      } else if (screen == 'fellowship') {
+        page = FellowshipQuestionScreen(
+          store: store,
+          groupId: 'g',
+          challenge: challenge,
+          service: service,
+        );
+      } else {
+        page = GroupQuestionScreen(
+          store: store,
+          groupId: 'g',
+          challenge: challenge,
+          service: service,
+        );
+      }
+      await tester.pumpWidget(MaterialApp(home: page));
+      await tester.pump();
+      controller.add(challenge);
+      await tester.pump();
+      controller.addError(const ChallengeUnavailable());
+      await tester.pump();
+      expect(
+        find.text('This challenge was deleted by its host.'),
+        findsOneWidget,
+      );
+      expect(find.text('BACK TO GROUP'), findsOneWidget);
+      expect(find.text('Who built the ark?'), findsNothing);
+      await tester.pump(const Duration(seconds: 35));
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+  }
   test(
     'parses canonical and legacy backend owner fields without demoting host',
     () {

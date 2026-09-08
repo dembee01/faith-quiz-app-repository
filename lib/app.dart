@@ -3589,15 +3589,11 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
     setState(() => _extending = true);
     try {
       await _service.extendGroup(widget.group.id, additionalMinutes: 10);
-      final base = (_expiresAt != null && _expiresAt!.isAfter(DateTime.now()))
-          ? _expiresAt!
-          : DateTime.now();
-      setState(() {
-        _expiresAt = base.add(const Duration(minutes: 10));
-      });
+      // The group stream supplies the committed expiry and any rotated code.
+      // Locally adding ten minutes can double-count a fast stream update.
       if (mounted) {
         ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-          const SnackBar(content: Text('Session extended by 10 minutes!')),
+          const SnackBar(content: Text('Join window extended by 10 minutes!')),
         );
       }
     } catch (e) {
@@ -4299,6 +4295,9 @@ class _GroupLobbyScreenState extends State<GroupLobbyScreen> {
             stream: _challengeStream,
             initialData: widget.challenge,
             builder: (context, challengeSnap) {
+              if (challengeSnap.hasError) {
+                return _ChallengeUnavailableView(error: challengeSnap.error!);
+              }
               final challenge = challengeSnap.data ?? widget.challenge;
 
               if (!challenge.isLobby) {
@@ -5203,6 +5202,9 @@ class _FellowshipQuestionScreenState extends State<FellowshipQuestionScreen> {
             stream: _challengeStream,
             initialData: widget.challenge,
             builder: (context, snapshot) {
+              if (snapshot.hasError) {
+                return _ChallengeUnavailableView(error: snapshot.error!);
+              }
               final challenge = snapshot.data ?? widget.challenge;
               if (challenge.isCompleted) {
                 return _buildResultsView();
@@ -5217,6 +5219,35 @@ class _FellowshipQuestionScreenState extends State<FellowshipQuestionScreen> {
       ),
     );
   }
+}
+
+class _ChallengeUnavailableView extends StatelessWidget {
+  const _ChallengeUnavailableView({required this.error});
+  final Object error;
+
+  @override
+  Widget build(BuildContext context) => Center(
+    child: Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            error is ChallengeUnavailable
+                ? 'This challenge was deleted by its host.'
+                : 'Unable to load this challenge. Return to the group and retry.',
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: Colors.white, fontSize: 18),
+          ),
+          const SizedBox(height: 24),
+          TextButton(
+            onPressed: () => Navigator.of(context).maybePop(),
+            child: const Text('BACK TO GROUP'),
+          ),
+        ],
+      ),
+    ),
+  );
 }
 
 class GroupQuestionScreen extends StatefulWidget {
@@ -5250,11 +5281,23 @@ class _GroupQuestionScreenState extends State<GroupQuestionScreen> {
   int _totalSeconds = 0;
   bool _submitting = false;
   GroupQuizResult? _result;
+  StreamSubscription<GroupChallenge>? _challengeSubscription;
+  Object? _challengeError;
 
   @override
   void initState() {
     super.initState();
     _service = widget.service ?? CloudChallengeService();
+    _challengeSubscription = _service
+        .streamChallenge(widget.groupId, widget.challenge.id)
+        .listen(
+          (_) {},
+          onError: (Object error) {
+            if (!mounted) return;
+            _timer?.cancel();
+            setState(() => _challengeError = error);
+          },
+        );
     _questions = widget.challenge.items.isNotEmpty
         ? widget.challenge.items
         : [
@@ -5326,6 +5369,7 @@ class _GroupQuestionScreenState extends State<GroupQuestionScreen> {
   @override
   void dispose() {
     _timer?.cancel();
+    _challengeSubscription?.cancel();
     super.dispose();
   }
 
@@ -5336,7 +5380,7 @@ class _GroupQuestionScreenState extends State<GroupQuestionScreen> {
   }
 
   Future<void> _submitAll() async {
-    if (_submitting || _result != null) return;
+    if (_submitting || _result != null || _challengeError != null) return;
     setState(() => _submitting = true);
     _timer?.cancel();
     _totalSeconds = max(
@@ -5830,7 +5874,11 @@ class _GroupQuestionScreenState extends State<GroupQuestionScreen> {
     body: DivineBackground(
       reduceMotion: widget.store.reduceMotion,
       child: SafeArea(
-        child: _result != null ? _buildResultsView() : _buildQuizView(),
+        child: _challengeError != null
+            ? _ChallengeUnavailableView(error: _challengeError!)
+            : _result != null
+            ? _buildResultsView()
+            : _buildQuizView(),
       ),
     ),
   );

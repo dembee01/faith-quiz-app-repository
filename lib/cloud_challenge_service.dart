@@ -6,6 +6,10 @@ import 'package:google_sign_in/google_sign_in.dart';
 
 import 'remote_feature_service.dart';
 
+class ChallengeUnavailable implements Exception {
+  const ChallengeUnavailable();
+}
+
 class CloudChallenge {
   const CloudChallenge({
     required this.id,
@@ -723,8 +727,14 @@ class CloudChallengeService
           .collection('challenges')
           .doc(challengeId)
           .snapshots()
-          .where((doc) => doc.exists && doc.data() != null)
-          .map((doc) => GroupChallenge.fromDocument(doc));
+          .map((doc) {
+            if (!doc.exists ||
+                doc.data() == null ||
+                doc.data()?['status'] == 'deleting') {
+              throw const ChallengeUnavailable();
+            }
+            return GroupChallenge.fromDocument(doc);
+          });
 
   @override
   Stream<List<LeaderboardEntry>> groupLeaderboard(
