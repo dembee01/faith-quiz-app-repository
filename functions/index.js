@@ -502,6 +502,9 @@ exports.joinGroup = onCall(callableOptions, async (request) => {
 
   let targetGroupId = rawInput;
   const joinCodeDoc = await db.collection('joinCodes').doc(rawInput).get();
+  const joinCodeRef = joinCodeDoc.exists
+    ? db.collection('joinCodes').doc(rawInput)
+    : null;
 
   if (joinCodeDoc.exists) {
     const exp = joinCodeDoc.get('expiresAt');
@@ -537,12 +540,33 @@ exports.joinGroup = onCall(callableOptions, async (request) => {
     // turn role: owner into role: member or refresh joinedAt.
     const memberRef = group.collection('members').doc(uid);
     const userGroupRef = db.doc(`users/${uid}/groups/${targetGroupId}`);
-    const [snapshot, memberSnapshot, userGroupSnapshot] = await Promise.all([
+    const reads = [
       transaction.get(group),
       transaction.get(memberRef),
       transaction.get(userGroupRef),
-    ]);
+    ];
+    if (joinCodeRef) reads.push(transaction.get(joinCodeRef));
+    const [snapshot, memberSnapshot, userGroupSnapshot, currentJoinCodeSnapshot] =
+      await Promise.all(reads);
     if (!snapshot.exists) throw new HttpsError('not-found', 'Group not found. Please verify the code.');
+
+    // A six-digit code can be rotated or reused after expiry. Revalidate the
+    // mapping inside the membership transaction so a caller cannot join a
+    // stale group after the code has been assigned to a different room.
+    if (joinCodeRef && (!currentJoinCodeSnapshot?.exists ||
+        currentJoinCodeSnapshot.get('groupId') !== targetGroupId)) {
+      throw new HttpsError(
+        'failed-precondition',
+        'This group invitation is no longer valid. Ask the host for the current PIN.',
+      );
+    }
+    const currentCodeExpiry = currentJoinCodeSnapshot?.get('expiresAt');
+    if (joinCodeRef && currentCodeExpiry && currentCodeExpiry.toDate() < new Date()) {
+      throw new HttpsError(
+        'deadline-exceeded',
+        'This group invitation has expired. Ask the host for an updated code.',
+      );
+    }
 
     const exp = snapshot.get('expiresAt');
     if (exp && exp.toDate() < new Date()) {
