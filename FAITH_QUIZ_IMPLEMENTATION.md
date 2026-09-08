@@ -7,12 +7,10 @@ It is intentionally based on the source currently in this repository rather
 than on an old function count, an old screen name, or a historical design
 document.
 
-> Status snapshot: 2026-09-08, `master` at `f1661e8` (which includes the
-> Group Challenge stabilization commit `c362437`) plus uncommitted changes in
-> `lib/app.dart` and `test/widget_test.dart`. The working tree currently adds
-> two lint-only brace fixes and additional modal/route coverage. Re-check the
-> source and update this status section after each architecture or
-> product-flow change.
+> Status snapshot: 2026-09-08, `master` at `5f7278d` (which includes the
+> Group Challenge stabilization commit `c362437` and the implementation-guide
+> updates). Re-check the source and update this status section after each
+> architecture or product-flow change.
 
 ## 1. Product overview
 
@@ -659,11 +657,11 @@ Before declaring a Group Challenge release complete, exercise:
 * Both visible mode cards create the requested backend mode and route to the
   authoritative mode screen.
 * Competitive ranking remains accuracy first, speed second; timeout behavior
-  is tested once the 30-second deadline exists.
+  is covered by the Flutter 30-second timer regression.
 * Fellowship stays open until reveal, blocks duplicate/late answers, and
   finalizes/retries safely without a Competitive timer.
 * Join expiry rejects expired codes and active-challenge late joining is
-  prevented once participant freezing is implemented.
+  prevented by the frozen participant UID snapshot.
 * Existing security/rules and real client-path tests remain green.
 
 ## 15. Deployment
@@ -737,20 +735,16 @@ substantial code or product-flow work.
 
 ### Known gaps / planned future work
 
-* The audited `joinGroup` write path must explicitly preserve owner role and
-  joined timestamp for an owner entering their own code; add and run the
-  callable regression before calling ownership complete.
-* Enforce the product's 10-minute default/max policy server-side if longer
-  custom windows are no longer desired, and rename UI copy from “Session
-  duration” to “Join window”/“People can join for …”.
-* Add a participant UID snapshot at challenge start and reject late members
-  from that challenge; use the snapshot for Fellowship final entries.
-* Implement and server-verify the 30-second Competitive per-question timer.
+* The backend still accepts longer explicit join-window values for old clients;
+  enforce a hard ten-minute maximum only when compatibility can be retired.
+* The Competitive countdown is client-enforced today. Add a server-enforced
+  per-player timing contract if tamper-proof per-question deadlines become a
+  requirement.
 * Persist or otherwise safely restore Group Challenge navigation and answer
   state so background/close/reopen returns to the authoritative screen without
   starting a duplicate or resetting to Question 1.
-* Render a member list with an explicit host badge and improve waiting/empty
-  copy to reflect the exact state.
+* Render a full member list with an explicit host badge; current lobby copy
+  identifies host/member and waiting state but does not show every roster row.
 * Remove or isolate legacy long-ID presentation and obsolete single-question
   UI only after confirming no production callers depend on compatibility
   fields/methods.
