@@ -561,9 +561,9 @@ Do not conflate these clocks:
 
 The normal default is 10 minutes from group creation. It controls code/group
 availability for joining and owner ability to create/start a challenge. The
-current UI offers only 10 minutes; the backend retains integer-duration and
-no-expiry compatibility behavior. An expired code is rejected by the
-Function. This duration is not the time allowed to finish a quiz.
+current UI offers only 10 minutes, and the backend accepts only integer values
+from 1 through 10 (omitted defaults to 10). An expired code is rejected by
+the Function. This duration is not the time allowed to finish a quiz.
 
 ### Competitive question timer
 
