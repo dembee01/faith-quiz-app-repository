@@ -3393,7 +3393,15 @@ class _GroupsScreenState extends State<GroupsScreen> {
     );
     final text = controller.text.trim();
     controller.dispose();
-    if (result != true || text.isEmpty || !mounted) return;
+    if (result != true || !mounted) return;
+    if (text.isEmpty) {
+      _notice(
+        join
+            ? 'Enter the 6-digit PIN shared by the host.'
+            : 'Enter a group name to create the challenge.',
+      );
+      return;
+    }
     if (join && !RegExp(r'^\d{6}$').hasMatch(text)) {
       _notice('Enter the 6-digit PIN shared by the host.');
       return;
@@ -4388,6 +4396,9 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
                                     onPressed: () =>
                                         _deleteChallenge(challenge),
                                   )
+                                : null,
+                            onLongPress: _currentGroup.isOwner
+                                ? () => _deleteChallenge(challenge)
                                 : null,
                             onTap: () {
                               if (challenge.isLobby) {
@@ -7194,6 +7205,7 @@ class SlateSettingCard extends StatelessWidget {
     required this.subtitle,
     required this.icon,
     this.onTap,
+    this.onLongPress,
     this.trailing,
     this.iconColor = _gold,
   });
@@ -7202,6 +7214,7 @@ class SlateSettingCard extends StatelessWidget {
   final IconData icon;
   final Color iconColor;
   final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
   final Widget? trailing;
   @override
   Widget build(BuildContext context) => Padding(
@@ -7212,6 +7225,7 @@ class SlateSettingCard extends StatelessWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(20),
         onTap: onTap,
+        onLongPress: onLongPress,
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Row(

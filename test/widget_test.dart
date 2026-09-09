@@ -1284,6 +1284,30 @@ void main() {
   );
 
   testWidgets(
+    'GroupsScreen explains that a group name is required before creating a room',
+    (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: GroupsScreen(
+            store: ProgressStore(),
+            service: _FakeGroupGateway(),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.tap(find.text('CREATE GROUP CHALLENGE'));
+      await tester.pump();
+      await tester.tap(find.text('CREATE ROOM'));
+      await tester.pump();
+
+      expect(
+        find.text('Enter a group name to create the challenge.'),
+        findsOneWidget,
+      );
+    },
+  );
+
+  testWidgets(
     'GroupsScreen opens the lobby immediately after atomic room creation',
     (tester) async {
       final service = _FakeGroupGateway();
@@ -1792,6 +1816,55 @@ void main() {
       await tester.tap(find.byTooltip('Delete challenge'));
       await tester.pump();
       expect(find.text('DELETE GROUP CHALLENGE?'), findsOneWidget);
+      await tester.tap(find.text('DELETE'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(service.deleteGroupChallengeCalled, isTrue);
+      expect(service.deletedChallengeId, challenge.id);
+    },
+  );
+
+  testWidgets(
+    'GroupDetailScreen lets the host long-press a challenge to delete it',
+    (tester) async {
+      const group = QuizGroup(
+        id: 'group-long-delete',
+        name: 'Long Delete Test Group',
+        role: 'owner',
+        joinCode: '223344',
+      );
+      const challenge = GroupChallenge(
+        id: 'challenge-long-delete',
+        title: 'Hold to Delete',
+        mode: 'fellowship',
+        status: 'completed',
+        questionCount: 20,
+        question: 'Question',
+        options: ['A', 'B'],
+        explanation: '',
+        scriptureReference: '',
+      );
+      final service = _FakeGroupGateway(
+        groups: [group],
+        challenges: [challenge],
+      );
+      await tester.pumpWidget(
+        MaterialApp(
+          home: GroupDetailScreen(
+            store: ProgressStore(),
+            group: group,
+            service: service,
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      await tester.longPress(find.text('Hold to Delete'));
+      await tester.pump();
+      expect(find.text('DELETE GROUP CHALLENGE?'), findsOneWidget);
+
       await tester.tap(find.text('DELETE'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
